@@ -62,12 +62,12 @@ export function TrackerCard({ tracker, onDelete, onUpdate, onAddEntry }) {
     .map(v => v.toString().padStart(2, '0')).join(':');
 
   return (
-    <div style={{ backgroundColor: 'white', border: '1px solid #f1f5f9', borderLeft: `6px solid ${tracker.color}`, borderRadius: '20px', padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.5rem', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)' }}>
+    <div style={{ backgroundColor: 'white', border: '1px solid #f1f5f9', borderLeft: `6px solid ${tracker.color}`, borderRadius: '20px', padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.5rem', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)', boxSizing: 'border-box' }}>
 
       {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-          <div style={{ width: '3rem', height: '3rem', borderRadius: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: `${tracker.color}15`, color: tracker.color }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', flexWrap: 'wrap', gap: '1rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flex: '1 1 auto', minWidth: '200px' }}>
+          <div style={{ width: '3rem', height: '3rem', borderRadius: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: `${tracker.color}15`, color: tracker.color, flexShrink: 0 }}>
             <IconComponent size={24} />
           </div>
           <div>
@@ -77,7 +77,7 @@ export function TrackerCard({ tracker, onDelete, onUpdate, onAddEntry }) {
         </div>
         <button
           onClick={() => onDelete(tracker.id)} // Fixed: Passed tracker.id
-          style={{ background: 'transparent', border: '1px solid #fee2e2', color: '#ef4444', padding: '6px 12px', borderRadius: '8px', cursor: 'pointer', fontSize: '0.75rem', fontWeight: '600' }}
+          style={{ background: 'transparent', border: '1px solid #fee2e2', color: '#ef4444', padding: '6px 12px', borderRadius: '8px', cursor: 'pointer', fontSize: '0.75rem', fontWeight: '600', flexShrink: 0 }}
         >
           Delete
         </button>
@@ -85,25 +85,25 @@ export function TrackerCard({ tracker, onDelete, onUpdate, onAddEntry }) {
 
       {/* Conditional UI Sections */}
       {tracker.type === 'habit' && (
-        <button onClick={handleHabitToggle} style={{ width: '100%', padding: '1rem', borderRadius: '12px', border: 'none', background: todayEntry ? `${tracker.color}15` : '#f1f5f9', color: todayEntry ? tracker.color : '#64748b', fontWeight: '700', cursor: 'pointer' }}>
+        <button onClick={handleHabitToggle} style={{ width: '100%', padding: '1rem', borderRadius: '12px', border: 'none', background: todayEntry ? `${tracker.color}15` : '#f1f5f9', color: todayEntry ? tracker.color : '#64748b', fontWeight: '700', cursor: 'pointer', boxSizing: 'border-box' }}>
           {todayEntry ? 'Completed Today' : 'Mark Done'}
         </button>
       )}
 
       {tracker.type === 'counter' && (
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <button onClick={() => handleCounterChange(-1)} style={{ width: '3rem', height: '3rem', borderRadius: '12px', border: 'none', background: '#f1f5f9', cursor: 'pointer' }}><Minus size={20} /></button>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem' }}>
+          <button onClick={() => handleCounterChange(-1)} style={{ width: '3rem', height: '3rem', borderRadius: '12px', border: 'none', background: '#f1f5f9', cursor: 'pointer', flexShrink: 0 }}><Minus size={20} /></button>
           <span style={{ fontSize: '2.5rem', fontWeight: '800', color: tracker.color, fontFamily: 'monospace' }}>{Number(todayEntry?.value) || 0}</span>
-          <button onClick={() => handleCounterChange(1)} style={{ width: '3rem', height: '3rem', borderRadius: '12px', border: 'none', background: tracker.color, color: 'white', cursor: 'pointer' }}><Plus size={20} /></button>
+          <button onClick={() => handleCounterChange(1)} style={{ width: '3rem', height: '3rem', borderRadius: '12px', border: 'none', background: tracker.color, color: 'white', cursor: 'pointer', flexShrink: 0 }}><Plus size={20} /></button>
         </div>
       )}
 
       {tracker.type === 'timer' && (
         <div style={{ textAlign: 'center' }}>
-          <div style={{ fontSize: '3rem', fontWeight: '800', color: tracker.color, fontFamily: 'monospace', marginBottom: '1rem' }}>{formatTime(timerSeconds)}</div>
-          <div style={{ display: 'flex', gap: '0.5rem' }}>
-            <button onClick={() => setTimerRunning(!timerRunning)} style={{ flex: 1, padding: '1rem', borderRadius: '12px', border: 'none', background: tracker.color, color: 'white', fontWeight: '700', cursor: 'pointer' }}>{timerRunning ? 'PAUSE' : 'START'}</button>
-            <button onClick={() => { setTimerRunning(false); setTimerSeconds(0); }} style={{ padding: '1rem', borderRadius: '12px', border: 'none', background: '#f1f5f9', cursor: 'pointer' }}><RotateCcw size={20} /></button>
+          <div style={{ fontSize: '3rem', fontWeight: '800', color: tracker.color, fontFamily: 'monospace', marginBottom: '1rem', wordBreak: 'break-all' }}>{formatTime(timerSeconds)}</div>
+          <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+            <button onClick={() => setTimerRunning(!timerRunning)} style={{ flex: '1 1 120px', padding: '1rem', borderRadius: '12px', border: 'none', background: tracker.color, color: 'white', fontWeight: '700', cursor: 'pointer', boxSizing: 'border-box' }}>{timerRunning ? 'PAUSE' : 'START'}</button>
+            <button onClick={() => { setTimerRunning(false); setTimerSeconds(0); }} style={{ flex: '0 0 auto', padding: '1rem', borderRadius: '12px', border: 'none', background: '#f1f5f9', cursor: 'pointer', boxSizing: 'border-box' }}><RotateCcw size={20} /></button>
           </div>
         </div>
       )}
@@ -121,7 +121,7 @@ export function TrackerCard({ tracker, onDelete, onUpdate, onAddEntry }) {
                   style={{
                     flex: '1 1 60px', minWidth: '60px', padding: '0.75rem', borderRadius: '12px',
                     border: '2px solid #f1f5f9', background: 'white', cursor: 'pointer',
-                    display: 'flex', flexDirection: 'column', alignItems: 'center'
+                    display: 'flex', flexDirection: 'column', alignItems: 'center', boxSizing: 'border-box'
                   }}
                 >
                   <div style={{ fontSize: '1.5rem', marginBottom: '4px' }}>{m.emoji}</div>
@@ -133,7 +133,7 @@ export function TrackerCard({ tracker, onDelete, onUpdate, onAddEntry }) {
 
           {/* Summary State: Shown if entry exists for today */}
           {todayEntry && (
-            <div style={{ padding: '1rem', borderRadius: '16px', background: `${tracker.color}10`, textAlign: 'center' }}>
+            <div style={{ padding: '1rem', borderRadius: '16px', background: `${tracker.color}10`, textAlign: 'center', boxSizing: 'border-box' }}>
               <p style={{ fontSize: '0.85rem', color: tracker.color, fontWeight: '700', margin: '0 0 0.5rem 0' }}>
                 Today's Mood: {MOOD_OPTIONS.find(m => m.value === todayEntry.value)?.label}
               </p>
@@ -146,9 +146,9 @@ export function TrackerCard({ tracker, onDelete, onUpdate, onAddEntry }) {
           {/* Recent History (Always shown) */}
           <div style={{ marginTop: '0.5rem' }}>
             <h4 style={{ fontSize: '0.7rem', color: '#94a3b8', textTransform: 'uppercase', marginBottom: '0.5rem' }}>Recent History</h4>
-            <div style={{ display: 'flex', gap: '0.5rem', overflowX: 'auto' }}>
+            <div style={{ display: 'flex', gap: '0.5rem', overflowX: 'auto', paddingBottom: '0.5rem' }}>
               {tracker.entries.slice(-7).reverse().map((entry, index) => (
-                <div key={index} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: '40px' }}>
+                <div key={index} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: '40px', flexShrink: 0 }}>
                   <span style={{ fontSize: '1.25rem' }}>{MOOD_OPTIONS.find(m => m.value === entry.value)?.emoji || '❓'}</span>
                   <span style={{ fontSize: '0.6rem', color: '#64748b' }}>{entry.date.slice(5)}</span>
                 </div>
@@ -165,7 +165,7 @@ export function TrackerCard({ tracker, onDelete, onUpdate, onAddEntry }) {
             const percentage = Math.min((currentTotal / (tracker.target || 1)) * 100, 100);
             return (
               <div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem', flexWrap: 'wrap' }}>
                   <span style={{ fontSize: '0.85rem', fontWeight: '700' }}>{currentTotal} <span style={{ color: '#94a3b8' }}>/ {tracker.target}</span></span>
                   <span style={{ fontSize: '0.75rem', fontWeight: '700', color: tracker.color }}>{percentage.toFixed(0)}%</span>
                 </div>
@@ -175,9 +175,9 @@ export function TrackerCard({ tracker, onDelete, onUpdate, onAddEntry }) {
               </div>
             );
           })()}
-          <div style={{ display: 'flex', gap: '0.5rem' }}>
-            <input type="number" value={inputValue} onChange={(e) => setInputValue(e.target.value)} placeholder="Enter amount" style={{ flex: 1, padding: '0.75rem', borderRadius: '12px', border: '2px solid #f1f5f9', outline: 'none' }} />
-            <button onClick={handleSaveAmount} style={{ padding: '0.75rem 1.5rem', borderRadius: '12px', border: 'none', background: tracker.color, color: 'white', cursor: 'pointer', fontWeight: '600' }}>Add</button>
+          <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+            <input type="number" value={inputValue} onChange={(e) => setInputValue(e.target.value)} placeholder="Enter amount" style={{ flex: '1 1 120px', padding: '0.75rem', borderRadius: '12px', border: '2px solid #f1f5f9', outline: 'none', boxSizing: 'border-box' }} />
+            <button onClick={handleSaveAmount} style={{ flex: '1 1 80px', padding: '0.75rem 1.5rem', borderRadius: '12px', border: 'none', background: tracker.color, color: 'white', cursor: 'pointer', fontWeight: '600', boxSizing: 'border-box' }}>Add</button>
           </div>
         </div>
       )}
