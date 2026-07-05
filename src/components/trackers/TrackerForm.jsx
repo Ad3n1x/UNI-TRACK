@@ -52,7 +52,6 @@ export default function TrackerForm({ onCreate, onClose }) {
     if (onClose) onClose();
   };
 
-  const PreviewIcon = Icons[icon] || Icons.Circle;
   const needsTarget = type === 'counter' || type === 'goal' || type === 'expense' || type === 'timer';
 
   return (
@@ -73,14 +72,14 @@ export default function TrackerForm({ onCreate, onClose }) {
 
           <div>
             <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: '600', color: '#64748b', marginBottom: '0.5rem', textTransform: 'uppercase' }}>Tracker Name</label>
-            <input type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Morning Run…" style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid #cbd5e1', outline: 'none' }} autoFocus />
+            <input type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Morning Run…" style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid #cbd5e1', outline: 'none', boxSizing: 'border-box' }} autoFocus />
           </div>
 
           <div>
             <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: '600', color: '#64748b', marginBottom: '0.5rem', textTransform: 'uppercase' }}>Type</label>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
               {trackerTypes.map(({ value, label, emoji }) => (
-                <button key={value} type="button" onClick={() => setType(value)} style={{ padding: '0.75rem', borderRadius: '8px', border: type === value ? `2px solid ${color}` : '1px solid #e2e8f0', background: type === value ? `${color}10` : 'white', cursor: 'pointer', textAlign: 'left' }}>
+                <button key={value} type="button" onClick={() => setType(value)} style={{ padding: '0.75rem', borderRadius: '8px', border: type === value ? `2px solid ${color}` : '1px solid #e2e8f0', background: type === value ? `${color}10` : 'white', cursor: 'pointer', textAlign: 'left', flex: '1 1 calc(50% - 0.5rem)', minWidth: '120px', boxSizing: 'border-box' }}>
                   <div style={{ fontSize: '1.25rem' }}>{emoji}</div>
                   <div style={{ fontSize: '0.875rem', fontWeight: '600', color: '#334155' }}>{label}</div>
                 </button>
@@ -90,11 +89,11 @@ export default function TrackerForm({ onCreate, onClose }) {
 
           <div>
             <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: '600', color: '#64748b', marginBottom: '0.5rem', textTransform: 'uppercase' }}>Icon</label>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(8, 1fr)', gap: '0.5rem', background: '#f8fafc', padding: '0.75rem', borderRadius: '8px' }}>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', background: '#f8fafc', padding: '0.75rem', borderRadius: '8px', width: '100%', boxSizing: 'border-box' }}>
               {iconOptions.map((iconName) => {
                 const IC = Icons[iconName] || Icons.Circle;
                 return (
-                  <button key={iconName} type="button" onClick={() => setIcon(iconName)} style={{ padding: '0.5rem', borderRadius: '6px', border: 'none', background: icon === iconName ? color : 'transparent', color: icon === iconName ? 'white' : '#94a3b8', cursor: 'pointer' }}>
+                  <button key={iconName} type="button" onClick={() => setIcon(iconName)} style={{ padding: '0.5rem', borderRadius: '6px', border: 'none', background: icon === iconName ? color : 'transparent', color: icon === iconName ? 'white' : '#94a3b8', cursor: 'pointer', flex: '0 0 auto' }}>
                     <IC size={16} />
                   </button>
                 );
@@ -106,7 +105,7 @@ export default function TrackerForm({ onCreate, onClose }) {
             <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: '600', color: '#64748b', marginBottom: '0.5rem', textTransform: 'uppercase' }}>Color</label>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
               {colorOptions.map((c) => (
-                <button key={c} type="button" onClick={() => setColor(c)} style={{ width: '28px', height: '28px', borderRadius: '6px', border: color === c ? '2px solid #334155' : 'none', background: c, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <button key={c} type="button" onClick={() => setColor(c)} style={{ width: '28px', height: '28px', borderRadius: '6px', border: color === c ? '2px solid #334155' : 'none', background: c, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                   {color === c && <Check size={14} color="white" />}
                 </button>
               ))}
@@ -114,15 +113,15 @@ export default function TrackerForm({ onCreate, onClose }) {
           </div>
 
           {needsTarget && (
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
-              <input type="number" value={target} onChange={(e) => setTarget(e.target.value)} placeholder="Target" style={{ padding: '0.75rem', borderRadius: '8px', border: '1px solid #cbd5e1', outline: 'none' }} />
-              <input type="text" value={unit} onChange={(e) => setUnit(e.target.value)} placeholder="Unit" style={{ padding: '0.75rem', borderRadius: '8px', border: '1px solid #cbd5e1', outline: 'none' }} />
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+              <input type="number" value={target} onChange={(e) => setTarget(e.target.value)} placeholder="Target" style={{ flex: '1 1 120px', padding: '0.75rem', borderRadius: '8px', border: '1px solid #cbd5e1', outline: 'none', boxSizing: 'border-box' }} />
+              <input type="text" value={unit} onChange={(e) => setUnit(e.target.value)} placeholder="Unit" style={{ flex: '1 1 120px', padding: '0.75rem', borderRadius: '8px', border: '1px solid #cbd5e1', outline: 'none', boxSizing: 'border-box' }} />
             </div>
           )}
 
-          <div style={{ display: 'flex', gap: '0.75rem', marginTop: '1rem' }}>
-            <button type="button" onClick={onClose} style={{ flex: 1, padding: '0.75rem', borderRadius: '8px', border: '1px solid #e2e8f0', background: 'white', cursor: 'pointer', fontWeight: '600' }}>Cancel</button>
-            <button type="submit" disabled={!name.trim()} style={{ flex: 1, padding: '0.75rem', borderRadius: '8px', border: 'none', background: color, color: 'white', cursor: 'pointer', fontWeight: '600', opacity: !name.trim() ? 0.5 : 1 }}>Create</button>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem', marginTop: '1rem' }}>
+            <button type="button" onClick={onClose} style={{ flex: '1 1 100px', padding: '0.75rem', borderRadius: '8px', border: '1px solid #e2e8f0', background: 'white', cursor: 'pointer', fontWeight: '600' }}>Cancel</button>
+            <button type="submit" disabled={!name.trim()} style={{ flex: '1 1 100px', padding: '0.75rem', borderRadius: '8px', border: 'none', background: color, color: 'white', cursor: 'pointer', fontWeight: '600', opacity: !name.trim() ? 0.5 : 1 }}>Create</button>
           </div>
         </form>
       </div>
