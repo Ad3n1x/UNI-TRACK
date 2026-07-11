@@ -5,10 +5,15 @@ const App = () => {
   return (
     <>
       <Routes>
-          <Route index element={<Homepage/>}/>
+        <Route index element={<Homepage />} />
+        <Route path="/auth" element={<Auth />}>
+          <Route path="login" element={<LoginForm />} />
+          <Route path="register" element={<RegisterForm />} />
+        </Route>
 
-          {/* wild card routing */}
-          {/* <Route path='*' element={<Notfound/>}/> */}
+
+        {/* wild card routing */}
+        {/* <Route path='*' element={<Notfound/>}/> */}
       </Routes>
 
     </>
