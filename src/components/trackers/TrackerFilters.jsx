@@ -17,8 +17,8 @@ export default function TrackerFilters({ typeFilter, onTypeFilterChange }) {
       <span className="filter-label">Filter by type:</span>
       <select
         className="filter-select"
-        value={typeFilter || ''}
-        onChange={(e) => onTypeFilterChange(e.target.value || null)}
+        value={typeFilter ?? ''}
+        onChange={(e) => onTypeFilterChange(e.target.value)}
       >
         {FILTER_OPTIONS.map((opt) => (
           <option key={opt.value} value={opt.value}>
