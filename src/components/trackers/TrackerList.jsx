@@ -2,14 +2,19 @@ import React, { useState, useEffect } from 'react';
 import TrackerList from './TrackerList';
 import TrackerFilters from './TrackerFilters';
 
-const API_URL = process.env.API_URL;
+// 1. Safe environment variable setup with default fallback
+const API_URL =
+  process.env.REACT_APP_API_URL ||
+  process.env.VITE_API_URL ||
+  process.env.API_URL ||
+  "http://localhost:5000/api/trackers";
 
 export default function TrackerApp() {
   const [trackers, setTrackers] = useState([]);
   const [typeFilter, setTypeFilter] = useState('');
   const [loading, setLoading] = useState(true);
 
-  // 1. Fetch trackers from backend on mount or when filter changes
+  // Fetch trackers on initial mount or filter change
   useEffect(() => {
     fetchTrackers(typeFilter);
   }, [typeFilter]);
@@ -19,6 +24,7 @@ export default function TrackerApp() {
       setLoading(true);
       const url = filter ? `${API_URL}?type=${filter}` : API_URL;
       const res = await fetch(url);
+      if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
       const data = await res.json();
       setTrackers(data);
     } catch (err) {
@@ -28,7 +34,7 @@ export default function TrackerApp() {
     }
   };
 
-  // 2. Delete a tracker
+  // Delete a tracker
   const handleDeleteTracker = async (id) => {
     try {
       const res = await fetch(`${API_URL}/${id}`, { method: 'DELETE' });
@@ -40,7 +46,7 @@ export default function TrackerApp() {
     }
   };
 
-  // 3. Add an entry to a specific tracker
+  // Add or update an entry
   const handleAddEntry = async (trackerId, entryData) => {
     try {
       const res = await fetch(`${API_URL}/${trackerId}/entries`, {
@@ -48,6 +54,7 @@ export default function TrackerApp() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(entryData),
       });
+      if (!res.ok) throw new Error('Failed to save entry');
       const updatedTracker = await res.json();
       setTrackers((prev) =>
         prev.map((t) => (t.id === trackerId ? updatedTracker : t))
@@ -57,22 +64,23 @@ export default function TrackerApp() {
     }
   };
 
-  // 4. Delete an entry from a tracker
+  // Delete an entry from a tracker (filters entries client-side and syncs via PUT)
   const handleDeleteEntry = async (trackerId, entryId) => {
     try {
-      const res = await fetch(`${API_URL}/${trackerId}/entries/${entryId}`, {
-        method: 'DELETE',
-      });
-      const updatedTracker = await res.json();
-      setTrackers((prev) =>
-        prev.map((t) => (t.id === trackerId ? updatedTracker : t))
+      const trackerToUpdate = trackers.find((t) => t.id === trackerId);
+      if (!trackerToUpdate) return;
+
+      const updatedEntries = trackerToUpdate.entries.filter(
+        (e) => e.id !== entryId && e._id !== entryId
       );
+
+      await handleUpdate(trackerId, updatedEntries);
     } catch (err) {
       console.error('Failed to delete entry:', err);
     }
   };
 
-  // 5. Update tracker fields/entries directly
+  // Update tracker fields/entries directly
   const handleUpdate = async (trackerId, updatedEntries) => {
     try {
       const res = await fetch(`${API_URL}/${trackerId}`, {
@@ -80,6 +88,7 @@ export default function TrackerApp() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ entries: updatedEntries }),
       });
+      if (!res.ok) throw new Error('Failed to update tracker');
       const updatedTracker = await res.json();
       setTrackers((prev) =>
         prev.map((t) => (t.id === trackerId ? updatedTracker : t))
