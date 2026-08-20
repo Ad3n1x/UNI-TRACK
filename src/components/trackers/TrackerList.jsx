@@ -1,123 +1,46 @@
-import React, { useState, useEffect } from 'react';
-import TrackerList from './TrackerList';
-import TrackerFilters from './TrackerFilters';
+import React from "react";
+import { TrackerCard } from './TrackerCard';
 
-// 1. Safe environment variable setup with default fallback
-const API_URL =
-  process.env.REACT_APP_API_URL ||
-  process.env.VITE_API_URL ||
-  process.env.API_URL ||
-  "http://localhost:5000/api/trackers";
-
-export default function TrackerApp() {
-  const [trackers, setTrackers] = useState([]);
-  const [typeFilter, setTypeFilter] = useState('');
-  const [loading, setLoading] = useState(true);
-
-  // Fetch trackers on initial mount or filter change
-  useEffect(() => {
-    fetchTrackers(typeFilter);
-  }, [typeFilter]);
-
-  const fetchTrackers = async (filter = '') => {
-    try {
-      setLoading(true);
-      const url = filter ? `${API_URL}?type=${filter}` : API_URL;
-      const res = await fetch(url);
-      if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
-      const data = await res.json();
-      setTrackers(data);
-    } catch (err) {
-      console.error('Failed to fetch trackers:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Delete a tracker
-  const handleDeleteTracker = async (id) => {
-    try {
-      const res = await fetch(`${API_URL}/${id}`, { method: 'DELETE' });
-      if (res.ok) {
-        setTrackers((prev) => prev.filter((tracker) => tracker.id !== id));
-      }
-    } catch (err) {
-      console.error('Failed to delete tracker:', err);
-    }
-  };
-
-  // Add or update an entry
-  const handleAddEntry = async (trackerId, entryData) => {
-    try {
-      const res = await fetch(`${API_URL}/${trackerId}/entries`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(entryData),
-      });
-      if (!res.ok) throw new Error('Failed to save entry');
-      const updatedTracker = await res.json();
-      setTrackers((prev) =>
-        prev.map((t) => (t.id === trackerId ? updatedTracker : t))
-      );
-    } catch (err) {
-      console.error('Failed to add entry:', err);
-    }
-  };
-
-  // Delete an entry from a tracker (filters entries client-side and syncs via PUT)
-  const handleDeleteEntry = async (trackerId, entryId) => {
-    try {
-      const trackerToUpdate = trackers.find((t) => t.id === trackerId);
-      if (!trackerToUpdate) return;
-
-      const updatedEntries = trackerToUpdate.entries.filter(
-        (e) => e.id !== entryId && e._id !== entryId
-      );
-
-      await handleUpdate(trackerId, updatedEntries);
-    } catch (err) {
-      console.error('Failed to delete entry:', err);
-    }
-  };
-
-  // Update tracker fields/entries directly
-  const handleUpdate = async (trackerId, updatedEntries) => {
-    try {
-      const res = await fetch(`${API_URL}/${trackerId}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ entries: updatedEntries }),
-      });
-      if (!res.ok) throw new Error('Failed to update tracker');
-      const updatedTracker = await res.json();
-      setTrackers((prev) =>
-        prev.map((t) => (t.id === trackerId ? updatedTracker : t))
-      );
-    } catch (err) {
-      console.error('Failed to update tracker:', err);
-    }
-  };
-
-  if (loading) {
-    return <div className="p-4 text-center">Loading trackers...</div>;
-  }
-
+export default function TrackerList({
+  trackers = [],
+  onDeleteTracker,
+  onAddEntry,
+  onDeleteEntry,
+  onUpdate
+}) {
   return (
-    <div className="container py-4">
-      {/* Type Filter */}
-      <TrackerFilters
-        typeFilter={typeFilter}
-        onTypeFilterChange={(val) => setTypeFilter(val || '')}
-      />
+    <div className="tracker-list-container">
+      {/* Count Header */}
+      <div className="d-flex align-items-center mb-4">
+        <span className="text-uppercase text-muted small fw-bold tracking-widest">
+          {trackers.length} {trackers.length === 1 ? 'tracker' : 'trackers'}
+        </span>
+      </div>
 
-      {/* Tracker List Component */}
-      <TrackerList
-        trackers={trackers}
-        onDeleteTracker={handleDeleteTracker}
-        onAddEntry={handleAddEntry}
-        onDeleteEntry={handleDeleteEntry}
-        onUpdate={handleUpdate}
-      />
+      {trackers.length === 0 ? (
+        <div className="text-center py-5 border border-dashed rounded-4 bg-light">
+          <div className="display-6 mb-3 text-secondary">
+            📭
+          </div>
+          <p className="text-muted mb-0">
+            No trackers found. Create your first one!
+          </p>
+        </div>
+      ) : (
+        <div className="row g-4">
+          {trackers.map(tracker => (
+            <div key={tracker.id} className="col-12 col-md-6 col-lg-4">
+              <TrackerCard
+                tracker={tracker}
+                onDelete={() => onDeleteTracker?.(tracker.id)}
+                onAddEntry={(entry) => onAddEntry?.(tracker.id, entry)}
+                onDeleteEntry={(entryId) => onDeleteEntry?.(tracker.id, entryId)}
+                onUpdate={(updatedData) => onUpdate?.(tracker.id, updatedData.entries)}
+              />
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
