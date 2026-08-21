@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import TrackerList from './TrackerList';
 import TrackerFilters from './TrackerFilters';
-import TrackerDashboard from './TrackerDashboard';
 
-const API_URL =
-  (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_API_URL) ||
+const BASE_API_URL =
+  (typeof import.meta !== 'undefined' && import.meta.env?.VITE_API_URL) ||
   process.env.REACT_APP_API_URL ||
   process.env.API_URL ||
   "http://localhost:5000/api/trackers";
+
+const API_URL = BASE_API_URL.replace(/\/$/, "");
 
 export default function TrackerApp() {
   const [trackers, setTrackers] = useState([]);
@@ -23,21 +24,13 @@ export default function TrackerApp() {
     try {
       setLoading(true);
       setErrorMsg(null);
-      const url = filter ? `${API_URL}?type=${filter}` : API_URL;
+      const url = filter ? `${API_URL}?type=${encodeURIComponent(filter)}` : API_URL;
       
       const res = await fetch(url);
-      if (!res.ok) {
-        throw new Error(`Server responded with status ${res.status}`);
-      }
+      if (!res.ok) throw new Error(`Server responded with status ${res.status}`);
       
       const data = await res.json();
-      
-      if (Array.isArray(data)) {
-        setTrackers(data);
-      } else {
-        console.warn("API response was not an array:", data);
-        setTrackers([]);
-      }
+      setTrackers(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error('Failed to fetch trackers:', err);
       setErrorMsg(err.message || 'Failed to connect to backend server');
@@ -51,7 +44,7 @@ export default function TrackerApp() {
     try {
       const res = await fetch(`${API_URL}/${id}`, { method: 'DELETE' });
       if (res.ok) {
-        setTrackers((prev) => prev.filter((tracker) => tracker.id !== id));
+        setTrackers((prev) => prev.filter((t) => (t.id || t._id) !== id));
       }
     } catch (err) {
       console.error('Failed to delete tracker:', err);
@@ -68,7 +61,7 @@ export default function TrackerApp() {
       if (!res.ok) throw new Error('Failed to save entry');
       const updatedTracker = await res.json();
       setTrackers((prev) =>
-        prev.map((t) => (t.id === trackerId ? updatedTracker : t))
+        prev.map((t) => ((t.id || t._id) === trackerId ? updatedTracker : t))
       );
     } catch (err) {
       console.error('Failed to add entry:', err);
@@ -77,11 +70,11 @@ export default function TrackerApp() {
 
   const handleDeleteEntry = async (trackerId, entryId) => {
     try {
-      const trackerToUpdate = trackers.find((t) => t.id === trackerId);
+      const trackerToUpdate = trackers.find((t) => (t.id || t._id) === trackerId);
       if (!trackerToUpdate) return;
 
       const updatedEntries = trackerToUpdate.entries.filter(
-        (e) => e.id !== entryId && e._id !== entryId
+        (e) => (e.id || e._id) !== entryId
       );
 
       await handleUpdate(trackerId, updatedEntries);
@@ -100,7 +93,7 @@ export default function TrackerApp() {
       if (!res.ok) throw new Error('Failed to update tracker');
       const updatedTracker = await res.json();
       setTrackers((prev) =>
-        prev.map((t) => (t.id === trackerId ? updatedTracker : t))
+        prev.map((t) => ((t.id || t._id) === trackerId ? updatedTracker : t))
       );
     } catch (err) {
       console.error('Failed to update tracker:', err);
@@ -112,23 +105,18 @@ export default function TrackerApp() {
   }
 
   return (
-    <div className="container py-4 space-y-6">
+    <div className="container py-4">
       {errorMsg && (
         <div className="p-3 mb-4 text-red-700 bg-red-100 rounded">
-          <strong>Error:</strong> {errorMsg}. Check if your backend server is running at <code>{API_URL}</code>.
+          <strong>Error:</strong> {errorMsg}. Check backend at <code>{API_URL}</code>.
         </div>
       )}
 
-      {/* Render Summary Dashboard */}
-      <TrackerDashboard trackers={trackers} />
-
-      {/* Type Filter */}
       <TrackerFilters
         typeFilter={typeFilter}
         onTypeFilterChange={(val) => setTypeFilter(val || '')}
       />
 
-      {/* Tracker List Component */}
       <TrackerList
         trackers={trackers}
         onDeleteTracker={handleDeleteTracker}
