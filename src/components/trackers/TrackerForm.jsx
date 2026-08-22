@@ -1,6 +1,16 @@
 import { useState } from "react";
-import { Check, X, Circle } from "lucide-react";
+import { Check, X, Circle, Loader2 } from "lucide-react";
 import * as Icons from "lucide-react";
+
+// Read base URL and normalize trailing slash
+const RAW_BASE_URL =
+  (typeof process !== "undefined" && process.env?.API_URL) ||
+  (typeof import.meta !== "undefined" && import.meta.env?.VITE_API_URL) ||
+  (typeof process !== "undefined" && process.env?.REACT_APP_API_URL) ||
+  "https://lv3node.onrender.com";
+
+const BASE_URL = RAW_BASE_URL.replace(/\/$/, "");
+const TRACKERS_ENDPOINT = `${BASE_URL}/api/trackers`;
 
 const TRACKER_TYPES = [
   { value: "habit", label: "Habit", description: "Daily yes/no", emoji: "✅" },
@@ -35,12 +45,17 @@ export default function TrackerForm({ onCreate, onClose }) {
   const [target, setTarget] = useState("");
   const [unit, setUnit] = useState("");
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    if (!name.trim()) return;
+  const [loading, setLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState(null);
 
-    onCreate?.({
-      id: crypto.randomUUID(),
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!name.trim() || loading) return;
+
+    setLoading(true);
+    setErrorMsg(null);
+
+    const payload = {
       name: name.trim(),
       type,
       icon,
@@ -48,9 +63,33 @@ export default function TrackerForm({ onCreate, onClose }) {
       target: target ? parseFloat(target) : undefined,
       unit: unit.trim() || undefined,
       entries: [],
-    });
+    };
 
-    onClose?.();
+    try {
+      const response = await fetch(TRACKERS_ENDPOINT, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Server returned status ${response.status}`);
+      }
+
+      const createdTracker = await response.json();
+
+      if (onCreate) onCreate(createdTracker);
+      if (onClose) onClose();
+    } catch (err) {
+      console.error("Failed to create tracker:", err);
+      setErrorMsg(
+        err.message || "Failed to reach backend at https://lv3node.onrender.com"
+      );
+    } finally {
+      setLoading(false);
+    }
   };
 
   const needsTarget = TARGET_TYPES.has(type);
@@ -58,20 +97,28 @@ export default function TrackerForm({ onCreate, onClose }) {
   return (
     <div style={styles.overlay}>
       <div style={styles.modal}>
-        {/* Header */}
         <div style={styles.header}>
           <div>
             <h2 style={styles.title}>New Tracker</h2>
             <p style={styles.subtitle}>Configure and start tracking</p>
           </div>
-          <button type="button" onClick={onClose} style={styles.closeBtn}>
+          <button
+            type="button"
+            onClick={onClose}
+            style={styles.closeBtn}
+            disabled={loading}
+          >
             <X size={18} />
           </button>
         </div>
 
-        {/* Form */}
         <form onSubmit={handleSubmit} style={styles.form}>
-          {/* Tracker Name */}
+          {errorMsg && (
+            <div style={styles.errorBox}>
+              <strong>Error:</strong> {errorMsg}
+            </div>
+          )}
+
           <div>
             <label style={styles.label}>Tracker Name</label>
             <input
@@ -80,11 +127,11 @@ export default function TrackerForm({ onCreate, onClose }) {
               onChange={(e) => setName(e.target.value)}
               placeholder="e.g. Morning Run…"
               style={styles.input}
+              disabled={loading}
               autoFocus
             />
           </div>
 
-          {/* Type Selection */}
           <div>
             <label style={styles.label}>Type</label>
             <div style={styles.gridContainer}>
@@ -94,10 +141,13 @@ export default function TrackerForm({ onCreate, onClose }) {
                   <button
                     key={value}
                     type="button"
+                    disabled={loading}
                     onClick={() => setType(value)}
                     style={{
                       ...styles.typeBtn,
-                      border: isActive ? `2px solid ${color}` : "1px solid #e2e8f0",
+                      border: isActive
+                        ? `2px solid ${color}`
+                        : "1px solid #e2e8f0",
                       background: isActive ? `${color}10` : "white",
                     }}
                   >
@@ -109,7 +159,6 @@ export default function TrackerForm({ onCreate, onClose }) {
             </div>
           </div>
 
-          {/* Icon Picker */}
           <div>
             <label style={styles.label}>Icon</label>
             <div style={styles.iconContainer}>
@@ -120,6 +169,7 @@ export default function TrackerForm({ onCreate, onClose }) {
                   <button
                     key={iconName}
                     type="button"
+                    disabled={loading}
                     onClick={() => setIcon(iconName)}
                     style={{
                       ...styles.iconBtn,
@@ -134,7 +184,6 @@ export default function TrackerForm({ onCreate, onClose }) {
             </div>
           </div>
 
-          {/* Color Swatches */}
           <div>
             <label style={styles.label}>Color</label>
             <div style={{ display: "flex", flexWrap: "wrap", gap: "0.5rem" }}>
@@ -142,6 +191,7 @@ export default function TrackerForm({ onCreate, onClose }) {
                 <button
                   key={c}
                   type="button"
+                  disabled={loading}
                   onClick={() => setColor(c)}
                   style={{
                     ...styles.colorBtn,
@@ -155,12 +205,12 @@ export default function TrackerForm({ onCreate, onClose }) {
             </div>
           </div>
 
-          {/* Dynamic Target Inputs */}
           {needsTarget && (
             <div style={{ display: "flex", flexWrap: "wrap", gap: "0.5rem" }}>
               <input
                 type="number"
                 value={target}
+                disabled={loading}
                 onChange={(e) => setTarget(e.target.value)}
                 placeholder="Target"
                 style={{ ...styles.input, flex: "1 1 120px" }}
@@ -168,6 +218,7 @@ export default function TrackerForm({ onCreate, onClose }) {
               <input
                 type="text"
                 value={unit}
+                disabled={loading}
                 onChange={(e) => setUnit(e.target.value)}
                 placeholder="Unit"
                 style={{ ...styles.input, flex: "1 1 120px" }}
@@ -175,21 +226,30 @@ export default function TrackerForm({ onCreate, onClose }) {
             </div>
           )}
 
-          {/* Form Controls */}
           <div style={styles.actions}>
-            <button type="button" onClick={onClose} style={styles.cancelBtn}>
+            <button
+              type="button"
+              onClick={onClose}
+              disabled={loading}
+              style={styles.cancelBtn}
+            >
               Cancel
             </button>
             <button
               type="submit"
-              disabled={!name.trim()}
+              disabled={!name.trim() || loading}
               style={{
                 ...styles.submitBtn,
                 background: color,
-                opacity: !name.trim() ? 0.5 : 1,
+                opacity: !name.trim() || loading ? 0.5 : 1,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: "0.5rem",
               }}
             >
-              Create
+              {loading && <Loader2 size={16} className="animate-spin" />}
+              {loading ? "Creating..." : "Create"}
             </button>
           </div>
         </form>
@@ -198,7 +258,6 @@ export default function TrackerForm({ onCreate, onClose }) {
   );
 }
 
-// Extracted style objects to keep markup readable
 const styles = {
   overlay: {
     position: "fixed",
@@ -236,6 +295,14 @@ const styles = {
     background: "#f8fafc",
     cursor: "pointer",
     display: "flex",
+  },
+  errorBox: {
+    padding: "0.75rem",
+    borderRadius: "8px",
+    backgroundColor: "#fef2f2",
+    color: "#b91c1c",
+    fontSize: "0.875rem",
+    border: "1px solid #fecaca",
   },
   form: { padding: "1.5rem", display: "flex", flexDirection: "column", gap: "1.25rem" },
   label: {

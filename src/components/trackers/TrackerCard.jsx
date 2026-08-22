@@ -2,6 +2,8 @@ import React, { useState, useEffect, useRef, useMemo } from "react";
 import { Minus, Plus, RotateCcw } from "lucide-react";
 import * as Icons from "lucide-react";
 
+const API_BASE = "https://lv3node.onrender.com/api/trackers";
+
 const TYPE_COLORS = {
   habit: "#10b981",
   counter: "#3b82f6",
@@ -35,7 +37,7 @@ export function TrackerCard({ tracker, onDelete, onUpdate, onAddEntry }) {
   const today = useMemo(() => getLocalDateString(), []);
   const trackerEntries = tracker.entries || [];
   const todayEntry = trackerEntries.find((e) => e.date === today);
-  
+
   const IconComponent = Icons[tracker.icon] || Icons.Circle;
   const typeColor = TYPE_COLORS[tracker.type] || tracker.color || "#3b82f6";
 
@@ -54,7 +56,9 @@ export function TrackerCard({ tracker, onDelete, onUpdate, onAddEntry }) {
   const handleHabitToggle = () => {
     if (todayEntry) {
       onUpdate({
-        entries: trackerEntries.filter((e) => e.id !== todayEntry.id && e._id !== todayEntry._id),
+        entries: trackerEntries.filter(
+          (e) => e.id !== todayEntry.id && e._id !== todayEntry._id
+        ),
       });
     } else {
       onAddEntry({ date: today, value: true });
@@ -67,7 +71,9 @@ export function TrackerCard({ tracker, onDelete, onUpdate, onAddEntry }) {
     if (todayEntry) {
       onUpdate({
         entries: trackerEntries.map((e) =>
-          (e.id === todayEntry.id || e._id === todayEntry._id) ? { ...e, value: next } : e
+          e.id === todayEntry.id || e._id === todayEntry._id
+            ? { ...e, value: next }
+            : e
         ),
       });
     } else if (delta > 0) {
@@ -81,7 +87,7 @@ export function TrackerCard({ tracker, onDelete, onUpdate, onAddEntry }) {
       if (todayEntry) {
         onUpdate({
           entries: trackerEntries.map((e) =>
-            (e.id === todayEntry.id || e._id === todayEntry._id)
+            e.id === todayEntry.id || e._id === todayEntry._id
               ? { ...e, value: Number(e.value) + val }
               : e
           ),
@@ -99,8 +105,7 @@ export function TrackerCard({ tracker, onDelete, onUpdate, onAddEntry }) {
       .join(":");
 
   const currentTotal = useMemo(
-    () =>
-      trackerEntries.reduce((sum, e) => sum + (Number(e.value) || 0), 0),
+    () => trackerEntries.reduce((sum, e) => sum + (Number(e.value) || 0), 0),
     [trackerEntries]
   );
 
@@ -397,13 +402,93 @@ export function TrackerCard({ tracker, onDelete, onUpdate, onAddEntry }) {
   );
 }
 
-// Container Component
-export function TrackerList({
-  trackers = [],
-  onDeleteTracker,
-  onAddEntry,
-  onUpdate,
-}) {
+// Container Component with Built-in Backend Integration
+export function TrackerList() {
+  const [trackers, setTrackers] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  // Fetch trackers on initial mount
+  useEffect(() => {
+    fetch(API_BASE)
+      .then((res) => {
+        if (!res.ok) throw new Error("Failed to fetch trackers");
+        return res.json();
+      })
+      .then((data) => {
+        setTrackers(data);
+        setLoading(false);
+      })
+      .catch((err) => {
+        console.error("API Fetch Error:", err);
+        setError(err.message);
+        setLoading(false);
+      });
+  }, []);
+
+  // Handler: Add new entry to backend
+  const handleAddEntry = async (trackerId, entry) => {
+    try {
+      const res = await fetch(`${API_BASE}/${trackerId}/entries`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(entry),
+      });
+      if (!res.ok) throw new Error("Failed to create entry");
+      const updatedTracker = await res.json();
+      setTrackers((prev) =>
+        prev.map((t) => ((t._id || t.id) === trackerId ? updatedTracker : t))
+      );
+    } catch (err) {
+      console.error("Error adding entry:", err);
+    }
+  };
+
+  // Handler: Update entries array on backend
+  const handleUpdate = async (trackerId, updatedEntries) => {
+    try {
+      const res = await fetch(`${API_BASE}/${trackerId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ entries: updatedEntries }),
+      });
+      if (!res.ok) throw new Error("Failed to update tracker");
+      const updatedTracker = await res.json();
+      setTrackers((prev) =>
+        prev.map((t) => ((t._id || t.id) === trackerId ? updatedTracker : t))
+      );
+    } catch (err) {
+      console.error("Error updating tracker:", err);
+    }
+  };
+
+  // Handler: Delete tracker on backend
+  const handleDeleteTracker = async (trackerId) => {
+    try {
+      const res = await fetch(`${API_BASE}/${trackerId}`, {
+        method: "DELETE",
+      });
+      if (!res.ok) throw new Error("Failed to delete tracker");
+      setTrackers((prev) =>
+        prev.filter((t) => (t._id || t.id) !== trackerId)
+      );
+    } catch (err) {
+      console.error("Error deleting tracker:", err);
+    }
+  };
+
+  if (loading) {
+    return <div style={{ padding: "2rem", textAlign: "center", color: "#64748b" }}>Loading trackers...</div>;
+  }
+
+  if (error) {
+    return (
+      <div style={{ padding: "2rem", textAlign: "center", color: "#ef4444" }}>
+        Error loading trackers: {error}. Check backend connection.
+      </div>
+    );
+  }
+
   return (
     <div
       style={{
@@ -413,15 +498,18 @@ export function TrackerList({
         width: "100%",
       }}
     >
-      {trackers.map((tracker) => (
-        <TrackerCard
-          key={tracker.id || tracker._id}
-          tracker={tracker}
-          onDelete={(id) => onDeleteTracker && onDeleteTracker(id)}
-          onUpdate={(fields) => onUpdate && onUpdate(tracker.id || tracker._id, fields.entries)}
-          onAddEntry={(entry) => onAddEntry && onAddEntry(tracker.id || tracker._id, entry)}
-        />
-      ))}
+      {trackers.map((tracker) => {
+        const trackerId = tracker._id || tracker.id;
+        return (
+          <TrackerCard
+            key={trackerId}
+            tracker={tracker}
+            onDelete={handleDeleteTracker}
+            onUpdate={(fields) => handleUpdate(trackerId, fields.entries)}
+            onAddEntry={(entry) => handleAddEntry(trackerId, entry)}
+          />
+        );
+      })}
     </div>
   );
 }
