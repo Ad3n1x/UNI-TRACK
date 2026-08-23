@@ -6,7 +6,6 @@ import Auth from './components/auth/Auth';
 import LoginForm from './components/auth/LoginForm';
 import RegisterForm from './components/auth/RegisterForm';
 import TrackerDashboard from './components/trackers/TrackerDashboard';
-
 export default function App() {
   return (
     <Routes>

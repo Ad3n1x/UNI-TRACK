@@ -1,28 +1,53 @@
+import React, { useEffect } from "react";
 import { TrendingUp, Target, CheckCircle, LayoutGrid } from "lucide-react";
 
-// Helper to get local YYYY-MM-DD reliably without UTC timezone shifting
-const getLocalDateString = (date) => {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
-};
+const API_BASE = "https://lv3node.onrender.com/api/trackers";
 
-// ADDED 'default' keyword here to fix the import error
-export default function TrackerDashboard({ trackers = [] }) {
-  const today = getLocalDateString(new Date());
+export default function TrackerDashboard({ trackers = [], onRefresh }) {
+  // Poll the backend every second for live updates
+  useEffect(() => {
+    if (!onRefresh) return;
+
+    const intervalId = setInterval(async () => {
+      try {
+        const res = await fetch(API_BASE);
+        if (res.ok) {
+          const latestData = await res.json();
+          // Pass updated trackers back up to the parent component
+          onRefresh(latestData);
+        }
+      } catch (err) {
+        console.error("Background polling error:", err);
+      }
+    }, 1000);
+
+    return () => clearInterval(intervalId);
+  }, [onRefresh]);
+
+  const now = new Date();
+  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+  const endOfToday = startOfToday + 24 * 60 * 60 * 1000 - 1;
 
   const total = trackers.length;
 
-  // Safely check entries using optional chaining (?.)
   const completedToday = trackers.filter((t) => {
-    if (t.type === "habit") {
-      return t.entries?.some((e) => e.date === today && e.value === true);
-    }
-    return t.entries?.some((e) => e.date === today);
+    if (!t.entries || !Array.isArray(t.entries)) return false;
+    
+    return t.entries.some((e) => {
+      if (!e.date) return false;
+      const entryTime = new Date(e.date).getTime();
+      if (isNaN(entryTime)) return false;
+
+      const isWithinToday = entryTime >= startOfToday && entryTime <= endOfToday;
+
+      if (t.type === "habit") {
+        return isWithinToday && e.value === true;
+      }
+      return isWithinToday;
+    });
   }).length;
 
-  const withGoals = trackers.filter((t) => t.target).length;
+  const withGoals = trackers.filter((t) => t.target != null && t.target !== "").length;
   const activeStreak = calculateStreak(trackers);
 
   const cards = [
@@ -64,6 +89,7 @@ export default function TrackerDashboard({ trackers = [] }) {
         flexWrap: "wrap",
         gap: "16px",
         width: "100%",
+        marginBottom: "2rem",
       }}
     >
       {cards.map((card) => (
@@ -82,7 +108,6 @@ export default function TrackerDashboard({ trackers = [] }) {
             boxShadow: `0 4px 6px -1px rgba(0,0,0,0.05), 0 0 0 1px ${card.color}22`,
           }}
         >
-          {/* Icon Container */}
           <div
             style={{
               width: "40px",
@@ -98,7 +123,6 @@ export default function TrackerDashboard({ trackers = [] }) {
             {card.icon}
           </div>
 
-          {/* Content */}
           <div>
             <div
               style={{
@@ -150,32 +174,34 @@ function calculateStreak(trackers) {
   if (habitTrackers.length === 0) return 0;
 
   let streak = 0;
-  const currentDate = new Date();
+  let checkDate = new Date();
 
-  // Helper to check if any habit was completed on a specific date object
-  const hasCompletionForDate = (dateObj) => {
-    const dateStr = getLocalDateString(dateObj);
+  const hasCompletionForDay = (targetDate) => {
+    const startOfDay = new Date(targetDate.getFullYear(), targetDate.getMonth(), targetDate.getDate()).getTime();
+    const endOfDay = startOfDay + 24 * 60 * 60 * 1000 - 1;
+
     return habitTrackers.some((t) =>
-      t.entries?.some((e) => e.date === dateStr && e.value === true),
+      t.entries?.some((e) => {
+        if (!e.date) return false;
+        const entryTime = new Date(e.date).getTime();
+        if (isNaN(entryTime)) return false;
+        return entryTime >= startOfDay && entryTime <= endOfDay && e.value === true;
+      })
     );
   };
 
-  // If the user hasn't done today's habit yet, we shouldn't break their streak.
-  // We check if yesterday was completed instead.
-  if (!hasCompletionForDate(currentDate)) {
-    currentDate.setDate(currentDate.getDate() - 1);
+  if (!hasCompletionForDay(checkDate)) {
+    checkDate.setDate(checkDate.getDate() - 1);
 
-    // If yesterday ALSO has no completion, the streak is truly 0.
-    if (!hasCompletionForDate(currentDate)) {
+    if (!hasCompletionForDay(checkDate)) {
       return 0;
     }
   }
 
-  // Count backwards continuously
   while (streak < 365) {
-    if (!hasCompletionForDate(currentDate)) break;
+    if (!hasCompletionForDay(checkDate)) break;
     streak++;
-    currentDate.setDate(currentDate.getDate() - 1);
+    checkDate.setDate(checkDate.getDate() - 1);
   }
 
   return streak;

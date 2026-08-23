@@ -1,8 +1,7 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Check, X, Circle, Loader2 } from "lucide-react";
 import * as Icons from "lucide-react";
 
-// Read base URL and normalize trailing slash
 const RAW_BASE_URL =
   (typeof process !== "undefined" && process.env?.API_URL) ||
   (typeof import.meta !== "undefined" && import.meta.env?.VITE_API_URL) ||
@@ -48,10 +47,15 @@ export default function TrackerForm({ onCreate, onClose }) {
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState(null);
 
+  // Synchronous ref lock to prevent double submissions instantly
+  const isSubmittingRef = useRef(false);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!name.trim() || loading) return;
+    if (!name.trim() || isSubmittingRef.current || loading) return;
 
+    // Lock immediately
+    isSubmittingRef.current = true;
     setLoading(true);
     setErrorMsg(null);
 
@@ -87,6 +91,8 @@ export default function TrackerForm({ onCreate, onClose }) {
       setErrorMsg(
         err.message || "Failed to reach backend at https://lv3node.onrender.com"
       );
+      // Unlock only if it failed so they can retry
+      isSubmittingRef.current = false;
     } finally {
       setLoading(false);
     }
@@ -95,207 +101,151 @@ export default function TrackerForm({ onCreate, onClose }) {
   const needsTarget = TARGET_TYPES.has(type);
 
   return (
-    <div style={styles.overlay}>
-      <div style={styles.modal}>
-        <div style={styles.header}>
-          <div>
-            <h2 style={styles.title}>New Tracker</h2>
-            <p style={styles.subtitle}>Configure and start tracking</p>
-          </div>
-          <button
-            type="button"
-            onClick={onClose}
-            style={styles.closeBtn}
-            disabled={loading}
-          >
-            <X size={18} />
-          </button>
+    <form onSubmit={handleSubmit} style={styles.form}>
+      {errorMsg && (
+        <div style={styles.errorBox}>
+          <strong>Error:</strong> {errorMsg}
         </div>
+      )}
 
-        <form onSubmit={handleSubmit} style={styles.form}>
-          {errorMsg && (
-            <div style={styles.errorBox}>
-              <strong>Error:</strong> {errorMsg}
-            </div>
-          )}
+      <div>
+        <label style={styles.label}>Tracker Name</label>
+        <input
+          type="text"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          placeholder="e.g. Morning Run…"
+          style={styles.input}
+          disabled={loading}
+          autoFocus
+        />
+      </div>
 
-          <div>
-            <label style={styles.label}>Tracker Name</label>
-            <input
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="e.g. Morning Run…"
-              style={styles.input}
-              disabled={loading}
-              autoFocus
-            />
-          </div>
-
-          <div>
-            <label style={styles.label}>Type</label>
-            <div style={styles.gridContainer}>
-              {TRACKER_TYPES.map(({ value, label, emoji }) => {
-                const isActive = type === value;
-                return (
-                  <button
-                    key={value}
-                    type="button"
-                    disabled={loading}
-                    onClick={() => setType(value)}
-                    style={{
-                      ...styles.typeBtn,
-                      border: isActive
-                        ? `2px solid ${color}`
-                        : "1px solid #e2e8f0",
-                      background: isActive ? `${color}10` : "white",
-                    }}
-                  >
-                    <div style={{ fontSize: "1.25rem" }}>{emoji}</div>
-                    <div style={styles.typeLabel}>{label}</div>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          <div>
-            <label style={styles.label}>Icon</label>
-            <div style={styles.iconContainer}>
-              {ICON_OPTIONS.map((iconName) => {
-                const IconComp = Icons[iconName] || Circle;
-                const isActive = icon === iconName;
-                return (
-                  <button
-                    key={iconName}
-                    type="button"
-                    disabled={loading}
-                    onClick={() => setIcon(iconName)}
-                    style={{
-                      ...styles.iconBtn,
-                      background: isActive ? color : "transparent",
-                      color: isActive ? "white" : "#94a3b8",
-                    }}
-                  >
-                    <IconComp size={16} />
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          <div>
-            <label style={styles.label}>Color</label>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: "0.5rem" }}>
-              {COLOR_OPTIONS.map((c) => (
-                <button
-                  key={c}
-                  type="button"
-                  disabled={loading}
-                  onClick={() => setColor(c)}
-                  style={{
-                    ...styles.colorBtn,
-                    background: c,
-                    border: color === c ? "2px solid #334155" : "none",
-                  }}
-                >
-                  {color === c && <Check size={14} color="white" />}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {needsTarget && (
-            <div style={{ display: "flex", flexWrap: "wrap", gap: "0.5rem" }}>
-              <input
-                type="number"
-                value={target}
+      <div>
+        <label style={styles.label}>Type</label>
+        <div style={styles.gridContainer}>
+          {TRACKER_TYPES.map(({ value, label, emoji }) => {
+            const isActive = type === value;
+            return (
+              <button
+                key={value}
+                type="button"
                 disabled={loading}
-                onChange={(e) => setTarget(e.target.value)}
-                placeholder="Target"
-                style={{ ...styles.input, flex: "1 1 120px" }}
-              />
-              <input
-                type="text"
-                value={unit}
-                disabled={loading}
-                onChange={(e) => setUnit(e.target.value)}
-                placeholder="Unit"
-                style={{ ...styles.input, flex: "1 1 120px" }}
-              />
-            </div>
-          )}
+                onClick={() => setType(value)}
+                style={{
+                  ...styles.typeBtn,
+                  border: isActive
+                    ? `2px solid ${color}`
+                    : "1px solid #e2e8f0",
+                  background: isActive ? `${color}10` : "white",
+                }}
+              >
+                <div style={{ fontSize: "1.25rem" }}>{emoji}</div>
+                <div style={styles.typeLabel}>{label}</div>
+              </button>
+            );
+          })}
+        </div>
+      </div>
 
-          <div style={styles.actions}>
+      <div>
+        <label style={styles.label}>Icon</label>
+        <div style={styles.iconContainer}>
+          {ICON_OPTIONS.map((iconName) => {
+            const IconComp = Icons[iconName] || Circle;
+            const isActive = icon === iconName;
+            return (
+              <button
+                key={iconName}
+                type="button"
+                disabled={loading}
+                onClick={() => setIcon(iconName)}
+                style={{
+                  ...styles.iconBtn,
+                  background: isActive ? color : "transparent",
+                  color: isActive ? "white" : "#94a3b8",
+                }}
+              >
+                <IconComp size={16} />
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      <div>
+        <label style={styles.label}>Color</label>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: "0.5rem" }}>
+          {COLOR_OPTIONS.map((c) => (
             <button
+              key={c}
               type="button"
-              onClick={onClose}
               disabled={loading}
-              style={styles.cancelBtn}
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={!name.trim() || loading}
+              onClick={() => setColor(c)}
               style={{
-                ...styles.submitBtn,
-                background: color,
-                opacity: !name.trim() || loading ? 0.5 : 1,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                gap: "0.5rem",
+                ...styles.colorBtn,
+                background: c,
+                border: color === c ? "2px solid #334155" : "none",
               }}
             >
-              {loading && <Loader2 size={16} className="animate-spin" />}
-              {loading ? "Creating..." : "Create"}
+              {color === c && <Check size={14} color="white" />}
             </button>
-          </div>
-        </form>
+          ))}
+        </div>
       </div>
-    </div>
+
+      {needsTarget && (
+        <div style={{ display: "flex", flexWrap: "wrap", gap: "0.5rem" }}>
+          <input
+            type="number"
+            value={target}
+            disabled={loading}
+            onChange={(e) => setTarget(e.target.value)}
+            placeholder="Target"
+            style={{ ...styles.input, flex: "1 1 120px" }}
+          />
+          <input
+            type="text"
+            value={unit}
+            disabled={loading}
+            onChange={(e) => setUnit(e.target.value)}
+            placeholder="Unit"
+            style={{ ...styles.input, flex: "1 1 120px" }}
+          />
+        </div>
+      )}
+
+      <div style={styles.actions}>
+        <button
+          type="button"
+          onClick={onClose}
+          disabled={loading}
+          style={styles.cancelBtn}
+        >
+          Cancel
+        </button>
+        <button
+          type="submit"
+          disabled={!name.trim() || loading}
+          style={{
+            ...styles.submitBtn,
+            background: color,
+            opacity: !name.trim() || loading ? 0.5 : 1,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: "0.5rem",
+          }}
+        >
+          {loading && <Loader2 size={16} className="animate-spin" />}
+          {loading ? "Creating..." : "Create"}
+        </button>
+      </div>
+    </form>
   );
 }
 
 const styles = {
-  overlay: {
-    position: "fixed",
-    inset: 0,
-    background: "rgba(0, 0, 0, 0.6)",
-    backdropFilter: "blur(4px)",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    zIndex: 50,
-    padding: "1rem",
-  },
-  modal: {
-    background: "white",
-    borderRadius: "16px",
-    maxWidth: "480px",
-    width: "100%",
-    maxHeight: "90vh",
-    overflowY: "auto",
-    boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1)",
-  },
-  header: {
-    padding: "1.5rem",
-    borderBottom: "1px solid #f1f5f9",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
-  title: { fontSize: "1.125rem", fontWeight: "600", margin: 0, color: "#1e293b" },
-  subtitle: { fontSize: "0.875rem", color: "#64748b", margin: "0.25rem 0 0 0" },
-  closeBtn: {
-    padding: "0.5rem",
-    borderRadius: "8px",
-    border: "none",
-    background: "#f8fafc",
-    cursor: "pointer",
-    display: "flex",
-  },
   errorBox: {
     padding: "0.75rem",
     borderRadius: "8px",
@@ -304,7 +254,7 @@ const styles = {
     fontSize: "0.875rem",
     border: "1px solid #fecaca",
   },
-  form: { padding: "1.5rem", display: "flex", flexDirection: "column", gap: "1.25rem" },
+  form: { display: "flex", flexDirection: "column", gap: "1.25rem" },
   label: {
     display: "block",
     fontSize: "0.75rem",

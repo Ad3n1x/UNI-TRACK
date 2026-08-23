@@ -1,5 +1,5 @@
 import React from "react";
-import { TrackerCard } from './TrackerCard';
+import TrackerCard from './TrackerCard';
 
 export default function TrackerList({
   trackers = [],
