@@ -127,18 +127,22 @@ const Register = () => {
             <input
               type="password"
               name="password"
-              className="form-control"
+              className={`form-control ${formik.touched.password && formik.errors.password ? "is-invalid" : ""
+                }`}
               value={formik.values.password}
               onChange={formik.handleChange}
               onBlur={formik.handleBlur}
             />
+
             {formik.touched.password && formik.errors.password && (
-              <small className="text-danger d-block mt-1">
-                {formik.errors.password}
-              </small>
+              <div className="invalid-feedback d-block mt-1">
+                <span className="fw-medium text-danger">{formik.errors.password}</span>
+                <div className="text-muted small mt-1">
+                  💡 <span className="fst-italic">Example:</span> <code className="text-dark bg-light px-1 py-0.5 rounded">yourname@123</code>
+                </div>
+              </div>
             )}
           </div>
-
           <button
             type="submit"
             disabled={formik.isSubmitting}
