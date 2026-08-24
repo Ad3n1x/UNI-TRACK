@@ -1,0 +1,49 @@
+Date : 2026-08-24 20:48:43
+Directory : c:\Users\adeni\OneDrive\Documents\React\myLv3Project\src
+Total : 17 files,  2077 codes, 31 comments, 227 blanks, all 2335 lines
+
+Languages
++----------------+------------+------------+------------+------------+------------+
+| language       | files      | code       | comment    | blank      | total      |
++----------------+------------+------------+------------+------------+------------+
+| JavaScript JSX |         13 |      2,075 |         31 |        224 |      2,330 |
+| XML            |          2 |          2 |          0 |          1 |          3 |
+| PostCSS        |          2 |          0 |          0 |          2 |          2 |
++----------------+------------+------------+------------+------------+------------+
+
+Directories
++---------------------------------------------------------------------------------------------------+------------+------------+------------+------------+------------+
+| path                                                                                              | files      | code       | comment    | blank      | total      |
++---------------------------------------------------------------------------------------------------+------------+------------+------------+------------+------------+
+| .                                                                                                 |         17 |      2,077 |         31 |        227 |      2,335 |
+| . (Files)                                                                                         |          4 |         57 |          5 |          7 |         69 |
+| assets                                                                                            |          2 |          2 |          0 |          1 |          3 |
+| components                                                                                        |          8 |      1,573 |         14 |        159 |      1,746 |
+| components\auth                                                                                   |          3 |        389 |          2 |         47 |        438 |
+| components\trackers                                                                               |          5 |      1,184 |         12 |        112 |      1,308 |
+| pages                                                                                             |          3 |        445 |         12 |         60 |        517 |
++---------------------------------------------------------------------------------------------------+------------+------------+------------+------------+------------+
+
+Files
++---------------------------------------------------------------------------------------------------+----------------+------------+------------+------------+------------+
+| filename                                                                                          | language       | code       | comment    | blank      | total      |
++---------------------------------------------------------------------------------------------------+----------------+------------+------------+------------+------------+
+| c:\Users\adeni\OneDrive\Documents\React\myLv3Project\src\App.css                                  | PostCSS        |          0 |          0 |          1 |          1 |
+| c:\Users\adeni\OneDrive\Documents\React\myLv3Project\src\App.jsx                                  | JavaScript JSX |         32 |          3 |          3 |         38 |
+| c:\Users\adeni\OneDrive\Documents\React\myLv3Project\src\assets\react.svg                         | XML            |          1 |          0 |          0 |          1 |
+| c:\Users\adeni\OneDrive\Documents\React\myLv3Project\src\assets\vite.svg                          | XML            |          1 |          0 |          1 |          2 |
+| c:\Users\adeni\OneDrive\Documents\React\myLv3Project\src\components\auth\Auth.jsx                 | JavaScript JSX |        123 |          0 |         15 |        138 |
+| c:\Users\adeni\OneDrive\Documents\React\myLv3Project\src\components\auth\LoginForm.jsx            | JavaScript JSX |        120 |          0 |         14 |        134 |
+| c:\Users\adeni\OneDrive\Documents\React\myLv3Project\src\components\auth\RegisterForm.jsx         | JavaScript JSX |        146 |          2 |         18 |        166 |
+| c:\Users\adeni\OneDrive\Documents\React\myLv3Project\src\components\trackers\TrackerCard.jsx      | JavaScript JSX |        465 |          0 |         47 |        512 |
+| c:\Users\adeni\OneDrive\Documents\React\myLv3Project\src\components\trackers\TrackerDashboard.jsx | JavaScript JSX |        183 |          2 |         25 |        210 |
+| c:\Users\adeni\OneDrive\Documents\React\myLv3Project\src\components\trackers\TrackerFilters.jsx   | JavaScript JSX |        153 |          3 |          8 |        164 |
+| c:\Users\adeni\OneDrive\Documents\React\myLv3Project\src\components\trackers\TrackerForm.jsx      | JavaScript JSX |        329 |          6 |         30 |        365 |
+| c:\Users\adeni\OneDrive\Documents\React\myLv3Project\src\components\trackers\TrackerList.jsx      | JavaScript JSX |         54 |          1 |          2 |         57 |
+| c:\Users\adeni\OneDrive\Documents\React\myLv3Project\src\index.css                                | PostCSS        |          0 |          0 |          1 |          1 |
+| c:\Users\adeni\OneDrive\Documents\React\myLv3Project\src\main.jsx                                 | JavaScript JSX |         25 |          2 |          2 |         29 |
+| c:\Users\adeni\OneDrive\Documents\React\myLv3Project\src\pages\CustomPage.jsx                     | JavaScript JSX |         43 |          0 |          7 |         50 |
+| c:\Users\adeni\OneDrive\Documents\React\myLv3Project\src\pages\Homepage.jsx                       | JavaScript JSX |        332 |         12 |         48 |        392 |
+| c:\Users\adeni\OneDrive\Documents\React\myLv3Project\src\pages\Notfound.jsx                       | JavaScript JSX |         70 |          0 |          5 |         75 |
+| Total                                                                                             |                |      2,077 |         31 |        227 |      2,335 |
++---------------------------------------------------------------------------------------------------+----------------+------------+------------+------------+------------+

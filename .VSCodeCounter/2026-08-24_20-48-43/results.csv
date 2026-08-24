@@ -1,0 +1,19 @@
+"filename", "language", "JavaScript JSX", "PostCSS", "XML", "comment", "blank", "total"
+"c:\Users\adeni\OneDrive\Documents\React\myLv3Project\src\App.css", "PostCSS", 0, 0, 0, 0, 1, 1
+"c:\Users\adeni\OneDrive\Documents\React\myLv3Project\src\App.jsx", "JavaScript JSX", 32, 0, 0, 3, 3, 38
+"c:\Users\adeni\OneDrive\Documents\React\myLv3Project\src\assets\react.svg", "XML", 0, 0, 1, 0, 0, 1
+"c:\Users\adeni\OneDrive\Documents\React\myLv3Project\src\assets\vite.svg", "XML", 0, 0, 1, 0, 1, 2
+"c:\Users\adeni\OneDrive\Documents\React\myLv3Project\src\components\auth\Auth.jsx", "JavaScript JSX", 123, 0, 0, 0, 15, 138
+"c:\Users\adeni\OneDrive\Documents\React\myLv3Project\src\components\auth\LoginForm.jsx", "JavaScript JSX", 120, 0, 0, 0, 14, 134
+"c:\Users\adeni\OneDrive\Documents\React\myLv3Project\src\components\auth\RegisterForm.jsx", "JavaScript JSX", 146, 0, 0, 2, 18, 166
+"c:\Users\adeni\OneDrive\Documents\React\myLv3Project\src\components\trackers\TrackerCard.jsx", "JavaScript JSX", 465, 0, 0, 0, 47, 512
+"c:\Users\adeni\OneDrive\Documents\React\myLv3Project\src\components\trackers\TrackerDashboard.jsx", "JavaScript JSX", 183, 0, 0, 2, 25, 210
+"c:\Users\adeni\OneDrive\Documents\React\myLv3Project\src\components\trackers\TrackerFilters.jsx", "JavaScript JSX", 153, 0, 0, 3, 8, 164
+"c:\Users\adeni\OneDrive\Documents\React\myLv3Project\src\components\trackers\TrackerForm.jsx", "JavaScript JSX", 329, 0, 0, 6, 30, 365
+"c:\Users\adeni\OneDrive\Documents\React\myLv3Project\src\components\trackers\TrackerList.jsx", "JavaScript JSX", 54, 0, 0, 1, 2, 57
+"c:\Users\adeni\OneDrive\Documents\React\myLv3Project\src\index.css", "PostCSS", 0, 0, 0, 0, 1, 1
+"c:\Users\adeni\OneDrive\Documents\React\myLv3Project\src\main.jsx", "JavaScript JSX", 25, 0, 0, 2, 2, 29
+"c:\Users\adeni\OneDrive\Documents\React\myLv3Project\src\pages\CustomPage.jsx", "JavaScript JSX", 43, 0, 0, 0, 7, 50
+"c:\Users\adeni\OneDrive\Documents\React\myLv3Project\src\pages\Homepage.jsx", "JavaScript JSX", 332, 0, 0, 12, 48, 392
+"c:\Users\adeni\OneDrive\Documents\React\myLv3Project\src\pages\Notfound.jsx", "JavaScript JSX", 70, 0, 0, 0, 5, 75
+"Total", "-", 2075, 0, 2, 31, 227, 2335
