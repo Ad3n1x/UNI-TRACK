@@ -71,8 +71,9 @@ const Register = () => {
   });
 
   return (
-    <div className="d-flex flex-column align-items-center justify-content-center vh-100">
-      <div className="p-4 rounded shadow-lg bg-light" style={{ width: "420px" }}>
+    <div className="d-flex flex-column align-items-center justify-content-center min-vh-100 px-3 py-4">
+      {/* Responsive card wrapper using Bootstrap sizing columns */}
+      <div className="p-4 rounded shadow-lg bg-light w-100" style={{ maxWidth: "450px" }}>
         <h2 className="text-center mb-4 fw-bold">Create Account</h2>
 
         <form onSubmit={formik.handleSubmit}>
