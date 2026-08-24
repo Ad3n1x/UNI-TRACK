@@ -1,8 +1,15 @@
 import React, { useState, useEffect, useRef, useMemo } from "react";
 import { Minus, Plus, RotateCcw } from "lucide-react";
 import * as Icons from "lucide-react";
+import Cookies from "universal-cookie";
 
-const API_BASE = "https://lv3node.onrender.com/api/trackers";
+const RAW_BASE_URL =
+  (typeof process !== "undefined" && process.env?.API_URL) ||
+  (typeof import.meta !== "undefined" && import.meta.env?.VITE_API_URL) ||
+  (typeof process !== "undefined" && process.env?.REACT_APP_API_URL) ||
+  "https://lv3node.onrender.com";
+
+const BASE_URL = RAW_BASE_URL.replace(/\/$/, "");
 
 const TYPE_COLORS = {
   habit: "#10b981",
@@ -85,32 +92,42 @@ export default function TrackerCard({
       return;
     }
 
-    // Silent optimistic UI update
+    // Read Bearer Token
+    const cookies = new Cookies();
+    const token = cookies.get("token");
+
+    const headers = {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    };
+
+    // Optimistic UI update
     setLocalEntries(updatedEntriesList);
     const optimisticTracker = { ...tracker, entries: updatedEntriesList };
     onUpdateTracker?.(optimisticTracker);
 
     try {
-      let res = await fetch(`${API_BASE}/${trackerId}`, {
+      let res = await fetch(`${BASE_URL}/api/v1/trackers/${trackerId}`, {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
+        headers,
         body: JSON.stringify({ entries: updatedEntriesList }),
       });
 
-      if (!res.ok && res.status === 404) {
-        res = await fetch(`${API_BASE}?id=${trackerId}`, {
+      if (res.status === 404) {
+        res = await fetch(`${BASE_URL}/api/trackers/${trackerId}`, {
           method: "PUT",
-          headers: { "Content-Type": "application/json" },
+          headers,
           body: JSON.stringify({ entries: updatedEntriesList }),
         });
       }
 
-      if (!res.ok) throw new Error("Failed to register entry on DB");
+      if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
 
       const updatedTracker = await res.json();
       onUpdateTracker?.(updatedTracker);
     } catch (err) {
       console.error("Database interaction error:", err);
+      // Revert optimistic changes on failure
       setLocalEntries(tracker?.entries || []);
       onUpdateTracker?.(tracker);
     }

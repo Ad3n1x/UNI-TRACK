@@ -1,25 +1,30 @@
+import React from "react";
+import { Routes, Route } from "react-router-dom";
+import Homepage from "./pages/Homepage";
+import Auth from "./components/auth/Auth";
+import LoginForm from "./components/auth/LoginForm";
+import RegisterForm from "./components/auth/RegisterForm";
+import TrackerDashboard from "./components/trackers/TrackerDashboard";
 
-import React from 'react';
-import { Routes, Route } from 'react-router-dom';
-import Homepage from './pages/Homepage';
-import Auth from './components/auth/Auth';
-import LoginForm from './components/auth/LoginForm';
-import RegisterForm from './components/auth/RegisterForm';
-import TrackerDashboard from './components/trackers/TrackerDashboard';
 export default function App() {
   return (
     <Routes>
-      <Route index element={<Homepage />} />
+      {/* Top-Level Routes */}
+      <Route index element={<LoginForm />} />
+      <Route path="/login" element={<LoginForm />} />
+      <Route path="/register" element={<RegisterForm />} />
+      <Route path="/homepage" element={<Homepage />} />
       <Route path="/trackers" element={<TrackerDashboard />} />
-      {/* Route /list to the dashboard container component instead of plain TrackerList */}
       <Route path="/list" element={<TrackerDashboard />} />
-      
+
+      {/* Nested Auth Routes */}
       <Route path="/auth" element={<Auth />}>
         <Route index element={<LoginForm />} />
         <Route path="login" element={<LoginForm />} />
         <Route path="register" element={<RegisterForm />} />
       </Route>
 
+      {/* Catch-All 404 Route */}
       <Route
         path="*"
         element={

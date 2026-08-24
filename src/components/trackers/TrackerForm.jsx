@@ -1,6 +1,7 @@
 import { useState, useRef } from "react";
 import { Check, X, Circle, Loader2 } from "lucide-react";
 import * as Icons from "lucide-react";
+import Cookies from "universal-cookie";
 
 const RAW_BASE_URL =
   (typeof process !== "undefined" && process.env?.API_URL) ||
@@ -9,7 +10,6 @@ const RAW_BASE_URL =
   "https://lv3node.onrender.com";
 
 const BASE_URL = RAW_BASE_URL.replace(/\/$/, "");
-const TRACKERS_ENDPOINT = `${BASE_URL}/api/trackers`;
 
 const TRACKER_TYPES = [
   { value: "habit", label: "Habit", description: "Daily yes/no", emoji: "✅" },
@@ -54,6 +54,15 @@ export default function TrackerForm({ onCreate, onClose }) {
     e.preventDefault();
     if (!name.trim() || isSubmittingRef.current || loading) return;
 
+    // Retrieve authentication token
+    const cookies = new Cookies();
+    const token = cookies.get("token");
+
+    if (!token) {
+      setErrorMsg("Session expired or missing authentication token. Please log in again.");
+      return;
+    }
+
     // Lock immediately
     isSubmittingRef.current = true;
     setLoading(true);
@@ -69,14 +78,30 @@ export default function TrackerForm({ onCreate, onClose }) {
       entries: [],
     };
 
+    const headers = {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    };
+
     try {
-      const response = await fetch(TRACKERS_ENDPOINT, {
+      // Primary route attempt (/api/v1/trackers with fallback to /api/trackers)
+      let response = await fetch(`${BASE_URL}/api/v1/trackers`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers,
         body: JSON.stringify(payload),
       });
+
+      if (response.status === 404) {
+        response = await fetch(`${BASE_URL}/api/trackers`, {
+          method: "POST",
+          headers,
+          body: JSON.stringify(payload),
+        });
+      }
+
+      if (response.status === 401) {
+        throw new Error("Session expired or unauthorized. Please log in again.");
+      }
 
       if (!response.ok) {
         throw new Error(`Server returned status ${response.status}`);
@@ -88,10 +113,8 @@ export default function TrackerForm({ onCreate, onClose }) {
       if (onClose) onClose();
     } catch (err) {
       console.error("Failed to create tracker:", err);
-      setErrorMsg(
-        err.message || "Failed to reach backend at https://lv3node.onrender.com"
-      );
-      // Unlock only if it failed so they can retry
+      setErrorMsg(err.message || "Failed to connect to backend server.");
+      // Unlock only if it failed so user can retry
       isSubmittingRef.current = false;
     } finally {
       setLoading(false);

@@ -3,19 +3,35 @@ import TrackerDashboard from "../components/trackers/TrackerDashboard";
 import TrackerForm from "../components/trackers/TrackerForm";
 import TrackerList from "../components/trackers/TrackerList";
 import TrackerFilters from "../components/trackers/TrackerFilters";
-import { PlusCircle, LayoutDashboard, CheckCircle2 } from "lucide-react";
+import { PlusCircle, LayoutDashboard, CheckCircle2, LogOut } from "lucide-react";
+import Cookies from "universal-cookie";
 
-const API_BASE_URL = "https://lv3node.onrender.com/api"; 
+const RAW_BASE_URL =
+  (typeof process !== "undefined" && process.env?.API_URL) ||
+  (typeof import.meta !== "undefined" && import.meta.env?.VITE_API_URL) ||
+  (typeof process !== "undefined" && process.env?.REACT_APP_API_URL) ||
+  "https://lv3node.onrender.com";
 
-// --- Sample Tracker Data (used as fallback when empty) ---
+const BASE_URL = RAW_BASE_URL.replace(/\/$/, "");
+
+// Helper to construct request headers with JWT token
+const getAuthHeaders = () => {
+  const cookies = new Cookies();
+  const token = cookies.get("token");
+  return {
+    "Content-Type": "application/json",
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  };
+};
+
 const SAMPLE_TRACKER = {
-  _id: 'sample-001',
-  name: 'Sample: Daily Water Intake',
-  type: 'counter',
-  color: '#3b82f6',
-  icon: 'Droplets',
+  _id: "sample-001",
+  name: "Sample: Daily Water Intake",
+  type: "counter",
+  color: "#3b82f6",
+  icon: "Droplet",
   entries: [],
-  isSample: true
+  isSample: true,
 };
 
 export default function HomePage() {
@@ -25,26 +41,35 @@ export default function HomePage() {
   const [newlyAddedId, setNewlyAddedId] = useState(null);
   const [notification, setNotification] = useState(null);
 
-  // Helper to safely close the Bootstrap modal without double-triggering events
   const closeModal = () => {
-    const modalElement = document.getElementById('trackerModal');
+    const modalElement = document.getElementById("trackerModal");
     if (modalElement && window.bootstrap) {
-      const modalInstance = window.bootstrap.Modal.getInstance(modalElement) || new window.bootstrap.Modal(modalElement);
+      const modalInstance =
+        window.bootstrap.Modal.getInstance(modalElement) ||
+        new window.bootstrap.Modal(modalElement);
       modalInstance.hide();
     } else {
-      document.querySelector('#trackerModal .btn-close')?.click();
+      document.querySelector("#trackerModal .btn-close")?.click();
     }
   };
 
-  // 1. Fetch Trackers (and reverse array if your DB saves them oldest-first)
+  const handleLogout = () => {
+    const cookies = new Cookies();
+    cookies.remove("token", { path: "/" });
+    window.location.href = "/"; // Redirect or refresh to clear session state
+  };
+
   const fetchTrackers = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/trackers`);
-      const data = await response.json();
-      const fetchedArray = Array.isArray(data) ? data : [];
+      const response = await fetch(`${BASE_URL}/api/v1/trackers`, {
+        headers: getAuthHeaders(),
+      });
       
-      // Reverse so newest/last created are permanently at the top
-      setTrackers(fetchedArray.reverse());
+      const resData = response.ok ? response : await fetch(`${BASE_URL}/api/trackers`, { headers: getAuthHeaders() });
+      const data = await resData.json();
+
+      const fetchedArray = Array.isArray(data) ? data : Array.isArray(data.trackers) ? data.trackers : [];
+      setTrackers([...fetchedArray].reverse());
     } catch (error) {
       console.error("Error fetching trackers:", error);
     } finally {
@@ -56,68 +81,58 @@ export default function HomePage() {
     fetchTrackers();
   }, []);
 
-  // 2. Handle Tracker Creation (UI State Update Only - TrackerForm already saved it to DB)
   const handleCreate = (newTracker) => {
     const newId = newTracker._id || newTracker.id;
-
-    // Permanently prepend to the very top of the list array
-    setTrackers((prev) => [newTracker, ...prev]); 
+    setTrackers((prev) => [newTracker, ...prev]);
     setNewlyAddedId(newId);
 
-    // Show success notification
-    setNotification(`Successfully created "${newTracker.name || 'New Tracker'}"!`);
+    setNotification(`Successfully created "${newTracker.name || "New Tracker"}"!`);
 
-    // Clear highlight/scroll target after a moment
     if (newId) {
       window.setTimeout(() => {
         setNewlyAddedId((current) => (current === newId ? null : current));
       }, 2500);
     }
 
-    // Clear notification after 3 seconds
     window.setTimeout(() => {
       setNotification(null);
     }, 3000);
   };
 
-  // 3. Delete a Tracker (Optimistic UI Update with 404 Fallback)
   const handleDeleteTracker = async (trackerId) => {
-    if (trackerId === SAMPLE_TRACKER._id) return; 
+    if (trackerId === SAMPLE_TRACKER._id) return;
 
     const previousTrackers = [...trackers];
-    setTrackers((prev) => prev.filter((t) => (t._id || t.id) !== trackerId)); 
+    setTrackers((prev) => prev.filter((t) => (t._id || t.id) !== trackerId));
 
     try {
-      let response = await fetch(`${API_BASE_URL}/trackers/${trackerId}`, {
+      let response = await fetch(`${BASE_URL}/api/v1/trackers/${trackerId}`, {
         method: "DELETE",
+        headers: getAuthHeaders(),
       });
-      
-      if (!response.ok && response.status === 404) {
-        response = await fetch(`${API_BASE_URL}/trackers?id=${trackerId}`, {
+
+      if (response.status === 404) {
+        response = await fetch(`${BASE_URL}/api/trackers/${trackerId}`, {
           method: "DELETE",
-          headers: { "Content-Type": "application/json" },
+          headers: getAuthHeaders(),
         });
       }
 
-      if (!response.ok) {
-        throw new Error("Server failed to delete via both routes.");
-      }
+      if (!response.ok) throw new Error("Server failed to delete tracker.");
     } catch (error) {
       console.error("Error deleting tracker:", error);
       alert("Failed to delete tracker. Please check your connection.");
-      setTrackers(previousTrackers); 
+      setTrackers(previousTrackers);
     }
   };
 
-  // 4. Add an Entry (Safe fallback with optimistic update)
   const handleAddEntry = async (trackerId, entry) => {
-    // Optimistic local update immediately
     setTrackers((prev) =>
       prev.map((t) => {
         if ((t._id || t.id) === trackerId) {
           return {
             ...t,
-            entries: [...(t.entries || []), { ...entry, _id: Date.now().toString() }]
+            entries: [...(t.entries || []), { ...entry, _id: Date.now().toString() }],
           };
         }
         return t;
@@ -125,14 +140,22 @@ export default function HomePage() {
     );
 
     try {
-      const response = await fetch(`${API_BASE_URL}/trackers/${trackerId}/entries`, {
+      let response = await fetch(`${BASE_URL}/api/v1/trackers/${trackerId}/entries`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(entry), 
+        headers: getAuthHeaders(),
+        body: JSON.stringify(entry),
       });
+
+      if (response.status === 404) {
+        response = await fetch(`${BASE_URL}/api/trackers/${trackerId}/entries`, {
+          method: "POST",
+          headers: getAuthHeaders(),
+          body: JSON.stringify(entry),
+        });
+      }
+
       if (response.ok) {
         const updatedTracker = await response.json();
-        // If backend returned the full tracker with entries, sync with it
         if (updatedTracker && Array.isArray(updatedTracker.entries)) {
           setTrackers((prev) =>
             prev.map((t) => ((t._id || t.id) === trackerId ? updatedTracker : t))
@@ -141,11 +164,10 @@ export default function HomePage() {
       }
     } catch (error) {
       console.error("Error adding entry:", error);
-      fetchTrackers(); // Re-fetch from server on failure to stay in sync
+      fetchTrackers();
     }
   };
 
-  // 5. Update Tracker (Safe fallback with optimistic update)
   const handleUpdate = async (trackerId, entries) => {
     setTrackers((prev) =>
       prev.map((t) => {
@@ -157,11 +179,20 @@ export default function HomePage() {
     );
 
     try {
-      const response = await fetch(`${API_BASE_URL}/trackers/${trackerId}`, {
+      let response = await fetch(`${BASE_URL}/api/v1/trackers/${trackerId}`, {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
+        headers: getAuthHeaders(),
         body: JSON.stringify({ entries }),
       });
+
+      if (response.status === 404) {
+        response = await fetch(`${BASE_URL}/api/trackers/${trackerId}`, {
+          method: "PUT",
+          headers: getAuthHeaders(),
+          body: JSON.stringify({ entries }),
+        });
+      }
+
       if (response.ok) {
         const updatedTracker = await response.json();
         if (updatedTracker && Array.isArray(updatedTracker.entries)) {
@@ -176,14 +207,13 @@ export default function HomePage() {
     }
   };
 
-  // 6. Delete an Entry (Safe fallback with optimistic update)
   const handleDeleteEntry = async (trackerId, entryId) => {
     setTrackers((prev) =>
       prev.map((t) => {
         if ((t._id || t.id) === trackerId) {
           return {
             ...t,
-            entries: (t.entries || []).filter((e) => (e._id || e.id) !== entryId)
+            entries: (t.entries || []).filter((e) => (e._id || e.id) !== entryId),
           };
         }
         return t;
@@ -191,9 +221,18 @@ export default function HomePage() {
     );
 
     try {
-      const response = await fetch(`${API_BASE_URL}/trackers/${trackerId}/entries/${entryId}`, {
-        method: "DELETE",
-      });
+      let response = await fetch(
+        `${BASE_URL}/api/v1/trackers/${trackerId}/entries/${entryId}`,
+        { method: "DELETE", headers: getAuthHeaders() }
+      );
+
+      if (response.status === 404) {
+        response = await fetch(
+          `${BASE_URL}/api/trackers/${trackerId}/entries/${entryId}`,
+          { method: "DELETE", headers: getAuthHeaders() }
+        );
+      }
+
       if (response.ok) {
         const updatedTracker = await response.json();
         if (updatedTracker && Array.isArray(updatedTracker.entries)) {
@@ -208,21 +247,21 @@ export default function HomePage() {
     }
   };
 
-  // --- View Logic ---
   if (loading) {
     return <div className="text-center py-5 mt-5">Loading trackers...</div>;
   }
 
   const hasTrackers = trackers.length > 0;
-  const filteredTrackers = typeFilter ? trackers.filter((t) => t.type === typeFilter) : trackers;
+  const filteredTrackers = typeFilter
+    ? trackers.filter((t) => t.type === typeFilter)
+    : trackers;
   const displayTrackers = hasTrackers ? filteredTrackers : [SAMPLE_TRACKER];
 
   return (
     <div className="min-vh-100 bg-light position-relative">
-      {/* Notification Toast */}
       {notification && (
-        <div 
-          className="position-fixed top-0 start-50 translate-middle-x p-3" 
+        <div
+          className="position-fixed top-0 start-50 translate-middle-x p-3"
           style={{ zIndex: 1080, marginTop: "1rem" }}
         >
           <div className="alert alert-success shadow-sm d-flex align-items-center gap-2 mb-0 py-2 px-3 rounded-pill">
@@ -237,14 +276,23 @@ export default function HomePage() {
           <h1 className="navbar-brand fw-bold d-flex align-items-center gap-2 m-0" href="#">
             <LayoutDashboard className="text-primary" /> UNI-TRACK
           </h1>
-          <button
-            type="button"
-            className="btn btn-primary d-flex align-items-center gap-2"
-            data-bs-toggle="modal"
-            data-bs-target="#trackerModal"
-          >
-            <PlusCircle size={18} /> New Tracker
-          </button>
+          <div className="d-flex align-items-center gap-2">
+            <button
+              type="button"
+              className="btn btn-primary d-flex align-items-center gap-2"
+              data-bs-toggle="modal"
+              data-bs-target="#trackerModal"
+            >
+              <PlusCircle size={18} /> New Tracker
+            </button>
+            <button
+              type="button"
+              className="btn btn-outline-danger d-flex align-items-center gap-2"
+              onClick={handleLogout}
+            >
+              <LogOut size={18} /> Logout
+            </button>
+          </div>
         </div>
       </nav>
 
@@ -252,11 +300,11 @@ export default function HomePage() {
         <div className="row">
           <div className="col-12">
             <TrackerDashboard trackers={trackers} />
-            
+
             <div className="bg-white p-4 rounded-4 shadow-sm border mt-4">
               <TrackerFilters typeFilter={typeFilter} onTypeFilterChange={setTypeFilter} />
               <hr />
-              
+
               <TrackerList
                 trackers={displayTrackers}
                 onDeleteTracker={handleDeleteTracker}
@@ -276,7 +324,6 @@ export default function HomePage() {
         </div>
       </div>
 
-      {/* Tracker Creation Modal */}
       <div className="modal fade" id="trackerModal" tabIndex="-1" aria-hidden="true">
         <div className="modal-dialog modal-dialog-centered">
           <div className="modal-content">
@@ -286,12 +333,8 @@ export default function HomePage() {
             </div>
             <div className="modal-body">
               <TrackerForm
-                onCreate={(createdTracker) => {
-                  handleCreate(createdTracker);
-                }}
-                onClose={() => {
-                  closeModal();
-                }}
+                onCreate={(createdTracker) => handleCreate(createdTracker)}
+                onClose={() => closeModal()}
               />
             </div>
           </div>
