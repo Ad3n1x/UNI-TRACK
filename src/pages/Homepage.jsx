@@ -35,6 +35,15 @@ const SAMPLE_TRACKER = {
 };
 
 export default function HomePage() {
+  // 🔒 Route Guard: Redirect unauthenticated users immediately
+  const cookies = new Cookies();
+  const token = cookies.get("token");
+
+  if (!token) {
+    window.location.href = "/"; // Redirects back to login/root if token is missing
+    return null;
+  }
+
   const [trackers, setTrackers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [typeFilter, setTypeFilter] = useState(null);
@@ -54,9 +63,8 @@ export default function HomePage() {
   };
 
   const handleLogout = () => {
-    const cookies = new Cookies();
     cookies.remove("token", { path: "/" });
-    window.location.href = "/"; // Redirect or refresh to clear session state
+    window.location.href = "/"; // Clear session and redirect to login
   };
 
   const fetchTrackers = async () => {

@@ -11,7 +11,6 @@ export default function App() {
     <Routes>
       {/* Top-Level Routes */}
       <Route index element={<LoginForm />} />
-      <Route path="/login" element={<LoginForm />} />
       <Route path="/register" element={<RegisterForm />} />
       <Route path="/homepage" element={<Homepage />} />
       <Route path="/trackers" element={<TrackerDashboard />} />
