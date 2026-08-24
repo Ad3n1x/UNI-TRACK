@@ -4,7 +4,6 @@ import Homepage from "./pages/Homepage";
 import Auth from "./components/auth/Auth";
 import LoginForm from "./components/auth/LoginForm";
 import RegisterForm from "./components/auth/RegisterForm";
-import TrackerDashboard from "./components/trackers/TrackerDashboard";
 
 export default function App() {
   return (
@@ -13,8 +12,6 @@ export default function App() {
       <Route index element={<LoginForm />} />
       <Route path="/register" element={<RegisterForm />} />
       <Route path="/homepage" element={<Homepage />} />
-      <Route path="/trackers" element={<TrackerDashboard />} />
-      <Route path="/list" element={<TrackerDashboard />} />
 
       {/* Nested Auth Routes */}
       <Route path="/auth" element={<Auth />}>
