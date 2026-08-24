@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useMemo } from "react";
 import { Minus, Plus, RotateCcw } from "lucide-react";
 import * as Icons from "lucide-react";
 import Cookies from "universal-cookie";
+import { toast } from "react-toastify";
 
 const RAW_BASE_URL =
   (typeof process !== "undefined" && process.env?.API_URL) ||
@@ -51,7 +52,7 @@ export default function TrackerCard({
   onUpdateTracker = () => {},
   cardRef = null,
   isNewlyAdded = false,
-  darkMode = false, // 🌙 Added darkMode prop
+  darkMode = false,
 }) {
   const [inputValue, setInputValue] = useState("");
   const [timerRunning, setTimerRunning] = useState(false);
@@ -87,9 +88,10 @@ export default function TrackerCard({
     return () => clearInterval(intervalRef.current);
   }, [timerRunning]);
 
-  const syncEntryToDb = async (updatedEntriesList) => {
+  const syncEntryToDb = async (updatedEntriesList, successMessage = "Progress updated!") => {
     if (!trackerId) {
       console.error("Cannot sync entry: Tracker ID is missing", tracker);
+      toast.error("Cannot sync entry: Tracker ID is missing");
       return;
     }
 
@@ -124,19 +126,25 @@ export default function TrackerCard({
 
       const updatedTracker = await res.json();
       onUpdateTracker?.(updatedTracker);
+      toast.success(successMessage);
     } catch (err) {
       console.error("Database interaction error:", err);
+      toast.error("Failed to sync progress with server.");
       setLocalEntries(tracker?.entries || []);
       onUpdateTracker?.(tracker);
     }
   };
 
   const handleHabitToggle = () => {
-    const nextList = todayEntry
-      ? localEntries.filter((e) => getEntryDateString(e.date) !== today)
-      : [...localEntries, { date: today, value: true }];
+    const isCompleted = !todayEntry;
+    const nextList = isCompleted
+      ? [...localEntries, { date: today, value: true }]
+      : localEntries.filter((e) => getEntryDateString(e.date) !== today);
 
-    syncEntryToDb(nextList);
+    syncEntryToDb(
+      nextList, 
+      isCompleted ? "Habit marked as done! 🎉" : "Habit unmarked for today."
+    );
   };
 
   const handleCounterChange = (delta) => {
@@ -147,7 +155,7 @@ export default function TrackerCard({
       ? localEntries.map((e) => (getEntryDateString(e.date) === today ? { ...e, value: nextVal } : e))
       : [...localEntries, { date: today, value: nextVal }];
 
-    syncEntryToDb(nextList);
+    syncEntryToDb(nextList, "Counter updated successfully!");
   };
 
   const handleTimerToggle = () => {
@@ -161,7 +169,7 @@ export default function TrackerCard({
           ? localEntries.map((e) => (getEntryDateString(e.date) === today ? { ...e, value: totalSeconds } : e))
           : [...localEntries, { date: today, value: totalSeconds }];
 
-        syncEntryToDb(nextList);
+        syncEntryToDb(nextList, "Timer session saved! ⏱️");
         setTimerSeconds(0);
       }
     } else {
@@ -174,7 +182,7 @@ export default function TrackerCard({
       ? localEntries.map((e) => (getEntryDateString(e.date) === today ? { ...e, value: val } : e))
       : [...localEntries, { date: today, value: val }];
 
-    syncEntryToDb(nextList);
+    syncEntryToDb(nextList, "Mood logged successfully! ✨");
   };
 
   const handleSaveAmount = () => {
@@ -188,7 +196,7 @@ export default function TrackerCard({
       ? localEntries.map((e) => (getEntryDateString(e.date) === today ? { ...e, value: nextVal } : e))
       : [...localEntries, { date: today, value: nextVal }];
 
-    syncEntryToDb(nextList);
+    syncEntryToDb(nextList, "Amount added successfully! 🎯");
     setInputValue("");
   };
 
@@ -265,7 +273,7 @@ export default function TrackerCard({
             const targetId = tracker?._id || tracker?.id;
 
             if (!targetId) {
-              alert("Cannot delete: Missing tracker ID");
+              toast.error("Cannot delete: Missing tracker ID");
               return;
             }
 

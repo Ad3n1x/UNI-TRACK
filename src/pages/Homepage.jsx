@@ -35,10 +35,10 @@ const SAMPLE_TRACKER = {
 };
 
 export default function HomePage() {
-  // 🔒 Route Guard: Redirect unauthenticated users immediately
   const cookies = new Cookies();
   const token = cookies.get("token");
 
+  // 🔒 Route Guard: Redirect unauthenticated users immediately
   if (!token) {
     window.location.href = "/";
     return null;
@@ -49,7 +49,7 @@ export default function HomePage() {
   const [typeFilter, setTypeFilter] = useState(null);
   const [newlyAddedId, setNewlyAddedId] = useState(null);
   const [notification, setNotification] = useState(null);
-  
+
   // 🌙 Dark Mode State with LocalStorage persistence
   const [darkMode, setDarkMode] = useState(() => {
     return localStorage.getItem("theme") === "dark";
@@ -81,7 +81,7 @@ export default function HomePage() {
       const response = await fetch(`${BASE_URL}/api/v1/trackers`, {
         headers: getAuthHeaders(),
       });
-      
+
       const resData = response.ok ? response : await fetch(`${BASE_URL}/api/trackers`, { headers: getAuthHeaders() });
       const data = await resData.json();
 
@@ -238,16 +238,16 @@ export default function HomePage() {
     );
 
     try {
-      let response = await fetch(
-        `${BASE_URL}/api/v1/trackers/${trackerId}/entries/${entryId}`,
-        { method: "DELETE", headers: getAuthHeaders() }
-      );
+      let response = await fetch(`${BASE_URL}/api/v1/trackers/${trackerId}/entries/${entryId}`, {
+        method: "DELETE",
+        headers: getAuthHeaders(),
+      });
 
       if (response.status === 404) {
-        response = await fetch(
-          `${BASE_URL}/api/trackers/${trackerId}/entries/${entryId}`,
-          { method: "DELETE", headers: getAuthHeaders() }
-        );
+        response = await fetch(`${BASE_URL}/api/trackers/${trackerId}/entries/${entryId}`, {
+          method: "DELETE",
+          headers: getAuthHeaders(),
+        });
       }
 
       if (response.ok) {
@@ -279,6 +279,7 @@ export default function HomePage() {
       className={`min-vh-100 position-relative ${darkMode ? "bg-dark text-light" : "bg-light text-dark"}`}
       data-bs-theme={darkMode ? "dark" : "light"}
     >
+      {/* Notification Toast */}
       {notification && (
         <div
           className="position-fixed top-0 start-50 translate-middle-x p-3"
@@ -291,13 +292,15 @@ export default function HomePage() {
         </div>
       )}
 
+      {/* Navigation Header */}
       <nav className={`navbar navbar-expand-lg border-bottom shadow-sm ${darkMode ? "bg-dark border-secondary" : "bg-white"}`}>
         <div className="container">
-          <h1 className="navbar-brand fw-bold d-flex align-items-center gap-2 m-0" href="#">
+          <h1 className="navbar-brand fw-bold d-flex align-items-center gap-2 m-0" style={{ fontSize: "1.25rem" }}>
             <LayoutDashboard className="text-primary" /> UNI-TRACK
           </h1>
+
           <div className="d-flex align-items-center gap-2">
-            {/* Dark Mode Toggle Button */}
+            {/* Dark Mode Toggle */}
             <button
               type="button"
               className={`btn ${darkMode ? "btn-outline-light" : "btn-outline-secondary"} d-flex align-items-center justify-content-center p-2`}
@@ -307,6 +310,7 @@ export default function HomePage() {
               {darkMode ? <Sun size={18} /> : <Moon size={18} />}
             </button>
 
+            {/* New Tracker Button */}
             <button
               type="button"
               className="btn btn-primary d-flex align-items-center gap-2"
@@ -315,6 +319,8 @@ export default function HomePage() {
             >
               <PlusCircle size={18} /> New Tracker
             </button>
+
+            {/* Logout Button */}
             <button
               type="button"
               className="btn btn-outline-danger d-flex align-items-center gap-2"
@@ -326,17 +332,18 @@ export default function HomePage() {
         </div>
       </nav>
 
+      {/* Main Container */}
       <div className="container py-5">
         <div className="row">
           <div className="col-12">
-            {/* 📊 Pass darkMode down to dashboard */}
+            {/* Dashboard Stats */}
             <TrackerDashboard trackers={trackers} darkMode={darkMode} />
 
+            {/* Trackers Filter and List Section */}
             <div className={`p-4 rounded-4 shadow-sm border mt-4 ${darkMode ? "bg-dark border-secondary" : "bg-white"}`}>
-              <TrackerFilters typeFilter={typeFilter} onTypeFilterChange={setTypeFilter} />
+              <TrackerFilters typeFilter={typeFilter} onTypeFilterChange={setTypeFilter} darkMode={darkMode} />
               <hr />
 
-              {/* 📋 Pass darkMode down to tracker list/cards */}
               <TrackerList
                 trackers={displayTrackers}
                 onDeleteTracker={handleDeleteTracker}
@@ -357,12 +364,18 @@ export default function HomePage() {
         </div>
       </div>
 
+      {/* Create Tracker Modal */}
       <div className="modal fade" id="trackerModal" tabIndex="-1" aria-hidden="true">
         <div className="modal-dialog modal-dialog-centered">
           <div className={`modal-content ${darkMode ? "bg-dark text-light border-secondary" : ""}`}>
             <div className="modal-header">
               <h5 className="modal-title">Configure Tracker</h5>
-              <button type="button" className={`btn-close ${darkMode ? "btn-close-white" : ""}`} data-bs-dismiss="modal" aria-label="Close"></button>
+              <button
+                type="button"
+                className={`btn-close ${darkMode ? "btn-close-white" : ""}`}
+                data-bs-dismiss="modal"
+                aria-label="Close"
+              ></button>
             </div>
             <div className="modal-body">
               <TrackerForm
