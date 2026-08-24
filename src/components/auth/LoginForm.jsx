@@ -1,7 +1,9 @@
 import React, { useState } from "react";
 import axios from "axios";
+import { jwtDecode } from "jwt-decode";
 import Cookies from "universal-cookie";
 import { Link, useNavigate } from "react-router-dom";
+import { toast } from "react-toastify";
 
 const RAW_BASE_URL =
   import.meta.env.VITE_BASE_URL ||
@@ -14,13 +16,11 @@ export default function LoginForm({ onSuccess }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    setError(null);
 
     try {
       const response = await axios.post(`${BASE_URL}/api/v1/auth/login`, {
@@ -28,8 +28,17 @@ export default function LoginForm({ onSuccess }) {
         password: password.trim(),
       });
 
-      const cookies = new Cookies();
-      cookies.set("token", response.data.token, { path: "/" });
+      toast.success(response.data.message || "Login successful! 🎉");
+      const token = response.data.token || response.data.data?.token;
+
+      if (token) {
+        const cookies = new Cookies();
+        const expiryTime = jwtDecode(token);
+        cookies.set("token", token, {
+          path: "/",
+          expires: expiryTime.exp ? new Date(expiryTime.exp * 1000) : undefined,
+        });
+      }
 
       if (onSuccess) {
         onSuccess(response.data);
@@ -37,7 +46,7 @@ export default function LoginForm({ onSuccess }) {
         navigate("/homepage");
       }
     } catch (err) {
-      setError(
+      toast.error(
         err.response?.data?.message || "Invalid credentials or login failed."
       );
     } finally {
@@ -78,50 +87,54 @@ export default function LoginForm({ onSuccess }) {
       `}</style>
 
       <div className="login-container d-flex flex-column align-items-center justify-content-center p-3">
-        <div className="login-card p-4 rounded-4 shadow-lg bg-white border-0">
-          <h2 className="text-center mb-4 fw-bold text-dark">Welcome Back</h2>
-
-          {error && (
-            <div className="alert alert-danger py-2 px-3 small mb-3 rounded-3" role="alert">
-              {error}
-            </div>
-          )}
+        <div className="login-card p-4 p-md-5 rounded-4 shadow-lg bg-white border-0">
+          <div className="text-center mb-4">
+            <h2 className="fw-bold text-dark">Welcome Back</h2>
+            <p className="text-muted small">Please enter your details to sign in.</p>
+          </div>
 
           <form onSubmit={handleSubmit}>
             <div className="mb-3">
-              <label className="form-label fw-semibold small text-secondary">Email</label>
+              <label className="form-label fw-semibold small text-secondary">Email Address</label>
               <input
                 type="email"
-                className="form-control form-control-md rounded-3 py-2"
+                className="form-control form-control-md rounded-3 py-2 shadow-sm"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="Enter your email"
+                placeholder="name@example.com"
                 required
               />
             </div>
 
-            <div className="mb-3">
+            <div className="mb-4">
               <label className="form-label fw-semibold small text-secondary">Password</label>
               <input
                 type="password"
-                className="form-control form-control-md rounded-3 py-2"
+                className="form-control form-control-md rounded-3 py-2 shadow-sm"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="Enter your password"
+                placeholder="••••••••"
                 required
               />
             </div>
 
             <button
-              className="btn btn-primary w-100 py-2 mt-2 fw-semibold rounded-3 shadow-sm"
+              className="btn btn-primary w-100 py-2 fw-semibold rounded-3 shadow-sm d-flex align-items-center justify-content-center gap-2"
               type="submit"
               disabled={loading}
             >
-              {loading ? "Logging in..." : "Login"}
+              {loading ? (
+                <>
+                  <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                  Signing In...
+                </>
+              ) : (
+                "Login →"
+              )}
             </button>
           </form>
 
-          <p className="text-center mt-3 mb-0 small text-muted">
+          <p className="text-center mt-4 mb-0 small text-muted">
             Don't have an account?{" "}
             <Link to="/register" className="text-primary text-decoration-none fw-semibold">
               Register
