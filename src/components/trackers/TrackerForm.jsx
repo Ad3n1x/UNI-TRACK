@@ -36,7 +36,7 @@ const COLOR_OPTIONS = [
 
 const TARGET_TYPES = new Set(["counter", "goal", "expense", "timer"]);
 
-export default function TrackerForm({ onCreate, onClose }) {
+export default function TrackerForm({ onCreate, onClose, darkMode = false }) {
   const [name, setName] = useState("");
   const [type, setType] = useState("habit");
   const [icon, setIcon] = useState("Star");
@@ -123,6 +123,100 @@ export default function TrackerForm({ onCreate, onClose }) {
 
   const needsTarget = TARGET_TYPES.has(type);
 
+  // Dynamic style objects based on darkMode
+  const styles = {
+    errorBox: {
+      padding: "0.75rem",
+      borderRadius: "8px",
+      backgroundColor: darkMode ? "#451a03" : "#fef2f2",
+      color: darkMode ? "#f87171" : "#b91c1c",
+      fontSize: "0.875rem",
+      border: darkMode ? "1px solid #7f1d1d" : "1px solid #fecaca",
+    },
+    form: { display: "flex", flexDirection: "column", gap: "1.25rem" },
+    label: {
+      display: "block",
+      fontSize: "0.75rem",
+      fontWeight: "600",
+      color: darkMode ? "#94a3b8" : "#64748b",
+      marginBottom: "0.5rem",
+      textTransform: "uppercase",
+    },
+    input: {
+      width: "100%",
+      padding: "0.75rem",
+      borderRadius: "8px",
+      border: darkMode ? "1px solid #334155" : "1px solid #cbd5e1",
+      backgroundColor: darkMode ? "#1e293b" : "#ffffff",
+      color: darkMode ? "#f8fafc" : "#1e293b",
+      outline: "none",
+      boxSizing: "border-box",
+    },
+    gridContainer: { display: "flex", flexWrap: "wrap", gap: "0.5rem" },
+    typeBtn: {
+      padding: "0.75rem",
+      borderRadius: "8px",
+      cursor: "pointer",
+      textAlign: "left",
+      flex: "1 1 calc(50% - 0.5rem)",
+      minWidth: "120px",
+      boxSizing: "border-box",
+    },
+    typeLabel: { 
+      fontSize: "0.875rem", 
+      fontWeight: "600", 
+      color: darkMode ? "#f8fafc" : "#334155" 
+    },
+    iconContainer: {
+      display: "flex",
+      flexWrap: "wrap",
+      gap: "0.5rem",
+      background: darkMode ? "#1e293b" : "#f8fafc",
+      border: darkMode ? "1px solid #334155" : "none",
+      padding: "0.75rem",
+      borderRadius: "8px",
+      width: "100%",
+      boxSizing: "border-box",
+    },
+    iconBtn: {
+      padding: "0.5rem",
+      borderRadius: "6px",
+      border: "none",
+      cursor: "pointer",
+      flex: "0 0 auto",
+    },
+    colorBtn: {
+      width: "28px",
+      height: "28px",
+      borderRadius: "6px",
+      cursor: "pointer",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      flexShrink: 0,
+    },
+    actions: { display: "flex", flexWrap: "wrap", gap: "0.75rem", marginTop: "1rem" },
+    cancelBtn: {
+      flex: "1 1 100px",
+      padding: "0.75rem",
+      borderRadius: "8px",
+      border: darkMode ? "1px solid #334155" : "1px solid #e2e8f0",
+      background: darkMode ? "#1e293b" : "white",
+      color: darkMode ? "#f8fafc" : "#0f172a",
+      cursor: "pointer",
+      fontWeight: "600",
+    },
+    submitBtn: {
+      flex: "1 1 100px",
+      padding: "0.75rem",
+      borderRadius: "8px",
+      border: "none",
+      color: "white",
+      cursor: "pointer",
+      fontWeight: "600",
+    },
+  };
+
   return (
     <form onSubmit={handleSubmit} style={styles.form}>
       {errorMsg && (
@@ -159,8 +253,10 @@ export default function TrackerForm({ onCreate, onClose }) {
                   ...styles.typeBtn,
                   border: isActive
                     ? `2px solid ${color}`
-                    : "1px solid #e2e8f0",
-                  background: isActive ? `${color}10` : "white",
+                    : darkMode ? "1px solid #334155" : "1px solid #e2e8f0",
+                  background: isActive 
+                    ? `${color}15` 
+                    : darkMode ? "#0f172a" : "white",
                 }}
               >
                 <div style={{ fontSize: "1.25rem" }}>{emoji}</div>
@@ -208,7 +304,7 @@ export default function TrackerForm({ onCreate, onClose }) {
               style={{
                 ...styles.colorBtn,
                 background: c,
-                border: color === c ? "2px solid #334155" : "none",
+                border: color === c ? "2px solid #ffffff" : "none",
               }}
             >
               {color === c && <Check size={14} color="white" />}
@@ -267,88 +363,3 @@ export default function TrackerForm({ onCreate, onClose }) {
     </form>
   );
 }
-
-const styles = {
-  errorBox: {
-    padding: "0.75rem",
-    borderRadius: "8px",
-    backgroundColor: "#fef2f2",
-    color: "#b91c1c",
-    fontSize: "0.875rem",
-    border: "1px solid #fecaca",
-  },
-  form: { display: "flex", flexDirection: "column", gap: "1.25rem" },
-  label: {
-    display: "block",
-    fontSize: "0.75rem",
-    fontWeight: "600",
-    color: "#64748b",
-    marginBottom: "0.5rem",
-    textTransform: "uppercase",
-  },
-  input: {
-    width: "100%",
-    padding: "0.75rem",
-    borderRadius: "8px",
-    border: "1px solid #cbd5e1",
-    outline: "none",
-    boxSizing: "border-box",
-  },
-  gridContainer: { display: "flex", flexWrap: "wrap", gap: "0.5rem" },
-  typeBtn: {
-    padding: "0.75rem",
-    borderRadius: "8px",
-    cursor: "pointer",
-    textAlign: "left",
-    flex: "1 1 calc(50% - 0.5rem)",
-    minWidth: "120px",
-    boxSizing: "border-box",
-  },
-  typeLabel: { fontSize: "0.875rem", fontWeight: "600", color: "#334155" },
-  iconContainer: {
-    display: "flex",
-    flexWrap: "wrap",
-    gap: "0.5rem",
-    background: "#f8fafc",
-    padding: "0.75rem",
-    borderRadius: "8px",
-    width: "100%",
-    boxSizing: "border-box",
-  },
-  iconBtn: {
-    padding: "0.5rem",
-    borderRadius: "6px",
-    border: "none",
-    cursor: "pointer",
-    flex: "0 0 auto",
-  },
-  colorBtn: {
-    width: "28px",
-    height: "28px",
-    borderRadius: "6px",
-    cursor: "pointer",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    flexShrink: 0,
-  },
-  actions: { display: "flex", flexWrap: "wrap", gap: "0.75rem", marginTop: "1rem" },
-  cancelBtn: {
-    flex: "1 1 100px",
-    padding: "0.75rem",
-    borderRadius: "8px",
-    border: "1px solid #e2e8f0",
-    background: "white",
-    cursor: "pointer",
-    fontWeight: "600",
-  },
-  submitBtn: {
-    flex: "1 1 100px",
-    padding: "0.75rem",
-    borderRadius: "8px",
-    border: "none",
-    color: "white",
-    cursor: "pointer",
-    fontWeight: "600",
-  },
-};

@@ -3,7 +3,7 @@ import TrackerDashboard from "../components/trackers/TrackerDashboard";
 import TrackerForm from "../components/trackers/TrackerForm";
 import TrackerList from "../components/trackers/TrackerList";
 import TrackerFilters from "../components/trackers/TrackerFilters";
-import { PlusCircle, LayoutDashboard, CheckCircle2, LogOut } from "lucide-react";
+import { PlusCircle, LayoutDashboard, CheckCircle2, LogOut, Sun, Moon } from "lucide-react";
 import Cookies from "universal-cookie";
 
 const RAW_BASE_URL =
@@ -40,7 +40,7 @@ export default function HomePage() {
   const token = cookies.get("token");
 
   if (!token) {
-    window.location.href = "/"; // Redirects back to login/root if token is missing
+    window.location.href = "/";
     return null;
   }
 
@@ -49,6 +49,15 @@ export default function HomePage() {
   const [typeFilter, setTypeFilter] = useState(null);
   const [newlyAddedId, setNewlyAddedId] = useState(null);
   const [notification, setNotification] = useState(null);
+  
+  // 🌙 Dark Mode State with LocalStorage persistence
+  const [darkMode, setDarkMode] = useState(() => {
+    return localStorage.getItem("theme") === "dark";
+  });
+
+  useEffect(() => {
+    localStorage.setItem("theme", darkMode ? "dark" : "light");
+  }, [darkMode]);
 
   const closeModal = () => {
     const modalElement = document.getElementById("trackerModal");
@@ -64,7 +73,7 @@ export default function HomePage() {
 
   const handleLogout = () => {
     cookies.remove("token", { path: "/" });
-    window.location.href = "/"; // Clear session and redirect to login
+    window.location.href = "/";
   };
 
   const fetchTrackers = async () => {
@@ -266,7 +275,10 @@ export default function HomePage() {
   const displayTrackers = hasTrackers ? filteredTrackers : [SAMPLE_TRACKER];
 
   return (
-    <div className="min-vh-100 bg-light position-relative">
+    <div
+      className={`min-vh-100 position-relative ${darkMode ? "bg-dark text-light" : "bg-light text-dark"}`}
+      data-bs-theme={darkMode ? "dark" : "light"}
+    >
       {notification && (
         <div
           className="position-fixed top-0 start-50 translate-middle-x p-3"
@@ -279,12 +291,22 @@ export default function HomePage() {
         </div>
       )}
 
-      <nav className="navbar navbar-expand-lg bg-white border-bottom shadow-sm">
+      <nav className={`navbar navbar-expand-lg border-bottom shadow-sm ${darkMode ? "bg-dark border-secondary" : "bg-white"}`}>
         <div className="container">
           <h1 className="navbar-brand fw-bold d-flex align-items-center gap-2 m-0" href="#">
             <LayoutDashboard className="text-primary" /> UNI-TRACK
           </h1>
           <div className="d-flex align-items-center gap-2">
+            {/* Dark Mode Toggle Button */}
+            <button
+              type="button"
+              className={`btn ${darkMode ? "btn-outline-light" : "btn-outline-secondary"} d-flex align-items-center justify-content-center p-2`}
+              onClick={() => setDarkMode(!darkMode)}
+              title="Toggle Theme"
+            >
+              {darkMode ? <Sun size={18} /> : <Moon size={18} />}
+            </button>
+
             <button
               type="button"
               className="btn btn-primary d-flex align-items-center gap-2"
@@ -307,12 +329,14 @@ export default function HomePage() {
       <div className="container py-5">
         <div className="row">
           <div className="col-12">
-            <TrackerDashboard trackers={trackers} />
+            {/* 📊 Pass darkMode down to dashboard */}
+            <TrackerDashboard trackers={trackers} darkMode={darkMode} />
 
-            <div className="bg-white p-4 rounded-4 shadow-sm border mt-4">
+            <div className={`p-4 rounded-4 shadow-sm border mt-4 ${darkMode ? "bg-dark border-secondary" : "bg-white"}`}>
               <TrackerFilters typeFilter={typeFilter} onTypeFilterChange={setTypeFilter} />
               <hr />
 
+              {/* 📋 Pass darkMode down to tracker list/cards */}
               <TrackerList
                 trackers={displayTrackers}
                 onDeleteTracker={handleDeleteTracker}
@@ -320,6 +344,7 @@ export default function HomePage() {
                 onUpdate={handleUpdate}
                 onDeleteEntry={handleDeleteEntry}
                 newlyAddedId={newlyAddedId}
+                darkMode={darkMode}
               />
 
               {!hasTrackers && (
@@ -334,15 +359,16 @@ export default function HomePage() {
 
       <div className="modal fade" id="trackerModal" tabIndex="-1" aria-hidden="true">
         <div className="modal-dialog modal-dialog-centered">
-          <div className="modal-content">
+          <div className={`modal-content ${darkMode ? "bg-dark text-light border-secondary" : ""}`}>
             <div className="modal-header">
               <h5 className="modal-title">Configure Tracker</h5>
-              <button type="button" className="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+              <button type="button" className={`btn-close ${darkMode ? "btn-close-white" : ""}`} data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div className="modal-body">
               <TrackerForm
                 onCreate={(createdTracker) => handleCreate(createdTracker)}
                 onClose={() => closeModal()}
+                darkMode={darkMode}
               />
             </div>
           </div>

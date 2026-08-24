@@ -3,7 +3,7 @@ import { TrendingUp, Target, CheckCircle, LayoutGrid } from "lucide-react";
 
 const API_BASE = "https://lv3node.onrender.com/api/trackers";
 
-export default function TrackerDashboard({ trackers = [], onRefresh }) {
+export default function TrackerDashboard({ trackers = [], onRefresh, darkMode = false }) {
   // Poll the backend every second for live updates
   useEffect(() => {
     if (!onRefresh) return;
@@ -98,14 +98,16 @@ export default function TrackerDashboard({ trackers = [], onRefresh }) {
           style={{
             flex: "1 1 calc(25% - 16px)",
             minWidth: "200px",
-            backgroundColor: "#ffffff",
-            border: "1px solid #e2e8f0",
+            backgroundColor: darkMode ? "#1e293b" : "#ffffff",
+            border: darkMode ? "1px solid rgba(51, 65, 85, 0.8)" : "1px solid #e2e8f0",
             borderRadius: "16px",
             padding: "20px",
             display: "flex",
             flexDirection: "column",
             gap: "16px",
-            boxShadow: `0 4px 6px -1px rgba(0,0,0,0.05), 0 0 0 1px ${card.color}22`,
+            boxShadow: darkMode 
+              ? "0 4px 6px -1px rgba(0, 0, 0, 0.2)" 
+              : `0 4px 6px -1px rgba(0,0,0,0.05), 0 0 0 1px ${card.color}22`,
           }}
         >
           <div
@@ -140,7 +142,7 @@ export default function TrackerDashboard({ trackers = [], onRefresh }) {
               <span
                 style={{
                   fontSize: "0.75rem",
-                  color: "#94a3b8",
+                  color: darkMode ? "#94a3b8" : "#94a3b8",
                   marginLeft: "4px",
                 }}
               >
@@ -151,7 +153,7 @@ export default function TrackerDashboard({ trackers = [], onRefresh }) {
             <div
               style={{
                 fontSize: "0.65rem",
-                color: "#64748b",
+                color: darkMode ? "#94a3b8" : "#64748b",
                 marginTop: "8px",
                 textTransform: "uppercase",
                 letterSpacing: "0.15em",
