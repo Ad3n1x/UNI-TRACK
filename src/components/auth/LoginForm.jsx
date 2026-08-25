@@ -139,7 +139,12 @@ export default function LoginForm({ onSuccess }) {
             </div>
 
             <div className="mb-4">
-              <label className="form-label fw-semibold small text-secondary">Password</label>
+              <div className="d-flex justify-content-between align-items-center mb-1">
+                <label className="form-label fw-semibold small text-secondary mb-0">Password</label>
+                <Link to="/forgot-password" style={{ fontSize: "0.8rem" }} className="text-primary text-decoration-none fw-semibold">
+                  Forgot Password?
+                </Link>
+              </div>
               <input
                 type="password"
                 className="form-control form-control-md rounded-3 py-2 shadow-sm"

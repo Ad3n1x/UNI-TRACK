@@ -7,6 +7,7 @@ import LoginForm from "./components/auth/LoginForm";
 import RegisterForm from "./components/auth/RegisterForm";
 import TrackerDetail from "./components/trackers/TrackerDetail";
 import NotFound from "./pages/Notfound";
+import ForgotPassword from "./components/auth/ForgotPassword";
 
 export default function App() {
   return (
@@ -17,6 +18,7 @@ export default function App() {
         <Route path="/login" element={<LoginForm />} />
         <Route path="/register" element={<RegisterForm />} />
         <Route path="/homepage" element={<Homepage />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
         
         {/* Dynamic route for individual tracker entries */}
         <Route path="/trackers/:trackerId" element={<TrackerDetail />} />
