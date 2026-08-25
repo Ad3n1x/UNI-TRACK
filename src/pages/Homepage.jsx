@@ -52,7 +52,7 @@ async function registerServiceWorkerAndSubscribe() {
     try {
       const registration = await navigator.serviceWorker.register("/sw.js");
 
-      const publicVapidKey = "YOUR_PUBLIC_VAPID_KEY"; // Replace with your actual public VAPID key
+      const publicVapidKey = "BEaflZfmm8QfrFsL7r06HB-QrsdDAefJpRk2vw-zcHIKD-t8evj3TIS7k9k0w0am9BboNqiqbZ99Y-1WxYNcZcw";
       const subscription = await registration.pushManager.subscribe({
         userVisibleOnly: true,
         applicationServerKey: urlBase64ToUint8Array(publicVapidKey),
@@ -350,17 +350,17 @@ export default function HomePage() {
         <div className="row">
           <div className="col-12">
             
-            {/* ✨ Friendly User Greeting Banner */}
-            <div className={`p-4 rounded-4 shadow-sm border mb-4 position-relative overflow-hidden ${darkMode ? "bg-dark border-secondary" : "bg-white"}`}>
-              <div className="position-absolute top-0 end-0 p-3 opacity-10 d-none d-md-block text-primary">
-                <LayoutDashboard size={130} />
+            {/* ✨ Friendly User Greeting Banner (More Spaced Out) */}
+            <div className={`p-4 p-md-5 rounded-4 shadow-sm border mb-4 mb-md-5 position-relative overflow-hidden ${darkMode ? "bg-dark border-secondary" : "bg-white"}`}>
+              <div className="position-absolute top-0 end-0 p-4 opacity-10 d-none d-md-block text-primary">
+                <LayoutDashboard size={140} />
               </div>
               <div className="position-relative" style={{ zIndex: 1 }}>
-                <span className="badge bg-primary bg-opacity-10 text-primary mb-2 px-3 py-1 rounded-pill fw-semibold">
+                <span className="badge bg-primary bg-opacity-10 text-primary mb-3 px-3 py-2 rounded-pill fw-semibold">
                   {timeGreeting}
                 </span>
-                <h2 className="fw-bold mb-1" style={{ fontSize: "1.5rem" }}>Welcome back to Uni-Track!</h2>
-                <p className="text-muted mb-0 small">
+                <h2 className="fw-bold mb-2 display-6" style={{ fontSize: "1.75rem" }}>Welcome back to Uni-Track!</h2>
+                <p className="text-muted mb-0 lead fs-6">
                   Here is a quick look at your progress and active trackers. Let's make today productive.
                 </p>
               </div>
