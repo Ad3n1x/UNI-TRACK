@@ -5,7 +5,7 @@ import "react-toastify/dist/ReactToastify.css";
 import Homepage from "./pages/Homepage";
 import LoginForm from "./components/auth/LoginForm";
 import RegisterForm from "./components/auth/RegisterForm";
-import TrackerDetail from "./components/trackers/TrackerDetail"; // 👈 1. Import your new page component
+import TrackerDetail from "./components/trackers/TrackerDetail";
 import NotFound from "./pages/Notfound";
 
 export default function App() {
@@ -18,7 +18,7 @@ export default function App() {
         <Route path="/register" element={<RegisterForm />} />
         <Route path="/homepage" element={<Homepage />} />
         
-        {/* 👈 2. Add the dynamic route for individual tracker entries */}
+        {/* Dynamic route for individual tracker entries */}
         <Route path="/trackers/:trackerId" element={<TrackerDetail />} />
 
         {/* Catch-All 404 Route */}

@@ -24,8 +24,8 @@ export default function LoginForm({ onSuccess }) {
 
     try {
       const response = await axios.post(`${BASE_URL}/api/v1/auth/login`, {
-        email: email.trim(),
-        password: password.trim(),
+        email: email.trim().toLowerCase(),
+        password: password,
       });
 
       toast.success(response.data.message || "Login successful! 🎉");
@@ -33,11 +33,17 @@ export default function LoginForm({ onSuccess }) {
 
       if (token) {
         const cookies = new Cookies();
-        const expiryTime = jwtDecode(token);
-        cookies.set("token", token, {
-          path: "/",
-          expires: expiryTime.exp ? new Date(expiryTime.exp * 1000) : undefined,
-        });
+        try {
+          const decodedToken = jwtDecode(token);
+          cookies.set("token", token, {
+            path: "/",
+            expires: decodedToken?.exp ? new Date(decodedToken.exp * 1000) : undefined,
+          });
+        } catch (decodeErr) {
+          console.error("Failed to decode JWT token:", decodeErr);
+          // Fallback cookie setting without specific expiration if decoding fails
+          cookies.set("token", token, { path: "/" });
+        }
       }
 
       if (onSuccess) {
@@ -46,9 +52,11 @@ export default function LoginForm({ onSuccess }) {
         navigate("/homepage");
       }
     } catch (err) {
-      toast.error(
-        err.response?.data?.message || "Invalid credentials or login failed."
-      );
+      const errorMsg =
+        err.response?.data?.message ||
+        err.response?.data?.error ||
+        "Invalid credentials or login failed.";
+      toast.error(errorMsg);
     } finally {
       setLoading(false);
     }
