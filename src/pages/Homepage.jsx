@@ -241,7 +241,18 @@ export default function HomePage() {
   };
 
   if (loading) {
-    return <div className="text-center py-5 mt-5">Loading trackers...</div>;
+    return (
+      <div className={`min-vh-100 d-flex flex-column align-items-center justify-content-center ${darkMode ? "bg-dark text-light" : "bg-light text-dark"}`} data-bs-theme={darkMode ? "dark" : "light"}>
+        <div className="d-flex align-items-center gap-2 mb-3">
+          <LayoutDashboard className="text-primary" size={32} />
+          <h2 className="fw-bold m-0" style={{ fontSize: "1.5rem" }}>UNI-TRACK</h2>
+        </div>
+        <div className="spinner-border text-primary mb-3" role="status" style={{ width: "3rem", height: "3rem" }}>
+          <span className="visually-hidden">Loading...</span>
+        </div>
+        <p className="text-muted small m-0">Synchronizing your trackers...</p>
+      </div>
+    );
   }
 
   const hasTrackers = trackers.length > 0;
@@ -249,6 +260,10 @@ export default function HomePage() {
     ? trackers.filter((t) => t.type === typeFilter)
     : trackers;
   const displayTrackers = hasTrackers ? filteredTrackers : [SAMPLE_TRACKER];
+
+  const currentHour = new Date().getHours();
+  const timeGreeting =
+    currentHour < 12 ? "Good Morning ☀️" : currentHour < 18 ? "Good Afternoon 🌤️" : "Good Evening 🌙";
 
   return (
     <div
@@ -291,6 +306,23 @@ export default function HomePage() {
       <div className="container py-4 py-md-5">
         <div className="row">
           <div className="col-12">
+            
+            {/* ✨ Friendly User Greeting Banner */}
+            <div className={`p-4 rounded-4 shadow-sm border mb-4 position-relative overflow-hidden ${darkMode ? "bg-dark border-secondary" : "bg-white"}`}>
+              <div className="position-absolute top-0 end-0 p-3 opacity-10 d-none d-md-block text-primary">
+                <LayoutDashboard size={130} />
+              </div>
+              <div className="position-relative" style={{ zIndex: 1 }}>
+                <span className="badge bg-primary bg-opacity-10 text-primary mb-2 px-3 py-1 rounded-pill fw-semibold">
+                  {timeGreeting}
+                </span>
+                <h2 className="fw-bold mb-1" style={{ fontSize: "1.5rem" }}>Welcome back to Uni-Track!</h2>
+                <p className="text-muted mb-0 small">
+                  Here is a quick look at your progress and active trackers. Let's make today productive.
+                </p>
+              </div>
+            </div>
+
             {/* Dashboard Stats */}
             <TrackerDashboard trackers={trackers} darkMode={darkMode} />
 
