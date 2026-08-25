@@ -6,8 +6,8 @@ import { Link, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 
 const RAW_BASE_URL =
-  import.meta.env.VITE_BASE_URL ||
-  import.meta.env.VITE_API_URL ||
+  process.env.REACT_APP_API_URL ||
+  process.env.REACT_APP_BASE_URL ||
   "https://lv3node.onrender.com";
 
 const BASE_URL = RAW_BASE_URL.replace(/\/$/, "");
@@ -16,18 +16,32 @@ export default function LoginForm({ onSuccess }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [loadingText, setLoadingText] = useState("Signing In...");
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
+    setLoadingText("Signing In...");
+
+    // Render free-tier cold start handler: if server takes > 4s, notify user it's waking up
+    const coldStartTimer = setTimeout(() => {
+      setLoadingText("Waking up server (takes ~30s)...");
+      toast.info("Server is waking up from sleep mode, please wait...", { autoClose: 5000 });
+    }, 4000);
 
     try {
-      const response = await axios.post(`${BASE_URL}/api/v1/auth/login`, {
-        email: email.trim().toLowerCase(),
-        password: password,
-      });
+      // 60-second timeout to accommodate Render free-tier cold starts
+      const response = await axios.post(
+        `${BASE_URL}/api/v1/auth/login`,
+        {
+          email: email.trim().toLowerCase(),
+          password: password,
+        },
+        { timeout: 60000 }
+      );
 
+      clearTimeout(coldStartTimer);
       toast.success(response.data.message || "Login successful! 🎉");
       const token = response.data.token || response.data.data?.token;
 
@@ -37,12 +51,13 @@ export default function LoginForm({ onSuccess }) {
           const decodedToken = jwtDecode(token);
           cookies.set("token", token, {
             path: "/",
+            secure: window.location.protocol === "https:",
+            sameSite: "lax",
             expires: decodedToken?.exp ? new Date(decodedToken.exp * 1000) : undefined,
           });
         } catch (decodeErr) {
           console.error("Failed to decode JWT token:", decodeErr);
-          // Fallback cookie setting without specific expiration if decoding fails
-          cookies.set("token", token, { path: "/" });
+          cookies.set("token", token, { path: "/", secure: window.location.protocol === "https:" });
         }
       }
 
@@ -52,13 +67,22 @@ export default function LoginForm({ onSuccess }) {
         navigate("/homepage");
       }
     } catch (err) {
-      const errorMsg =
-        err.response?.data?.message ||
-        err.response?.data?.error ||
-        "Invalid credentials or login failed.";
+      clearTimeout(coldStartTimer);
+      console.error("Login error details:", err);
+
+      let errorMsg = "Invalid credentials or login failed.";
+      if (err.code === "ECONNABORTED" || err.message?.includes("timeout")) {
+        errorMsg = "Server took too long to respond. Please try clicking login again.";
+      } else if (!err.response) {
+        errorMsg = "Network error: Unable to reach the server. Check your connection.";
+      } else {
+        errorMsg = err.response?.data?.message || err.response?.data?.error || errorMsg;
+      }
+
       toast.error(errorMsg);
     } finally {
       setLoading(false);
+      setLoadingText("Signing In...");
     }
   };
 
@@ -134,7 +158,7 @@ export default function LoginForm({ onSuccess }) {
               {loading ? (
                 <>
                   <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
-                  Signing In...
+                  {loadingText}
                 </>
               ) : (
                 "Login →"

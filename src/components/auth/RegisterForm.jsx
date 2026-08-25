@@ -6,8 +6,8 @@ import { useNavigate, Link } from "react-router-dom";
 import { toast } from "react-toastify";
 
 const RAW_BASE_URL =
-  import.meta.env.VITE_BASE_URL ||
-  import.meta.env.VITE_API_URL ||
+  process.env.REACT_APP_API_URL ||
+  process.env.REACT_APP_BASE_URL ||
   "https://lv3node.onrender.com";
 
 const BASE_URL = RAW_BASE_URL.replace(/\/$/, "");
@@ -19,6 +19,7 @@ const Register = () => {
   const [registeredEmail, setRegisteredEmail] = useState("");
   const [otpValue, setOtpValue] = useState("");
   const [isVerifying, setIsVerifying] = useState(false);
+  const [loadingText, setLoadingText] = useState("Sending Verification Code...");
 
   const formik = useFormik({
     initialValues: {
@@ -45,21 +46,47 @@ const Register = () => {
     }),
 
     onSubmit: async (values, { setSubmitting }) => {
-      try {
-        const response = await axios.post(`${BASE_URL}/api/v1/auth/register`, {
-          firstName: values.firstname,
-          lastName: values.lastname,
-          email: values.email,
-          password: values.password,
-        });
+      setLoadingText("Sending Verification Code...");
+      
+      // Render free-tier cold start notification handler
+      const coldStartTimer = setTimeout(() => {
+        setLoadingText("Waking up server (~30s)...");
+        toast.info("Server is waking up from sleep mode, please wait...", { autoClose: 5000 });
+      }, 4000);
 
-        toast.success(response.data.message || "OTP sent to your email!");
-        setRegisteredEmail(values.email);
+      try {
+        const response = await axios.post(
+          `${BASE_URL}/api/v1/auth/register`,
+          {
+            firstName: values.firstname,
+            lastName: values.lastname,
+            email: values.email.trim().toLowerCase(),
+            password: values.password,
+          },
+          { timeout: 60000 }
+        );
+
+        clearTimeout(coldStartTimer);
+        toast.success(response.data.message || "OTP sent to your email! 🎉");
+        setRegisteredEmail(values.email.trim().toLowerCase());
         setStep("otp");
-      } catch (error) {
-        toast.error(error.response?.data?.message || "Registration failed");
+      } catch (err) {
+        clearTimeout(coldStartTimer);
+        console.error("Registration error:", err);
+
+        let errorMsg = "Registration failed";
+        if (err.code === "ECONNABORTED" || err.message?.includes("timeout")) {
+          errorMsg = "Server took too long to respond. Please try submitting again.";
+        } else if (!err.response) {
+          errorMsg = "Network error: Unable to reach the server. Check your connection.";
+        } else {
+          errorMsg = err.response?.data?.message || err.response?.data?.error || errorMsg;
+        }
+
+        toast.error(errorMsg);
       } finally {
         setSubmitting(false);
+        setLoadingText("Sending Verification Code...");
       }
     },
   });
@@ -72,18 +99,37 @@ const Register = () => {
     }
 
     setIsVerifying(true);
-    try {
-      await axios.post(`${BASE_URL}/api/v1/auth/verify-otp`, {
-        email: registeredEmail,
-        otp: otpValue,
-      });
+    const coldStartTimer = setTimeout(() => {
+      toast.info("Server is waking up, verification may take a moment...", { autoClose: 5000 });
+    }, 4000);
 
+    try {
+      await axios.post(
+        `${BASE_URL}/api/v1/auth/verify-otp`,
+        {
+          email: registeredEmail,
+          otp: otpValue,
+        },
+        { timeout: 60000 }
+      );
+
+      clearTimeout(coldStartTimer);
       toast.success("Account verified successfully! 🎉 Please sign in.");
-      
-      // Redirect straight to login page instead of storing tokens/going to homepage
       navigate("/login");
-    } catch (error) {
-      toast.error(error.response?.data?.message || "Invalid or expired OTP");
+    } catch (err) {
+      clearTimeout(coldStartTimer);
+      console.error("OTP verification error:", err);
+
+      let errorMsg = "Invalid or expired OTP";
+      if (err.code === "ECONNABORTED" || err.message?.includes("timeout")) {
+        errorMsg = "Request timed out while verifying. Please try again.";
+      } else if (!err.response) {
+        errorMsg = "Network error: Unable to reach the server.";
+      } else {
+        errorMsg = err.response?.data?.message || err.response?.data?.error || errorMsg;
+      }
+
+      toast.error(errorMsg);
     } finally {
       setIsVerifying(false);
     }
@@ -175,7 +221,7 @@ const Register = () => {
                 {formik.isSubmitting ? (
                   <>
                     <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
-                    Sending Verification Code...
+                    {loadingText}
                   </>
                 ) : (
                   "Register & Send OTP →"
