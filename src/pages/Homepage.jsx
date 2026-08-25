@@ -34,6 +34,44 @@ const SAMPLE_TRACKER = {
   isSample: true,
 };
 
+// Helper utility to convert VAPID key
+function urlBase64ToUint8Array(base64String) {
+  const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
+  const base64 = (base64String + padding).replace(/\-/g, "+").replace(/_/g, "/");
+  const rawData = window.atob(base64);
+  const outputArray = new Uint8Array(rawData.length);
+  for (let i = 0; i < rawData.length; ++i) {
+    outputArray[i] = rawData.charCodeAt(i);
+  }
+  return outputArray;
+}
+
+// Service Worker & Push Notification Subscription Trigger
+async function registerServiceWorkerAndSubscribe() {
+  if ("serviceWorker" in navigator && "PushManager" in window) {
+    try {
+      const registration = await navigator.serviceWorker.register("/sw.js");
+
+      const publicVapidKey = "YOUR_PUBLIC_VAPID_KEY"; // Replace with your actual public VAPID key
+      const subscription = await registration.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(publicVapidKey),
+      });
+
+      // Send subscription to backend
+      await fetch(`${BASE_URL}/api/v1/subscribe`, {
+        method: "POST",
+        headers: getAuthHeaders(),
+        body: JSON.stringify(subscription),
+      });
+
+      console.log("Push Registered Successfully!");
+    } catch (err) {
+      console.error("Failed to register push notifications:", err);
+    }
+  }
+}
+
 export default function HomePage() {
   const cookies = new Cookies();
   const token = cookies.get("token");
@@ -58,6 +96,11 @@ export default function HomePage() {
   useEffect(() => {
     localStorage.setItem("theme", darkMode ? "dark" : "light");
   }, [darkMode]);
+
+  // Automatically request push notification permission and register service worker on load
+  useEffect(() => {
+    registerServiceWorkerAndSubscribe();
+  }, []);
 
   const closeModal = () => {
     const modalElement = document.getElementById("trackerModal");
@@ -120,7 +163,7 @@ export default function HomePage() {
     if (trackerId === SAMPLE_TRACKER._id) return;
 
     const previousTrackers = [...trackers];
-    setTrackers((prev) => prev.filter((t) => ((t._id?.toString() || t.id?.toString()) !== trackerId.toString())));
+    setTrackers((prev) => prev.filter((t) => (t._id?.toString() || t.id?.toString()) !== trackerId.toString()));
 
     try {
       let response = await fetch(`${BASE_URL}/api/v1/trackers/${trackerId}`, {
@@ -165,7 +208,7 @@ export default function HomePage() {
         if (trackerData && Array.isArray(trackerData.entries)) {
           setTrackers((prev) =>
             prev.map((t) => {
-              const tId = (t._id?.toString() || t.id?.toString() || t._id || t.id);
+              const tId = t._id?.toString() || t.id?.toString() || t._id || t.id;
               return tId === trackerId.toString() ? trackerData : t;
             })
           );
@@ -181,7 +224,7 @@ export default function HomePage() {
 
   const handleAddEntry = async (trackerId, entry) => {
     let targetTracker = trackers.find((t) => {
-      const tId = (t._id?.toString() || t.id?.toString() || t._id || t.id);
+      const tId = t._id?.toString() || t.id?.toString() || t._id || t.id;
       return tId === trackerId.toString();
     });
     if (!targetTracker) return;
@@ -191,7 +234,7 @@ export default function HomePage() {
 
     setTrackers((prev) =>
       prev.map((t) => {
-        const tId = (t._id?.toString() || t.id?.toString() || t._id || t.id);
+        const tId = t._id?.toString() || t.id?.toString() || t._id || t.id;
         if (tId === trackerId.toString()) {
           return { ...t, entries: updatedEntries };
         }
@@ -205,7 +248,7 @@ export default function HomePage() {
   const handleUpdate = async (trackerId, newEntries) => {
     setTrackers((prev) =>
       prev.map((t) => {
-        const tId = (t._id?.toString() || t.id?.toString() || t._id || t.id);
+        const tId = t._id?.toString() || t.id?.toString() || t._id || t.id;
         if (tId === trackerId.toString()) {
           return { ...t, entries: newEntries };
         }
@@ -218,7 +261,7 @@ export default function HomePage() {
 
   const handleDeleteEntry = async (trackerId, entryId) => {
     let targetTracker = trackers.find((t) => {
-      const tId = (t._id?.toString() || t.id?.toString() || t._id || t.id);
+      const tId = t._id?.toString() || t.id?.toString() || t._id || t.id;
       return tId === trackerId.toString();
     });
     if (!targetTracker) return;
@@ -229,7 +272,7 @@ export default function HomePage() {
 
     setTrackers((prev) =>
       prev.map((t) => {
-        const tId = (t._id?.toString() || t.id?.toString() || t._id || t.id);
+        const tId = t._id?.toString() || t.id?.toString() || t._id || t.id;
         if (tId === trackerId.toString()) {
           return { ...t, entries: updatedEntries };
         }
