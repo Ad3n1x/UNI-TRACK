@@ -143,7 +143,6 @@ export default function HomePage() {
     }
   };
 
-  // Helper utility with robust string/ObjectId matching
   const syncTrackerEntriesWithBackend = async (trackerId, updatedEntries) => {
     try {
       let response = await fetch(`${BASE_URL}/api/v1/trackers/${trackerId}`, {
@@ -176,7 +175,7 @@ export default function HomePage() {
       }
     } catch (error) {
       console.error("Error syncing entry modification:", error);
-      fetchTrackers(); // Fallback to refetching clean state from server
+      fetchTrackers();
     }
   };
 
@@ -190,7 +189,6 @@ export default function HomePage() {
     const newEntryWithId = { ...entry, _id: Date.now().toString() };
     const updatedEntries = [...(targetTracker.entries || []), newEntryWithId];
 
-    // Optimistic UI Update
     setTrackers((prev) =>
       prev.map((t) => {
         const tId = (t._id?.toString() || t.id?.toString() || t._id || t.id);
@@ -205,7 +203,6 @@ export default function HomePage() {
   };
 
   const handleUpdate = async (trackerId, newEntries) => {
-    // Optimistic UI Update
     setTrackers((prev) =>
       prev.map((t) => {
         const tId = (t._id?.toString() || t.id?.toString() || t._id || t.id);
@@ -230,7 +227,6 @@ export default function HomePage() {
       (e) => (e._id?.toString() || e.id?.toString() || e._id || e.id) !== entryId.toString()
     );
 
-    // Optimistic UI Update
     setTrackers((prev) =>
       prev.map((t) => {
         const tId = (t._id?.toString() || t.id?.toString() || t._id || t.id);
@@ -272,56 +268,63 @@ export default function HomePage() {
         </div>
       )}
 
-      {/* Navigation Header */}
-      <nav className={`navbar navbar-expand-lg border-bottom shadow-sm ${darkMode ? "bg-dark border-secondary" : "bg-white"}`}>
-        <div className="container">
+      {/* Navigation Header: Brand & Theme Toggle */}
+      <nav className={`navbar border-bottom shadow-sm py-3 ${darkMode ? "bg-dark border-secondary" : "bg-white"}`}>
+        <div className="container d-flex align-items-center justify-content-between">
           <h1 className="navbar-brand fw-bold d-flex align-items-center gap-2 m-0" style={{ fontSize: "1.25rem" }}>
             <LayoutDashboard className="text-primary" /> UNI-TRACK
           </h1>
 
-          <div className="d-flex align-items-center gap-2">
-            {/* Dark Mode Toggle */}
-            <button
-              type="button"
-              className={`btn ${darkMode ? "btn-outline-light" : "btn-outline-secondary"} d-flex align-items-center justify-content-center p-2`}
-              onClick={() => setDarkMode(!darkMode)}
-              title="Toggle Theme"
-            >
-              {darkMode ? <Sun size={18} /> : <Moon size={18} />}
-            </button>
-
-            {/* New Tracker Button */}
-            <button
-              type="button"
-              className="btn btn-primary d-flex align-items-center gap-2"
-              data-bs-toggle="modal"
-              data-bs-target="#trackerModal"
-            >
-              <PlusCircle size={18} /> New Tracker
-            </button>
-
-            {/* Logout Button */}
-            <button
-              type="button"
-              className="btn btn-outline-danger d-flex align-items-center gap-2"
-              onClick={handleLogout}
-            >
-              <LogOut size={18} /> Logout
-            </button>
-          </div>
+          {/* Quick Access Theme Toggle */}
+          <button
+            type="button"
+            className={`btn ${darkMode ? "btn-outline-light" : "btn-outline-secondary"} d-flex align-items-center justify-content-center p-2`}
+            onClick={() => setDarkMode(!darkMode)}
+            title="Toggle Theme"
+          >
+            {darkMode ? <Sun size={18} /> : <Moon size={18} />}
+          </button>
         </div>
       </nav>
 
       {/* Main Container */}
-      <div className="container py-5">
+      <div className="container py-4 py-md-5">
         <div className="row">
           <div className="col-12">
             {/* Dashboard Stats */}
             <TrackerDashboard trackers={trackers} darkMode={darkMode} />
 
-            {/* Trackers Filter and List Section */}
-            <div className={`p-4 rounded-4 shadow-sm border mt-4 ${darkMode ? "bg-dark border-secondary" : "bg-white"}`}>
-              <TrackerFilters typeFilter={typeFilter} onTypeFilterChange={setTypeFilter} darkMode={darkMode} />
+            {/* Trackers Toolbar & List Section */}
+            <div className={`p-3 p-md-4 rounded-4 shadow-sm border mt-4 ${darkMode ? "bg-dark border-secondary" : "bg-white"}`}>
+              
+              {/* Action Toolbar: Filters + New Tracker and Logout buttons */}
+              <div className="d-flex flex-column flex-lg-row align-items-stretch align-items-lg-center justify-content-between gap-3 mb-3">
+                <div className="flex-grow-1 overflow-auto">
+                  <TrackerFilters typeFilter={typeFilter} onTypeFilterChange={setTypeFilter} darkMode={darkMode} />
+                </div>
+                
+                <div className="d-flex align-items-center flex-wrap gap-2 flex-shrink-0">
+                  {/* New Tracker Button */}
+                  <button
+                    type="button"
+                    className="btn btn-primary d-flex align-items-center justify-content-center gap-2 flex-grow-1 flex-lg-grow-0 px-3 py-2"
+                    data-bs-toggle="modal"
+                    data-bs-target="#trackerModal"
+                  >
+                    <PlusCircle size={18} /> New Tracker
+                  </button>
+
+                  {/* Logout Button */}
+                  <button
+                    type="button"
+                    className="btn btn-outline-danger d-flex align-items-center justify-content-center gap-2 px-3 py-2"
+                    onClick={handleLogout}
+                  >
+                    <LogOut size={18} /> Logout
+                  </button>
+                </div>
+              </div>
+
               <hr />
 
               <TrackerList
@@ -346,7 +349,7 @@ export default function HomePage() {
 
       {/* Create Tracker Modal */}
       <div className="modal fade" id="trackerModal" tabIndex="-1" aria-hidden="true">
-        <div className="modal-dialog modal-dialog-centered">
+        <div className="modal-dialog modal-dialog-centered modal-dialog-scrollable">
           <div className={`modal-content ${darkMode ? "bg-dark text-light border-secondary" : ""}`}>
             <div className="modal-header">
               <h5 className="modal-title">Configure Tracker</h5>
