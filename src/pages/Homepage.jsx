@@ -120,7 +120,7 @@ export default function HomePage() {
     if (trackerId === SAMPLE_TRACKER._id) return;
 
     const previousTrackers = [...trackers];
-    setTrackers((prev) => prev.filter((t) => (t._id || t.id) !== trackerId));
+    setTrackers((prev) => prev.filter((t) => ((t._id?.toString() || t.id?.toString()) !== trackerId.toString())));
 
     try {
       let response = await fetch(`${BASE_URL}/api/v1/trackers/${trackerId}`, {
@@ -143,125 +143,105 @@ export default function HomePage() {
     }
   };
 
-  const handleAddEntry = async (trackerId, entry) => {
-    setTrackers((prev) =>
-      prev.map((t) => {
-        if ((t._id || t.id) === trackerId) {
-          return {
-            ...t,
-            entries: [...(t.entries || []), { ...entry, _id: Date.now().toString() }],
-          };
-        }
-        return t;
-      })
-    );
-
-    try {
-      let response = await fetch(`${BASE_URL}/api/v1/trackers/${trackerId}/entries`, {
-        method: "POST",
-        headers: getAuthHeaders(),
-        body: JSON.stringify(entry),
-      });
-
-      if (response.status === 404) {
-        response = await fetch(`${BASE_URL}/api/trackers/${trackerId}/entries`, {
-          method: "POST",
-          headers: getAuthHeaders(),
-          body: JSON.stringify(entry),
-        });
-      }
-
-      if (response.ok) {
-        const updatedTracker = await response.json();
-        if (updatedTracker && Array.isArray(updatedTracker.entries)) {
-          setTrackers((prev) =>
-            prev.map((t) => ((t._id || t.id) === trackerId ? updatedTracker : t))
-          );
-        }
-      }
-    } catch (error) {
-      console.error("Error adding entry:", error);
-      fetchTrackers();
-    }
-  };
-
-  const handleUpdate = async (trackerId, entries) => {
-    setTrackers((prev) =>
-      prev.map((t) => {
-        if ((t._id || t.id) === trackerId) {
-          return { ...t, entries };
-        }
-        return t;
-      })
-    );
-
+  // Helper utility with robust string/ObjectId matching
+  const syncTrackerEntriesWithBackend = async (trackerId, updatedEntries) => {
     try {
       let response = await fetch(`${BASE_URL}/api/v1/trackers/${trackerId}`, {
         method: "PUT",
         headers: getAuthHeaders(),
-        body: JSON.stringify({ entries }),
+        body: JSON.stringify({ entries: updatedEntries }),
       });
 
       if (response.status === 404) {
         response = await fetch(`${BASE_URL}/api/trackers/${trackerId}`, {
           method: "PUT",
           headers: getAuthHeaders(),
-          body: JSON.stringify({ entries }),
+          body: JSON.stringify({ entries: updatedEntries }),
         });
       }
 
       if (response.ok) {
-        const updatedTracker = await response.json();
-        if (updatedTracker && Array.isArray(updatedTracker.entries)) {
+        const resJson = await response.json();
+        const trackerData = resJson.data || resJson;
+        if (trackerData && Array.isArray(trackerData.entries)) {
           setTrackers((prev) =>
-            prev.map((t) => ((t._id || t.id) === trackerId ? updatedTracker : t))
+            prev.map((t) => {
+              const tId = (t._id?.toString() || t.id?.toString() || t._id || t.id);
+              return tId === trackerId.toString() ? trackerData : t;
+            })
           );
         }
+      } else {
+        throw new Error("Failed to sync entries with server.");
       }
     } catch (error) {
-      console.error("Error updating tracker:", error);
-      fetchTrackers();
+      console.error("Error syncing entry modification:", error);
+      fetchTrackers(); // Fallback to refetching clean state from server
     }
   };
 
-  const handleDeleteEntry = async (trackerId, entryId) => {
+  const handleAddEntry = async (trackerId, entry) => {
+    let targetTracker = trackers.find((t) => {
+      const tId = (t._id?.toString() || t.id?.toString() || t._id || t.id);
+      return tId === trackerId.toString();
+    });
+    if (!targetTracker) return;
+
+    const newEntryWithId = { ...entry, _id: Date.now().toString() };
+    const updatedEntries = [...(targetTracker.entries || []), newEntryWithId];
+
+    // Optimistic UI Update
     setTrackers((prev) =>
       prev.map((t) => {
-        if ((t._id || t.id) === trackerId) {
-          return {
-            ...t,
-            entries: (t.entries || []).filter((e) => (e._id || e.id) !== entryId),
-          };
+        const tId = (t._id?.toString() || t.id?.toString() || t._id || t.id);
+        if (tId === trackerId.toString()) {
+          return { ...t, entries: updatedEntries };
         }
         return t;
       })
     );
 
-    try {
-      let response = await fetch(`${BASE_URL}/api/v1/trackers/${trackerId}/entries/${entryId}`, {
-        method: "DELETE",
-        headers: getAuthHeaders(),
-      });
+    await syncTrackerEntriesWithBackend(trackerId, updatedEntries);
+  };
 
-      if (response.status === 404) {
-        response = await fetch(`${BASE_URL}/api/trackers/${trackerId}/entries/${entryId}`, {
-          method: "DELETE",
-          headers: getAuthHeaders(),
-        });
-      }
-
-      if (response.ok) {
-        const updatedTracker = await response.json();
-        if (updatedTracker && Array.isArray(updatedTracker.entries)) {
-          setTrackers((prev) =>
-            prev.map((t) => ((t._id || t.id) === trackerId ? updatedTracker : t))
-          );
+  const handleUpdate = async (trackerId, newEntries) => {
+    // Optimistic UI Update
+    setTrackers((prev) =>
+      prev.map((t) => {
+        const tId = (t._id?.toString() || t.id?.toString() || t._id || t.id);
+        if (tId === trackerId.toString()) {
+          return { ...t, entries: newEntries };
         }
-      }
-    } catch (error) {
-      console.error("Error deleting entry:", error);
-      fetchTrackers();
-    }
+        return t;
+      })
+    );
+
+    await syncTrackerEntriesWithBackend(trackerId, newEntries);
+  };
+
+  const handleDeleteEntry = async (trackerId, entryId) => {
+    let targetTracker = trackers.find((t) => {
+      const tId = (t._id?.toString() || t.id?.toString() || t._id || t.id);
+      return tId === trackerId.toString();
+    });
+    if (!targetTracker) return;
+
+    const updatedEntries = (targetTracker.entries || []).filter(
+      (e) => (e._id?.toString() || e.id?.toString() || e._id || e.id) !== entryId.toString()
+    );
+
+    // Optimistic UI Update
+    setTrackers((prev) =>
+      prev.map((t) => {
+        const tId = (t._id?.toString() || t.id?.toString() || t._id || t.id);
+        if (tId === trackerId.toString()) {
+          return { ...t, entries: updatedEntries };
+        }
+        return t;
+      })
+    );
+
+    await syncTrackerEntriesWithBackend(trackerId, updatedEntries);
   };
 
   if (loading) {

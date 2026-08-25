@@ -1,10 +1,11 @@
 import React from "react";
 import { Routes, Route } from "react-router-dom";
 import { ToastContainer } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css"; // 👈 Required for styling
+import "react-toastify/dist/ReactToastify.css";
 import Homepage from "./pages/Homepage";
 import LoginForm from "./components/auth/LoginForm";
 import RegisterForm from "./components/auth/RegisterForm";
+import TrackerDetail from "./components/trackers/TrackerDetail"; // 👈 1. Import your new page component
 import NotFound from "./pages/Notfound";
 
 export default function App() {
@@ -16,12 +17,14 @@ export default function App() {
         <Route path="/login" element={<LoginForm />} />
         <Route path="/register" element={<RegisterForm />} />
         <Route path="/homepage" element={<Homepage />} />
+        
+        {/* 👈 2. Add the dynamic route for individual tracker entries */}
+        <Route path="/trackers/:trackerId" element={<TrackerDetail />} />
 
         {/* Catch-All 404 Route */}
         <Route path="*" element={<NotFound />} />
       </Routes>
 
-      {/* 👈 Required to actually display the toasts globally */}
       <ToastContainer 
         position="top-right"
         autoClose={3000}

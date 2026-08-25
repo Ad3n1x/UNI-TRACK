@@ -12,12 +12,60 @@ const RAW_BASE_URL =
 const BASE_URL = RAW_BASE_URL.replace(/\/$/, "");
 
 const TRACKER_TYPES = [
-  { value: "habit", label: "Habit", description: "Daily yes/no", emoji: "✅" },
-  { value: "counter", label: "Counter", description: "Count anything", emoji: "🔢" },
-  { value: "timer", label: "Timer", description: "Track time spent", emoji: "⏱️" },
-  { value: "goal", label: "Goal", description: "Progress to target", emoji: "🎯" },
-  { value: "expense", label: "Expense", description: "Monitor spending", emoji: "💸" },
-  { value: "mood", label: "Mood", description: "Log how you feel", emoji: "😊" },
+  { 
+    value: "habit", 
+    label: "Habit", 
+    description: "Daily yes/no check-in", 
+    emoji: "✅",
+    defaultTarget: "",
+    defaultUnit: "",
+    namePlaceholder: "e.g. Morning Jog, Read 10 Pages..."
+  },
+  { 
+    value: "counter", 
+    label: "Counter", 
+    description: "Count repetitions or items", 
+    emoji: "🔢",
+    defaultTarget: "50",
+    defaultUnit: "reps",
+    namePlaceholder: "e.g. Push-ups, Glasses of Water..."
+  },
+  { 
+    value: "timer", 
+    label: "Timer", 
+    description: "Track time spent on tasks", 
+    emoji: "⏱️",
+    defaultTarget: "",
+    defaultUnit: "",
+    namePlaceholder: "e.g. Coding, Guitar Practice..."
+  },
+  { 
+    value: "goal", 
+    label: "Goal", 
+    description: "Progress toward a target", 
+    emoji: "🎯",
+    defaultTarget: "100",
+    defaultUnit: "pages",
+    namePlaceholder: "e.g. Read Book, Save Money..."
+  },
+  { 
+    value: "expense", 
+    label: "Expense", 
+    description: "Monitor spending budget", 
+    emoji: "💸",
+    defaultTarget: "5000",
+    defaultUnit: "₦",
+    namePlaceholder: "e.g. Monthly Budget, Groceries..."
+  },
+  { 
+    value: "mood", 
+    label: "Mood", 
+    description: "Log your daily emotional state", 
+    emoji: "😊",
+    defaultTarget: "",
+    defaultUnit: "",
+    namePlaceholder: "e.g. Daily Reflection..."
+  },
 ];
 
 const ICON_OPTIONS = [
@@ -34,7 +82,7 @@ const COLOR_OPTIONS = [
   "#8b5cf6", "#a855f7", "#d946ef", "#ec4899", "#f43f5e",
 ];
 
-const TARGET_TYPES = new Set(["counter", "goal", "expense", "timer"]);
+const TARGET_TYPES = new Set(["counter", "goal", "expense"]);
 
 export default function TrackerForm({ onCreate, onClose, darkMode = false }) {
   const [name, setName] = useState("");
@@ -47,14 +95,23 @@ export default function TrackerForm({ onCreate, onClose, darkMode = false }) {
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState(null);
 
-  // Synchronous ref lock to prevent double submissions instantly
   const isSubmittingRef = useRef(false);
+
+  const handleTypeChange = (selectedTypeConfig) => {
+    setType(selectedTypeConfig.value);
+    if (TARGET_TYPES.has(selectedTypeConfig.value)) {
+      setTarget(selectedTypeConfig.defaultTarget);
+      setUnit(selectedTypeConfig.defaultUnit);
+    } else {
+      setTarget("");
+      setUnit("");
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!name.trim() || isSubmittingRef.current || loading) return;
 
-    // Retrieve authentication token
     const cookies = new Cookies();
     const token = cookies.get("token");
 
@@ -63,7 +120,6 @@ export default function TrackerForm({ onCreate, onClose, darkMode = false }) {
       return;
     }
 
-    // Lock immediately
     isSubmittingRef.current = true;
     setLoading(true);
     setErrorMsg(null);
@@ -73,8 +129,10 @@ export default function TrackerForm({ onCreate, onClose, darkMode = false }) {
       type,
       icon,
       color,
-      target: target ? parseFloat(target) : undefined,
-      unit: unit.trim() || undefined,
+      ...(TARGET_TYPES.has(type) && {
+        target: target ? parseFloat(target) : undefined,
+        unit: unit.trim() || undefined,
+      }),
       entries: [],
     };
 
@@ -84,7 +142,6 @@ export default function TrackerForm({ onCreate, onClose, darkMode = false }) {
     };
 
     try {
-      // Primary route attempt (/api/v1/trackers with fallback to /api/trackers)
       let response = await fetch(`${BASE_URL}/api/v1/trackers`, {
         method: "POST",
         headers,
@@ -114,16 +171,16 @@ export default function TrackerForm({ onCreate, onClose, darkMode = false }) {
     } catch (err) {
       console.error("Failed to create tracker:", err);
       setErrorMsg(err.message || "Failed to connect to backend server.");
-      // Unlock only if it failed so user can retry
-      isSubmittingRef.current = false;
     } finally {
       setLoading(false);
+      // FIXED: Always release the submission lock whether successful or failed
+      isSubmittingRef.current = false;
     }
   };
 
   const needsTarget = TARGET_TYPES.has(type);
+  const activeTypeConfig = TRACKER_TYPES.find((t) => t.value === type) || TRACKER_TYPES[0];
 
-  // Dynamic style objects based on darkMode
   const styles = {
     errorBox: {
       padding: "0.75rem",
@@ -159,13 +216,19 @@ export default function TrackerForm({ onCreate, onClose, darkMode = false }) {
       cursor: "pointer",
       textAlign: "left",
       flex: "1 1 calc(50% - 0.5rem)",
-      minWidth: "120px",
+      minWidth: "135px",
       boxSizing: "border-box",
+      transition: "all 0.2s ease",
     },
     typeLabel: { 
       fontSize: "0.875rem", 
       fontWeight: "600", 
       color: darkMode ? "#f8fafc" : "#334155" 
+    },
+    typeDesc: {
+      fontSize: "0.7rem",
+      color: darkMode ? "#94a3b8" : "#64748b",
+      marginTop: "0.15rem",
     },
     iconContainer: {
       display: "flex",
@@ -231,7 +294,7 @@ export default function TrackerForm({ onCreate, onClose, darkMode = false }) {
           type="text"
           value={name}
           onChange={(e) => setName(e.target.value)}
-          placeholder="e.g. Morning Run…"
+          placeholder={activeTypeConfig.namePlaceholder}
           style={styles.input}
           disabled={loading}
           autoFocus
@@ -241,14 +304,14 @@ export default function TrackerForm({ onCreate, onClose, darkMode = false }) {
       <div>
         <label style={styles.label}>Type</label>
         <div style={styles.gridContainer}>
-          {TRACKER_TYPES.map(({ value, label, emoji }) => {
-            const isActive = type === value;
+          {TRACKER_TYPES.map((typeConfig) => {
+            const isActive = type === typeConfig.value;
             return (
               <button
-                key={value}
+                key={typeConfig.value}
                 type="button"
                 disabled={loading}
-                onClick={() => setType(value)}
+                onClick={() => handleTypeChange(typeConfig)}
                 style={{
                   ...styles.typeBtn,
                   border: isActive
@@ -259,8 +322,11 @@ export default function TrackerForm({ onCreate, onClose, darkMode = false }) {
                     : darkMode ? "#0f172a" : "white",
                 }}
               >
-                <div style={{ fontSize: "1.25rem" }}>{emoji}</div>
-                <div style={styles.typeLabel}>{label}</div>
+                <div style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
+                  <span style={{ fontSize: "1.1rem" }}>{typeConfig.emoji}</span>
+                  <span style={styles.typeLabel}>{typeConfig.label}</span>
+                </div>
+                <div style={styles.typeDesc}>{typeConfig.description}</div>
               </button>
             );
           })}
@@ -314,23 +380,26 @@ export default function TrackerForm({ onCreate, onClose, darkMode = false }) {
       </div>
 
       {needsTarget && (
-        <div style={{ display: "flex", flexWrap: "wrap", gap: "0.5rem" }}>
-          <input
-            type="number"
-            value={target}
-            disabled={loading}
-            onChange={(e) => setTarget(e.target.value)}
-            placeholder="Target"
-            style={{ ...styles.input, flex: "1 1 120px" }}
-          />
-          <input
-            type="text"
-            value={unit}
-            disabled={loading}
-            onChange={(e) => setUnit(e.target.value)}
-            placeholder="Unit"
-            style={{ ...styles.input, flex: "1 1 120px" }}
-          />
+        <div>
+          <label style={styles.label}>Target & Unit Configuration</label>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: "0.5rem" }}>
+            <input
+              type="number"
+              value={target}
+              disabled={loading}
+              onChange={(e) => setTarget(e.target.value)}
+              placeholder="Target value"
+              style={{ ...styles.input, flex: "1 1 120px" }}
+            />
+            <input
+              type="text"
+              value={unit}
+              disabled={loading}
+              onChange={(e) => setUnit(e.target.value)}
+              placeholder="Unit (e.g. reps)"
+              style={{ ...styles.input, flex: "1 1 120px" }}
+            />
+          </div>
         </div>
       )}
 
@@ -357,7 +426,7 @@ export default function TrackerForm({ onCreate, onClose, darkMode = false }) {
           }}
         >
           {loading && <Loader2 size={16} className="animate-spin" />}
-          {loading ? "Creating..." : "Create"}
+          {loading ? "Creating..." : "Create Tracker"}
         </button>
       </div>
     </form>
