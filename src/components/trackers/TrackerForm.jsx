@@ -1,8 +1,8 @@
 import { useState, useRef } from "react";
-import { Check, X, Circle, Loader2 } from "lucide-react";
+import { Check, Circle, Loader2 } from "lucide-react";
 import * as Icons from "lucide-react";
 import Cookies from "universal-cookie";
-import CryptoJS from "crypto-js"; // Ensure crypto-js is installed on frontend
+import CryptoJS from "crypto-js";
 
 const RAW_BASE_URL =
   (typeof process !== "undefined" && process.env?.API_URL) ||
@@ -12,8 +12,7 @@ const RAW_BASE_URL =
 
 const BASE_URL = RAW_BASE_URL.replace(/\/$/, "");
 
-// Client-side encryption helper
-const CLIENT_SECRET = "your_client_side_encryption_secret"; // Or user's master key
+const CLIENT_SECRET = "your_client_side_encryption_secret";
 const encryptField = (data) => {
   if (data === null || data === undefined || data === "") return data;
   const stringValue = typeof data === "object" ? JSON.stringify(data) : String(data);
@@ -85,10 +84,9 @@ export default function TrackerForm({ onCreate, onClose, darkMode = false }) {
     setErrorMsg(null);
 
     try {
-      // ENCRYPT DATA ON THE CLIENT BEFORE SENDING
       const payload = {
         name: encryptField(name.trim()),
-        type, // Kept clear for database routing/querying
+        type,
         icon,
         color,
         ...(TARGET_TYPES.has(type) && target ? { target: encryptField(parseFloat(target)) } : {}),
@@ -161,7 +159,7 @@ export default function TrackerForm({ onCreate, onClose, darkMode = false }) {
       )}
 
       <div>
-        <label style={styles.label}>Tracker Name (Client E2EE)</label>
+        <label style={styles.label}>Tracker Name</label>
         <input
           type="text"
           value={name}
@@ -289,7 +287,7 @@ export default function TrackerForm({ onCreate, onClose, darkMode = false }) {
           }}
         >
           {loading && <Loader2 size={16} className="animate-spin" />}
-          {loading ? "Encrypting & Saving..." : "Create Tracker"}
+          {loading ? "Saving..." : "Create Tracker"}
         </button>
       </div>
     </form>
