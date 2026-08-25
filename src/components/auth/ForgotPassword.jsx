@@ -4,8 +4,8 @@ import { useNavigate, Link } from "react-router-dom";
 import { toast } from "react-toastify";
 
 const RAW_BASE_URL =
-  process.env.REACT_APP_API_URL ||
-  process.env.REACT_APP_BASE_URL ||
+  (typeof process !== "undefined" && process.env && (process.env.REACT_APP_API_URL || process.env.REACT_APP_BASE_URL)) ||
+  (typeof import.meta !== "undefined" && import.meta.env && (import.meta.env.VITE_API_URL || import.meta.env.VITE_BASE_URL)) ||
   "https://lv3node.onrender.com";
 
 const BASE_URL = RAW_BASE_URL.replace(/\/$/, "");
@@ -17,6 +17,7 @@ const ForgotPassword = () => {
   const [otp, setOtp] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [loadingText, setLoadingText] = useState("Sending Code...");
 
   const handleRequestOtp = async (e) => {
     e.preventDefault();
@@ -26,16 +27,43 @@ const ForgotPassword = () => {
     }
 
     setLoading(true);
+    setLoadingText("Sending Code...");
+
+    // Render free-tier cold start handler
+    const coldStartTimer = setTimeout(() => {
+      setLoadingText("Waking up server (~30s)...");
+      toast.info("Server is waking up from sleep mode, please wait...", { autoClose: 5000 });
+    }, 4000);
+
     try {
-      const res = await axios.post(`${BASE_URL}/api/v1/auth/forgot-password`, {
-        email: email.trim().toLowerCase(),
-      });
-      toast.success(res.data.message || "Reset code sent!");
+      const res = await axios.post(
+        `${BASE_URL}/api/v1/auth/forgot-password`,
+        {
+          email: email.trim().toLowerCase(),
+        },
+        { timeout: 60000 }
+      );
+
+      clearTimeout(coldStartTimer);
+      toast.success(res.data.message || "Reset code sent! 🎉");
       setStep(2);
     } catch (err) {
-      toast.error(err.response?.data?.message || "Failed to send reset code.");
+      clearTimeout(coldStartTimer);
+      console.error("Forgot password error:", err);
+
+      let errorMsg = "Failed to send reset code.";
+      if (err.code === "ECONNABORTED" || err.message?.includes("timeout")) {
+        errorMsg = "Server took too long to respond. Please try again.";
+      } else if (!err.response) {
+        errorMsg = "Network error: Unable to reach the server. Check your connection.";
+      } else {
+        errorMsg = err.response?.data?.message || err.response?.data?.error || errorMsg;
+      }
+
+      toast.error(errorMsg);
     } finally {
       setLoading(false);
+      setLoadingText("Sending Code...");
     }
   };
 
@@ -47,18 +75,44 @@ const ForgotPassword = () => {
     }
 
     setLoading(true);
+    setLoadingText("Resetting Password...");
+
+    const coldStartTimer = setTimeout(() => {
+      setLoadingText("Waking up server (~30s)...");
+      toast.info("Server is waking up, please wait a moment...", { autoClose: 5000 });
+    }, 4000);
+
     try {
-      const res = await axios.post(`${BASE_URL}/api/v1/auth/reset-password`, {
-        email: email.trim().toLowerCase(),
-        otp,
-        newPassword,
-      });
-      toast.success(res.data.message || "Password reset successfully!");
+      const res = await axios.post(
+        `${BASE_URL}/api/v1/auth/reset-password`,
+        {
+          email: email.trim().toLowerCase(),
+          otp,
+          newPassword,
+        },
+        { timeout: 60000 }
+      );
+
+      clearTimeout(coldStartTimer);
+      toast.success(res.data.message || "Password reset successfully! 🎉");
       navigate("/login");
     } catch (err) {
-      toast.error(err.response?.data?.message || "Password reset failed.");
+      clearTimeout(coldStartTimer);
+      console.error("Reset password error:", err);
+
+      let errorMsg = "Password reset failed.";
+      if (err.code === "ECONNABORTED" || err.message?.includes("timeout")) {
+        errorMsg = "Request timed out. Please try again.";
+      } else if (!err.response) {
+        errorMsg = "Network error: Unable to reach the server.";
+      } else {
+        errorMsg = err.response?.data?.message || err.response?.data?.error || errorMsg;
+      }
+
+      toast.error(errorMsg);
     } finally {
       setLoading(false);
+      setLoadingText("Resetting Password...");
     }
   };
 
@@ -95,7 +149,7 @@ const ForgotPassword = () => {
                 {loading ? (
                   <>
                     <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
-                    Sending Code...
+                    {loadingText}
                   </>
                 ) : (
                   "Send Reset Code →"
@@ -146,7 +200,7 @@ const ForgotPassword = () => {
                 {loading ? (
                   <>
                     <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
-                    Resetting...
+                    {loadingText}
                   </>
                 ) : (
                   "Update Password"
