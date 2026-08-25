@@ -78,7 +78,7 @@ const ForgotPassword = () => {
                 <label className="form-label fw-semibold text-secondary small">Email Address</label>
                 <input
                   type="email"
-                  className="form-control"
+                  className="form-control rounded-3 py-2 shadow-sm"
                   placeholder="name@example.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
@@ -90,9 +90,16 @@ const ForgotPassword = () => {
               <button
                 type="submit"
                 disabled={loading}
-                className="btn btn-primary w-100 py-2 fw-semibold shadow-sm mb-3"
+                className="btn btn-primary w-100 py-2 fw-semibold rounded-3 shadow-sm d-flex align-items-center justify-content-center gap-2 mb-3"
               >
-                {loading ? "Sending Code..." : "Send Reset Code →"}
+                {loading ? (
+                  <>
+                    <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                    Sending Code...
+                  </>
+                ) : (
+                  "Send Reset Code →"
+                )}
               </button>
             </form>
           </>
@@ -108,7 +115,7 @@ const ForgotPassword = () => {
                 <label className="form-label fw-semibold text-secondary small">6-Digit OTP Code</label>
                 <input
                   type="text"
-                  className="form-control text-center fw-bold fs-4"
+                  className="form-control text-center fw-bold fs-4 rounded-3 shadow-sm"
                   placeholder="------"
                   maxLength={6}
                   value={otp}
@@ -123,7 +130,7 @@ const ForgotPassword = () => {
                 <label className="form-label fw-semibold text-secondary small">New Password</label>
                 <input
                   type="password"
-                  className="form-control"
+                  className="form-control rounded-3 py-2 shadow-sm"
                   placeholder="••••••••"
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
@@ -134,9 +141,16 @@ const ForgotPassword = () => {
               <button
                 type="submit"
                 disabled={loading}
-                className="btn btn-success w-100 py-2 fw-semibold shadow-sm mb-3"
+                className="btn btn-success w-100 py-2 fw-semibold rounded-3 shadow-sm d-flex align-items-center justify-content-center gap-2 mb-3"
               >
-                {loading ? "Resetting..." : "Update Password"}
+                {loading ? (
+                  <>
+                    <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                    Resetting...
+                  </>
+                ) : (
+                  "Update Password"
+                )}
               </button>
             </form>
           </>
