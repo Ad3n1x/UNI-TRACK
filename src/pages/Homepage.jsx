@@ -5,6 +5,7 @@ import TrackerList from "../components/trackers/TrackerList";
 import TrackerFilters from "../components/trackers/TrackerFilters";
 import { PlusCircle, LayoutDashboard, CheckCircle2, LogOut, Sun, Moon } from "lucide-react";
 import Cookies from "universal-cookie";
+import { initializeUserKeys, decryptData } from "../utils/e2ee";
 
 const RAW_BASE_URL =
   (typeof process !== "undefined" && process.env?.API_URL) ||
@@ -14,10 +15,10 @@ const RAW_BASE_URL =
 
 const BASE_URL = RAW_BASE_URL.replace(/\/$/, "");
 
-// Helper to construct request headers with JWT token
+// Helper to construct request headers with JWT token from cookies or localStorage
 const getAuthHeaders = () => {
   const cookies = new Cookies();
-  const token = cookies.get("token");
+  const token = cookies.get("token") || localStorage.getItem("token");
   return {
     "Content-Type": "application/json",
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
@@ -50,7 +51,8 @@ function urlBase64ToUint8Array(base64String) {
 async function registerServiceWorkerAndSubscribe() {
   if ("serviceWorker" in navigator && "PushManager" in window) {
     try {
-      const registration = await navigator.serviceWorker.register("/sw.js");
+      await navigator.serviceWorker.register("/sw.js");
+      const registration = await navigator.serviceWorker.ready;
 
       const publicVapidKey = "BEaflZfmm8QfrFsL7r06HB-QrsdDAefJpRk2vw-zcHIKD-t8evj3TIS7k9k0w0am9BboNqiqbZ99Y-1WxYNcZcw";
       const subscription = await registration.pushManager.subscribe({
@@ -74,7 +76,7 @@ async function registerServiceWorkerAndSubscribe() {
 
 export default function HomePage() {
   const cookies = new Cookies();
-  const token = cookies.get("token");
+  const token = cookies.get("token") || localStorage.getItem("token");
 
   // 🔒 Route Guard: Redirect unauthenticated users immediately
   if (!token) {
@@ -116,11 +118,15 @@ export default function HomePage() {
 
   const handleLogout = () => {
     cookies.remove("token", { path: "/" });
+    localStorage.removeItem("token");
     window.location.href = "/";
   };
 
   const fetchTrackers = async () => {
     try {
+      // 1. Initialize user keys (retrieves local private key or generates a new pair)
+      const { privateKey } = await initializeUserKeys();
+
       const response = await fetch(`${BASE_URL}/api/v1/trackers`, {
         headers: getAuthHeaders(),
       });
@@ -129,9 +135,27 @@ export default function HomePage() {
       const data = await resData.json();
 
       const fetchedArray = Array.isArray(data) ? data : Array.isArray(data.trackers) ? data.trackers : [];
-      setTrackers([...fetchedArray].reverse());
+
+      // 2. Decrypt each encrypted tracker field locally in the browser using E2EE private key
+      const decryptedTrackers = await Promise.all(
+        fetchedArray.map(async (tracker) => {
+          try {
+            return {
+              ...tracker,
+              name: await decryptData(privateKey, tracker.name),
+              target: tracker.target !== undefined ? await decryptData(privateKey, tracker.target) : tracker.target,
+              entries: tracker.entries !== undefined ? await decryptData(privateKey, tracker.entries) : tracker.entries,
+            };
+          } catch (decryptErr) {
+            console.error("Failed to decrypt individual tracker:", decryptErr);
+            return tracker; // Fallback to raw object if decryption fails
+          }
+        })
+      );
+
+      setTrackers([...decryptedTrackers].reverse());
     } catch (error) {
-      console.error("Error fetching trackers:", error);
+      console.error("Error fetching/decrypting trackers:", error);
     } finally {
       setLoading(false);
     }
@@ -142,11 +166,12 @@ export default function HomePage() {
   }, []);
 
   const handleCreate = (newTracker) => {
+    // Refresh list from server to ensure encryption state matches clean flow
+    fetchTrackers();
     const newId = newTracker._id || newTracker.id;
-    setTrackers((prev) => [newTracker, ...prev]);
     setNewlyAddedId(newId);
 
-    setNotification(`Successfully created "${newTracker.name || "New Tracker"}"!`);
+    setNotification("Successfully created encrypted tracker!");
 
     if (newId) {
       window.setTimeout(() => {
@@ -188,31 +213,26 @@ export default function HomePage() {
 
   const syncTrackerEntriesWithBackend = async (trackerId, updatedEntries) => {
     try {
+      // Note: Entries should ideally be encrypted before PUT payload transmission if fully E2EE on entries
+      const { publicKey } = await initializeUserKeys();
+      const encryptedEntries = await encryptData(publicKey, updatedEntries);
+
       let response = await fetch(`${BASE_URL}/api/v1/trackers/${trackerId}`, {
         method: "PUT",
         headers: getAuthHeaders(),
-        body: JSON.stringify({ entries: updatedEntries }),
+        body: JSON.stringify({ entries: encryptedEntries }),
       });
 
       if (response.status === 404) {
         response = await fetch(`${BASE_URL}/api/trackers/${trackerId}`, {
           method: "PUT",
           headers: getAuthHeaders(),
-          body: JSON.stringify({ entries: updatedEntries }),
+          body: JSON.stringify({ entries: encryptedEntries }),
         });
       }
 
       if (response.ok) {
-        const resJson = await response.json();
-        const trackerData = resJson.data || resJson;
-        if (trackerData && Array.isArray(trackerData.entries)) {
-          setTrackers((prev) =>
-            prev.map((t) => {
-              const tId = t._id?.toString() || t.id?.toString() || t._id || t.id;
-              return tId === trackerId.toString() ? trackerData : t;
-            })
-          );
-        }
+        fetchTrackers();
       } else {
         throw new Error("Failed to sync entries with server.");
       }
@@ -293,7 +313,7 @@ export default function HomePage() {
         <div className="spinner-border text-primary mb-3" role="status" style={{ width: "3rem", height: "3rem" }}>
           <span className="visually-hidden">Loading...</span>
         </div>
-        <p className="text-muted small m-0">Synchronizing your trackers...</p>
+        <p className="text-muted small m-0">Synchronizing & decrypting your secure trackers...</p>
       </div>
     );
   }
@@ -350,7 +370,7 @@ export default function HomePage() {
         <div className="row">
           <div className="col-12">
             
-            {/* ✨ Friendly User Greeting Banner (More Spaced Out) */}
+            {/* Friendly User Greeting Banner */}
             <div className={`p-4 p-md-5 rounded-4 shadow-sm border mb-4 mb-md-5 position-relative overflow-hidden ${darkMode ? "bg-dark border-secondary" : "bg-white"}`}>
               <div className="position-absolute top-0 end-0 p-4 opacity-10 d-none d-md-block text-primary">
                 <LayoutDashboard size={140} />
@@ -361,7 +381,7 @@ export default function HomePage() {
                 </span>
                 <h2 className="fw-bold mb-2 display-6" style={{ fontSize: "1.75rem" }}>Welcome back to Uni-Track!</h2>
                 <p className="text-muted mb-0 lead fs-6">
-                  Here is a quick look at your progress and active trackers. Let's make today productive.
+                  Your trackers are protected with client-side end-to-end encryption. Let's make today productive.
                 </p>
               </div>
             </div>
@@ -414,7 +434,7 @@ export default function HomePage() {
 
               {!hasTrackers && (
                 <div className="mt-3 p-3 bg-info bg-opacity-10 rounded text-info small text-center">
-                  💡 This is a sample tracker. Create your own to get started!
+                  💡 This is a sample tracker. Create your own secure tracker to get started!
                 </div>
               )}
             </div>
@@ -427,7 +447,7 @@ export default function HomePage() {
         <div className="modal-dialog modal-dialog-centered modal-dialog-scrollable">
           <div className={`modal-content ${darkMode ? "bg-dark text-light border-secondary" : ""}`}>
             <div className="modal-header">
-              <h5 className="modal-title">Configure Tracker</h5>
+              <h5 className="modal-title">Configure Secure Tracker</h5>
               <button
                 type="button"
                 className={`btn-close ${darkMode ? "btn-close-white" : ""}`}

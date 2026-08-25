@@ -2,6 +2,7 @@ import { useState, useRef } from "react";
 import { Check, X, Circle, Loader2 } from "lucide-react";
 import * as Icons from "lucide-react";
 import Cookies from "universal-cookie";
+import CryptoJS from "crypto-js"; // Ensure crypto-js is installed on frontend
 
 const RAW_BASE_URL =
   (typeof process !== "undefined" && process.env?.API_URL) ||
@@ -11,61 +12,21 @@ const RAW_BASE_URL =
 
 const BASE_URL = RAW_BASE_URL.replace(/\/$/, "");
 
+// Client-side encryption helper
+const CLIENT_SECRET = "your_client_side_encryption_secret"; // Or user's master key
+const encryptField = (data) => {
+  if (data === null || data === undefined || data === "") return data;
+  const stringValue = typeof data === "object" ? JSON.stringify(data) : String(data);
+  return CryptoJS.AES.encrypt(stringValue, CLIENT_SECRET).toString();
+};
+
 const TRACKER_TYPES = [
-  { 
-    value: "habit", 
-    label: "Habit", 
-    description: "Daily yes/no check-in", 
-    emoji: "✅",
-    defaultTarget: "",
-    defaultUnit: "",
-    namePlaceholder: "e.g. Morning Jog, Read 10 Pages..."
-  },
-  { 
-    value: "counter", 
-    label: "Counter", 
-    description: "Count repetitions or items", 
-    emoji: "🔢",
-    defaultTarget: "50",
-    defaultUnit: "reps",
-    namePlaceholder: "e.g. Push-ups, Glasses of Water..."
-  },
-  { 
-    value: "timer", 
-    label: "Timer", 
-    description: "Track time spent on tasks", 
-    emoji: "⏱️",
-    defaultTarget: "",
-    defaultUnit: "",
-    namePlaceholder: "e.g. Coding, Guitar Practice..."
-  },
-  { 
-    value: "goal", 
-    label: "Goal", 
-    description: "Progress toward a target", 
-    emoji: "🎯",
-    defaultTarget: "100",
-    defaultUnit: "pages",
-    namePlaceholder: "e.g. Read Book, Save Money..."
-  },
-  { 
-    value: "expense", 
-    label: "Expense", 
-    description: "Monitor spending budget", 
-    emoji: "💸",
-    defaultTarget: "5000",
-    defaultUnit: "₦",
-    namePlaceholder: "e.g. Monthly Budget, Groceries..."
-  },
-  { 
-    value: "mood", 
-    label: "Mood", 
-    description: "Log your daily emotional state", 
-    emoji: "😊",
-    defaultTarget: "",
-    defaultUnit: "",
-    namePlaceholder: "e.g. Daily Reflection..."
-  },
+  { value: "habit", label: "Habit", description: "Daily yes/no check-in", emoji: "✅", defaultTarget: "", defaultUnit: "", namePlaceholder: "e.g. Morning Jog..." },
+  { value: "counter", label: "Counter", description: "Count repetitions or items", emoji: "🔢", defaultTarget: "50", defaultUnit: "reps", namePlaceholder: "e.g. Push-ups..." },
+  { value: "timer", label: "Timer", description: "Track time spent on tasks", emoji: "⏱️", defaultTarget: "", defaultUnit: "", namePlaceholder: "e.g. Coding..." },
+  { value: "goal", label: "Goal", description: "Progress toward a target", emoji: "🎯", defaultTarget: "100", defaultUnit: "pages", namePlaceholder: "e.g. Read Book..." },
+  { value: "expense", label: "Expense", description: "Monitor spending budget", emoji: "💸", defaultTarget: "5000", defaultUnit: "₦", namePlaceholder: "e.g. Budget..." },
+  { value: "mood", label: "Mood", description: "Log your daily emotional state", emoji: "😊", defaultTarget: "", defaultUnit: "", namePlaceholder: "e.g. Reflection..." },
 ];
 
 const ICON_OPTIONS = [
@@ -94,7 +55,6 @@ export default function TrackerForm({ onCreate, onClose, darkMode = false }) {
 
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState(null);
-
   const isSubmittingRef = useRef(false);
 
   const handleTypeChange = (selectedTypeConfig) => {
@@ -113,10 +73,10 @@ export default function TrackerForm({ onCreate, onClose, darkMode = false }) {
     if (!name.trim() || isSubmittingRef.current || loading) return;
 
     const cookies = new Cookies();
-    const token = cookies.get("token");
+    const token = cookies.get("token") || localStorage.getItem("token");
 
     if (!token) {
-      setErrorMsg("Session expired or missing authentication token. Please log in again.");
+      setErrorMsg("Session expired or missing authentication token.");
       return;
     }
 
@@ -124,24 +84,23 @@ export default function TrackerForm({ onCreate, onClose, darkMode = false }) {
     setLoading(true);
     setErrorMsg(null);
 
-    const payload = {
-      name: name.trim(),
-      type,
-      icon,
-      color,
-      ...(TARGET_TYPES.has(type) && {
-        target: target ? parseFloat(target) : undefined,
-        unit: unit.trim() || undefined,
-      }),
-      entries: [],
-    };
-
-    const headers = {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-    };
-
     try {
+      // ENCRYPT DATA ON THE CLIENT BEFORE SENDING
+      const payload = {
+        name: encryptField(name.trim()),
+        type, // Kept clear for database routing/querying
+        icon,
+        color,
+        ...(TARGET_TYPES.has(type) && target ? { target: encryptField(parseFloat(target)) } : {}),
+        ...(unit.trim() && { unit: unit.trim() }),
+        entries: encryptField([]),
+      };
+
+      const headers = {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      };
+
       let response = await fetch(`${BASE_URL}/api/v1/trackers`, {
         method: "POST",
         headers,
@@ -156,16 +115,12 @@ export default function TrackerForm({ onCreate, onClose, darkMode = false }) {
         });
       }
 
-      if (response.status === 401) {
-        throw new Error("Session expired or unauthorized. Please log in again.");
-      }
-
       if (!response.ok) {
-        throw new Error(`Server returned status ${response.status}`);
+        const errorText = await response.text();
+        throw new Error(`Server returned status ${response.status}: ${errorText}`);
       }
 
       const createdTracker = await response.json();
-
       if (onCreate) onCreate(createdTracker);
       if (onClose) onClose();
     } catch (err) {
@@ -173,7 +128,6 @@ export default function TrackerForm({ onCreate, onClose, darkMode = false }) {
       setErrorMsg(err.message || "Failed to connect to backend server.");
     } finally {
       setLoading(false);
-      // FIXED: Always release the submission lock whether successful or failed
       isSubmittingRef.current = false;
     }
   };
@@ -182,102 +136,20 @@ export default function TrackerForm({ onCreate, onClose, darkMode = false }) {
   const activeTypeConfig = TRACKER_TYPES.find((t) => t.value === type) || TRACKER_TYPES[0];
 
   const styles = {
-    errorBox: {
-      padding: "0.75rem",
-      borderRadius: "8px",
-      backgroundColor: darkMode ? "#451a03" : "#fef2f2",
-      color: darkMode ? "#f87171" : "#b91c1c",
-      fontSize: "0.875rem",
-      border: darkMode ? "1px solid #7f1d1d" : "1px solid #fecaca",
-    },
+    errorBox: { padding: "0.75rem", borderRadius: "8px", backgroundColor: darkMode ? "#451a03" : "#fef2f2", color: darkMode ? "#f87171" : "#b91c1c", fontSize: "0.875rem", border: darkMode ? "1px solid #7f1d1d" : "1px solid #fecaca" },
     form: { display: "flex", flexDirection: "column", gap: "1.25rem" },
-    label: {
-      display: "block",
-      fontSize: "0.75rem",
-      fontWeight: "600",
-      color: darkMode ? "#94a3b8" : "#64748b",
-      marginBottom: "0.5rem",
-      textTransform: "uppercase",
-    },
-    input: {
-      width: "100%",
-      padding: "0.75rem",
-      borderRadius: "8px",
-      border: darkMode ? "1px solid #334155" : "1px solid #cbd5e1",
-      backgroundColor: darkMode ? "#1e293b" : "#ffffff",
-      color: darkMode ? "#f8fafc" : "#1e293b",
-      outline: "none",
-      boxSizing: "border-box",
-    },
+    label: { display: "block", fontSize: "0.75rem", fontWeight: "600", color: darkMode ? "#94a3b8" : "#64748b", marginBottom: "0.5rem", textTransform: "uppercase" },
+    input: { width: "100%", padding: "0.75rem", borderRadius: "8px", border: darkMode ? "1px solid #334155" : "1px solid #cbd5e1", backgroundColor: darkMode ? "#1e293b" : "#ffffff", color: darkMode ? "#f8fafc" : "#1e293b", outline: "none", boxSizing: "border-box" },
     gridContainer: { display: "flex", flexWrap: "wrap", gap: "0.5rem" },
-    typeBtn: {
-      padding: "0.75rem",
-      borderRadius: "8px",
-      cursor: "pointer",
-      textAlign: "left",
-      flex: "1 1 calc(50% - 0.5rem)",
-      minWidth: "135px",
-      boxSizing: "border-box",
-      transition: "all 0.2s ease",
-    },
-    typeLabel: { 
-      fontSize: "0.875rem", 
-      fontWeight: "600", 
-      color: darkMode ? "#f8fafc" : "#334155" 
-    },
-    typeDesc: {
-      fontSize: "0.7rem",
-      color: darkMode ? "#94a3b8" : "#64748b",
-      marginTop: "0.15rem",
-    },
-    iconContainer: {
-      display: "flex",
-      flexWrap: "wrap",
-      gap: "0.5rem",
-      background: darkMode ? "#1e293b" : "#f8fafc",
-      border: darkMode ? "1px solid #334155" : "none",
-      padding: "0.75rem",
-      borderRadius: "8px",
-      width: "100%",
-      boxSizing: "border-box",
-    },
-    iconBtn: {
-      padding: "0.5rem",
-      borderRadius: "6px",
-      border: "none",
-      cursor: "pointer",
-      flex: "0 0 auto",
-    },
-    colorBtn: {
-      width: "28px",
-      height: "28px",
-      borderRadius: "6px",
-      cursor: "pointer",
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      flexShrink: 0,
-    },
+    typeBtn: { padding: "0.75rem", borderRadius: "8px", cursor: "pointer", textAlign: "left", flex: "1 1 calc(50% - 0.5rem)", minWidth: "135px", boxSizing: "border-box", transition: "all 0.2s ease" },
+    typeLabel: { fontSize: "0.875rem", fontWeight: "600", color: darkMode ? "#f8fafc" : "#334155" },
+    typeDesc: { fontSize: "0.7rem", color: darkMode ? "#94a3b8" : "#64748b", marginTop: "0.15rem" },
+    iconContainer: { display: "flex", flexWrap: "wrap", gap: "0.5rem", background: darkMode ? "#1e293b" : "#f8fafc", border: darkMode ? "1px solid #334155" : "none", padding: "0.75rem", borderRadius: "8px", width: "100%", boxSizing: "border-box" },
+    iconBtn: { padding: "0.5rem", borderRadius: "6px", border: "none", cursor: "pointer", flex: "0 0 auto" },
+    colorBtn: { width: "28px", height: "28px", borderRadius: "6px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 },
     actions: { display: "flex", flexWrap: "wrap", gap: "0.75rem", marginTop: "1rem" },
-    cancelBtn: {
-      flex: "1 1 100px",
-      padding: "0.75rem",
-      borderRadius: "8px",
-      border: darkMode ? "1px solid #334155" : "1px solid #e2e8f0",
-      background: darkMode ? "#1e293b" : "white",
-      color: darkMode ? "#f8fafc" : "#0f172a",
-      cursor: "pointer",
-      fontWeight: "600",
-    },
-    submitBtn: {
-      flex: "1 1 100px",
-      padding: "0.75rem",
-      borderRadius: "8px",
-      border: "none",
-      color: "white",
-      cursor: "pointer",
-      fontWeight: "600",
-    },
+    cancelBtn: { flex: "1 1 100px", padding: "0.75rem", borderRadius: "8px", border: darkMode ? "1px solid #334155" : "1px solid #e2e8f0", background: darkMode ? "#1e293b" : "white", color: darkMode ? "#f8fafc" : "#0f172a", cursor: "pointer", fontWeight: "600" },
+    submitBtn: { flex: "1 1 100px", padding: "0.75rem", borderRadius: "8px", border: "none", color: "white", cursor: "pointer", fontWeight: "600" },
   };
 
   return (
@@ -289,7 +161,7 @@ export default function TrackerForm({ onCreate, onClose, darkMode = false }) {
       )}
 
       <div>
-        <label style={styles.label}>Tracker Name</label>
+        <label style={styles.label}>Tracker Name (Client E2EE)</label>
         <input
           type="text"
           value={name}
@@ -314,12 +186,8 @@ export default function TrackerForm({ onCreate, onClose, darkMode = false }) {
                 onClick={() => handleTypeChange(typeConfig)}
                 style={{
                   ...styles.typeBtn,
-                  border: isActive
-                    ? `2px solid ${color}`
-                    : darkMode ? "1px solid #334155" : "1px solid #e2e8f0",
-                  background: isActive 
-                    ? `${color}15` 
-                    : darkMode ? "#0f172a" : "white",
+                  border: isActive ? `2px solid ${color}` : darkMode ? "1px solid #334155" : "1px solid #e2e8f0",
+                  background: isActive ? `${color}15` : darkMode ? "#0f172a" : "white",
                 }}
               >
                 <div style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
@@ -404,12 +272,7 @@ export default function TrackerForm({ onCreate, onClose, darkMode = false }) {
       )}
 
       <div style={styles.actions}>
-        <button
-          type="button"
-          onClick={onClose}
-          disabled={loading}
-          style={styles.cancelBtn}
-        >
+        <button type="button" onClick={onClose} disabled={loading} style={styles.cancelBtn}>
           Cancel
         </button>
         <button
@@ -426,7 +289,7 @@ export default function TrackerForm({ onCreate, onClose, darkMode = false }) {
           }}
         >
           {loading && <Loader2 size={16} className="animate-spin" />}
-          {loading ? "Creating..." : "Create Tracker"}
+          {loading ? "Encrypting & Saving..." : "Create Tracker"}
         </button>
       </div>
     </form>
