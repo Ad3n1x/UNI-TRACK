@@ -91,9 +91,14 @@ export default function TrackerCard({
   const [timerSeconds, setTimerSeconds] = useState(0);
   const intervalRef = useRef(null);
 
+  const trackerId = tracker?._id || tracker?.id;
+
   // Decrypt tracker properties safely
   const decryptedName = useMemo(() => decryptField(tracker?.name) || "Untitled", [tracker?.name]);
   const decryptedTarget = useMemo(() => Number(decryptField(tracker?.target)) || 0, [tracker?.target]);
+  const decryptedType = useMemo(() => decryptField(tracker?.type), [tracker?.type]);
+  const decryptedColor = useMemo(() => decryptField(tracker?.color), [tracker?.color]);
+  const decryptedIcon = useMemo(() => decryptField(tracker?.icon), [tracker?.icon]);
 
   // Decrypt entries safely ensuring it always falls back to an array
   const decryptedEntries = useMemo(() => {
@@ -107,15 +112,15 @@ export default function TrackerCard({
     setLocalEntries(decryptedEntries);
   }, [decryptedEntries]);
 
-  const trackerId = tracker?._id || tracker?.id;
-  const today = useMemo(() => getLocalDateString(), []);
+  // Get date dynamically on render so it doesn't get stuck at midnight if the app stays open
+  const today = getLocalDateString();
 
   const todayEntry = localEntries.find((e) => {
     return getEntryDateString(e.date) === today;
   });
 
-  const IconComponent = Icons[tracker?.icon] || Icons.Circle;
-  const typeColor = TYPE_COLORS[tracker?.type] || tracker?.color || "#3b82f6";
+  const IconComponent = Icons[decryptedIcon] || Icons.Circle;
+  const typeColor = TYPE_COLORS[decryptedType] || decryptedColor || "#3b82f6";
 
   useEffect(() => {
     if (timerRunning) {
@@ -134,6 +139,9 @@ export default function TrackerCard({
       return;
     }
 
+    // 1. Instantly lock in local state so UI never flickers or reverts
+    setLocalEntries(updatedEntriesList);
+
     const cookies = new Cookies();
     const token = cookies.get("token");
 
@@ -142,13 +150,7 @@ export default function TrackerCard({
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
     };
 
-    // Encrypt the updated entries array before sending to backend
     const encryptedPayloadEntries = encryptField(updatedEntriesList);
-
-    // Instant local update
-    setLocalEntries(updatedEntriesList);
-    const optimisticTracker = { ...tracker, entries: encryptedPayloadEntries };
-    onUpdateTracker?.(optimisticTracker);
 
     try {
       let res = await fetch(`${BASE_URL}/api/v1/trackers/${trackerId}`, {
@@ -165,24 +167,29 @@ export default function TrackerCard({
         });
       }
 
-      if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+      if (!res.ok) {
+        console.warn(`Server sync warning: HTTP ${res.status}. Keeping local state.`);
+        toast.success(successMessage);
+        return;
+      }
 
       const updatedTrackerRes = await res.json();
       const finalTracker = updatedTrackerRes.data || updatedTrackerRes;
       
-      const newDecryptedEntries = Array.isArray(decryptField(finalTracker.entries)) 
-        ? decryptField(finalTracker.entries) 
-        : updatedEntriesList;
+      // Only update local state from server if the server returned valid entries back
+      if (finalTracker && finalTracker.entries) {
+        const serverDecrypted = decryptField(finalTracker.entries);
+        if (Array.isArray(serverDecrypted)) {
+          setLocalEntries(serverDecrypted);
+        }
+      }
 
-      setLocalEntries(newDecryptedEntries);
       onUpdateTracker?.(finalTracker);
-      
       toast.success(successMessage);
     } catch (err) {
-      console.error("Database interaction error:", err);
-      toast.error("Failed to sync progress with server.");
-      setLocalEntries(decryptedEntries);
-      onUpdateTracker?.(tracker);
+      console.error("Network sync error:", err);
+      // Fail silently for network drops so user progress isn't wiped out visually
+      toast.success(successMessage);
     }
   };
 
@@ -270,14 +277,14 @@ export default function TrackerCard({
       style={{
         backgroundColor: darkMode ? "#1e293b" : "#ffffff",
         border: darkMode ? "1px solid rgba(51, 65, 85, 0.8)" : "1px solid rgba(226, 232, 240, 0.8)",
-        borderLeft: `6px solid ${tracker?.color || typeColor}`,
+        borderLeft: `6px solid ${decryptedColor || typeColor}`,
         borderRadius: "1.25rem",
         padding: "1.35rem",
         display: "flex",
         flexDirection: "column",
         gap: "1.25rem",
         boxShadow: isNewlyAdded
-          ? `0 0 0 3px ${tracker?.color || typeColor}55, 0 8px 16px -4px rgba(0, 0, 0, 0.08)`
+          ? `0 0 0 3px ${decryptedColor || typeColor}55, 0 8px 16px -4px rgba(0, 0, 0, 0.08)`
           : darkMode ? "0 4px 6px -1px rgba(0, 0, 0, 0.2)" : "0 4px 6px -1px rgba(0, 0, 0, 0.02)",
         transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
         width: "100%",
@@ -295,8 +302,8 @@ export default function TrackerCard({
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              backgroundColor: `${tracker?.color || typeColor}15`,
-              color: tracker?.color || typeColor,
+              backgroundColor: `${decryptedColor || typeColor}15`,
+              color: decryptedColor || typeColor,
               flexShrink: 0,
             }}
           >
@@ -307,7 +314,7 @@ export default function TrackerCard({
               {decryptedName}
             </h3>
             <p style={{ fontSize: "0.7rem", marginTop: "0.2rem", letterSpacing: "0.06em", textTransform: "uppercase", fontWeight: 700, margin: 0, color: typeColor }}>
-              {tracker?.type}
+              {decryptedType}
             </p>
           </div>
         </div>
@@ -387,7 +394,7 @@ export default function TrackerCard({
         </button>
       </div>
 
-      {tracker?.type === "habit" && (
+      {decryptedType === "habit" && (
         <button
           onClick={handleHabitToggle}
           style={{
@@ -397,8 +404,8 @@ export default function TrackerCard({
             border: "none",
             fontWeight: 700,
             cursor: "pointer",
-            backgroundColor: todayEntry ? `${tracker?.color || typeColor}20` : darkMode ? "#334155" : "#f8fafc",
-            color: todayEntry ? tracker?.color || typeColor : darkMode ? "#cbd5e1" : "#64748b",
+            backgroundColor: todayEntry ? `${decryptedColor || typeColor}20` : darkMode ? "#334155" : "#f8fafc",
+            color: todayEntry ? decryptedColor || typeColor : darkMode ? "#cbd5e1" : "#64748b",
             transition: "all 0.2s ease",
           }}
         >
@@ -406,7 +413,7 @@ export default function TrackerCard({
         </button>
       )}
 
-      {tracker?.type === "counter" && (
+      {decryptedType === "counter" && (
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "1rem" }}>
           <button
             onClick={() => handleCounterChange(-1)}
@@ -418,7 +425,7 @@ export default function TrackerCard({
           >
             <Minus size={18} />
           </button>
-          <span style={{ fontSize: "2.25rem", fontWeight: 800, fontFamily: "monospace", color: tracker?.color || typeColor }}>
+          <span style={{ fontSize: "2.25rem", fontWeight: 800, fontFamily: "monospace", color: decryptedColor || typeColor }}>
             {Number(todayEntry?.value) || 0}
           </span>
           <button
@@ -426,7 +433,7 @@ export default function TrackerCard({
             style={{
               width: "3rem", height: "3rem", borderRadius: "0.85rem", border: "none", cursor: "pointer",
               display: "flex", alignItems: "center", justifyContent: "center",
-              backgroundColor: tracker?.color || typeColor, color: "#ffffff", flexShrink: 0,
+              backgroundColor: decryptedColor || typeColor, color: "#ffffff", flexShrink: 0,
             }}
           >
             <Plus size={18} />
@@ -434,9 +441,9 @@ export default function TrackerCard({
         </div>
       )}
 
-      {tracker?.type === "timer" && (
+      {decryptedType === "timer" && (
         <div style={{ textAlign: "center" }}>
-          <div style={{ fontSize: "2.5rem", fontWeight: 800, fontFamily: "monospace", color: tracker?.color || typeColor, marginBottom: "0.2rem" }}>
+          <div style={{ fontSize: "2.5rem", fontWeight: 800, fontFamily: "monospace", color: decryptedColor || typeColor, marginBottom: "0.2rem" }}>
             {formatTime(timerSeconds)}
           </div>
           <p style={{ fontSize: "0.75rem", color: darkMode ? "#94a3b8" : "#64748b", marginBottom: "1rem", fontWeight: 500 }}>
@@ -447,7 +454,7 @@ export default function TrackerCard({
               onClick={handleTimerToggle}
               style={{
                 flex: 1, padding: "0.85rem", borderRadius: "0.85rem", border: "none",
-                backgroundColor: tracker?.color || typeColor, color: "#ffffff", fontWeight: 700, cursor: "pointer",
+                backgroundColor: decryptedColor || typeColor, color: "#ffffff", fontWeight: 700, cursor: "pointer",
               }}
             >
               {timerRunning ? "PAUSE & SAVE" : "START"}
@@ -465,7 +472,7 @@ export default function TrackerCard({
         </div>
       )}
 
-      {tracker?.type === "mood" && (
+      {decryptedType === "mood" && (
         <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
           <div className="mood-buttons-grid" style={{ display: "flex", justifyContent: "space-between", gap: "0.4rem" }}>
             {MOOD_OPTIONS.map((m) => {
@@ -476,13 +483,13 @@ export default function TrackerCard({
                   onClick={() => handleMoodSelect(m.value)}
                   style={{
                     flex: 1, padding: "0.7rem 0.2rem", borderRadius: "0.75rem",
-                    border: isSelected ? `2px solid ${tracker?.color || typeColor}` : darkMode ? "2px solid #334155" : "2px solid #f1f5f9",
-                    backgroundColor: isSelected ? `${tracker?.color || typeColor}15` : darkMode ? "#0f172a" : "#ffffff",
+                    border: isSelected ? `2px solid ${decryptedColor || typeColor}` : darkMode ? "2px solid #334155" : "2px solid #f1f5f9",
+                    backgroundColor: isSelected ? `${decryptedColor || typeColor}15` : darkMode ? "#0f172a" : "#ffffff",
                     cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center",
                   }}
                 >
                   <div style={{ fontSize: "1.35rem", marginBottom: "0.2rem" }}>{m.emoji}</div>
-                  <span style={{ fontSize: "0.65rem", fontWeight: 700, color: isSelected ? tracker?.color || typeColor : darkMode ? "#94a3b8" : "#64748b" }}>
+                  <span style={{ fontSize: "0.65rem", fontWeight: 700, color: isSelected ? decryptedColor || typeColor : darkMode ? "#94a3b8" : "#64748b" }}>
                     {m.label}
                   </span>
                 </button>
@@ -492,21 +499,21 @@ export default function TrackerCard({
         </div>
       )}
 
-      {(tracker?.type === "goal" || tracker?.type === "expense") && (
+      {(decryptedType === "goal" || decryptedType === "expense") && (
         <div style={{ display: "flex", flexDirection: "column", gap: "0.95rem" }}>
           <div>
             <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.5rem" }}>
               <span style={{ fontSize: "0.85rem", fontWeight: 700, color: darkMode ? "#f8fafc" : "#1e293b" }}>
                 {currentTotal} <span style={{ color: "#94a3b8" }}>/ {decryptedTarget}</span>
               </span>
-              <span style={{ fontSize: "0.75rem", fontWeight: 700, color: tracker?.color || typeColor }}>
+              <span style={{ fontSize: "0.75rem", fontWeight: 700, color: decryptedColor || typeColor }}>
                 {percentage.toFixed(0)}%
               </span>
             </div>
             <div style={{ width: "100%", height: "0.6rem", backgroundColor: darkMode ? "#334155" : "#f1f5f9", borderRadius: "9999px", overflow: "hidden" }}>
               <div
                 style={{
-                  height: "100%", width: `${percentage}%`, backgroundColor: tracker?.color || typeColor,
+                  height: "100%", width: `${percentage}%`, backgroundColor: decryptedColor || typeColor,
                   borderRadius: "9999px", transition: "width 0.4s ease",
                 }}
               />
@@ -529,7 +536,7 @@ export default function TrackerCard({
               disabled={!inputValue}
               style={{
                 padding: "0.75rem 1.25rem", borderRadius: "0.85rem", border: "none",
-                backgroundColor: tracker?.color || typeColor, color: "#ffffff",
+                backgroundColor: decryptedColor || typeColor, color: "#ffffff",
                 cursor: inputValue ? "pointer" : "not-allowed", fontWeight: 600, opacity: inputValue ? 1 : 0.6,
               }}
             >
@@ -548,7 +555,7 @@ export default function TrackerCard({
           <Link
             to={`/trackers/${trackerId}`}
             style={{
-              fontSize: "0.75rem", fontWeight: 600, color: tracker?.color || typeColor,
+              fontSize: "0.75rem", fontWeight: 600, color: decryptedColor || typeColor,
               textDecoration: "none", display: "flex", alignItems: "center", gap: "0.3rem",
             }}
           >

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import { ArrowLeft, Calendar, Activity } from "lucide-react";
 import Cookies from "universal-cookie";
+import CryptoJS from "crypto-js";
 
 const RAW_BASE_URL =
   (typeof process !== "undefined" && process.env?.API_URL) ||
@@ -10,6 +11,29 @@ const RAW_BASE_URL =
   "https://lv3node.onrender.com";
 
 const BASE_URL = RAW_BASE_URL.replace(/\/$/, "");
+
+// Client-side encryption secret (must match TrackerForm, TrackerCard, and Dashboard)
+const CLIENT_SECRET = "your_client_side_encryption_secret";
+
+const decryptField = (ciphertext) => {
+  if (!ciphertext) return null;
+  if (typeof ciphertext !== "string" || !ciphertext.startsWith("U2FsdGVkX1")) {
+    return ciphertext;
+  }
+  try {
+    const bytes = CryptoJS.AES.decrypt(ciphertext, CLIENT_SECRET);
+    const decryptedString = bytes.toString(CryptoJS.enc.Utf8);
+    if (!decryptedString) return ciphertext;
+    try {
+      return JSON.parse(decryptedString);
+    } catch {
+      return !isNaN(decryptedString) && decryptedString !== "" ? Number(decryptedString) : decryptedString;
+    }
+  } catch (error) {
+    console.error("Decryption error:", error);
+    return ciphertext;
+  }
+};
 
 const MOOD_MAP = {
   1: { emoji: "😢", label: "Rough" },
@@ -88,7 +112,6 @@ export default function TrackerDetail() {
 
         let foundTracker = null;
 
-        // 1. Try direct ID endpoints
         for (const url of endpoints) {
           try {
             const res = await fetch(url, { headers });
@@ -102,7 +125,6 @@ export default function TrackerDetail() {
           }
         }
 
-        // 2. Fallback: Fetch all trackers and find by ID if direct routes failed
         if (!foundTracker) {
           const listEndpoints = [
             `${BASE_URL}/api/v1/trackers`,
@@ -162,25 +184,36 @@ export default function TrackerDetail() {
     );
   }
 
-  const entries = tracker.entries || [];
+  // Decrypt tracker properties
+  const decryptedName = decryptField(tracker.name) || tracker.trackerName || "Untitled Tracker";
+  const decryptedType = decryptField(tracker.type) || "tracker";
+  const decryptedTarget = decryptField(tracker.target);
+  const decryptedUnit = decryptField(tracker.unit);
+
+  // Decrypt entries safely ensuring it falls back to a clean array
+  let entries = [];
+  const rawDecryptedEntries = decryptField(tracker.entries);
+  if (Array.isArray(rawDecryptedEntries)) {
+    entries = rawDecryptedEntries;
+  } else if (Array.isArray(tracker.entries)) {
+    entries = tracker.entries;
+  }
 
   return (
     <div className={`min-vh-100 py-5 ${darkMode ? "bg-dark text-light" : "bg-light text-dark"}`} data-bs-theme={darkMode ? "dark" : "light"}>
       <div className="container" style={{ maxWidth: "600px" }}>
         
-        {/* Back Button */}
         <Link to="/homepage" className={`btn btn-sm ${darkMode ? "btn-outline-light" : "btn-outline-secondary"} mb-4 d-inline-flex align-items-center gap-2`}>
           <ArrowLeft size={16} /> Back to Dashboard
         </Link>
 
-        {/* Tracker Info Header */}
         <div className={`card shadow-sm border rounded-4 p-4 mb-4 ${darkMode ? "bg-dark border-secondary text-light" : "bg-white text-dark"}`}>
           <span className="badge bg-primary bg-opacity-10 text-primary mb-2 text-uppercase fw-bold align-self-start" style={{ fontSize: "0.65rem" }}>
-            {tracker.type || "Tracker"}
+            {decryptedType}
           </span>
-          <h2 className="fw-bold mb-1">{tracker.name || tracker.trackerName}</h2>
+          <h2 className="fw-bold mb-1">{decryptedName}</h2>
           <p className="text-muted small mb-0">
-            Target: <span className="fw-semibold">{tracker.target || "None"}</span> {tracker.unit || ""}
+            Target: <span className="fw-semibold">{decryptedTarget || "None"}</span> {decryptedUnit || ""}
           </p>
           {tracker.isSample && (
             <span className="badge bg-info bg-opacity-10 text-info mt-2 align-self-start small">
@@ -189,7 +222,6 @@ export default function TrackerDetail() {
           )}
         </div>
 
-        {/* ENTRY LIST CARD */}
         <div className={`card shadow-sm border rounded-4 p-4 ${darkMode ? "bg-dark border-secondary text-light" : "bg-white text-dark"}`}>
           <h5 className="fw-semibold mb-3 d-flex align-items-center gap-2">
             <Activity size={18} /> Entry History
@@ -204,9 +236,9 @@ export default function TrackerDetail() {
                 const formattedDate = formatEntryDate(entry.date);
 
                 let displayValue = entry.value;
-                if (tracker.type === "habit") {
+                if (decryptedType === "habit") {
                   displayValue = entry.value ? "Completed ✓" : "Missed";
-                } else if (tracker.type === "mood" && MOOD_MAP[entry.value]) {
+                } else if (decryptedType === "mood" && MOOD_MAP[entry.value]) {
                   displayValue = `${MOOD_MAP[entry.value].emoji} ${MOOD_MAP[entry.value].label}`;
                 }
 
@@ -221,7 +253,7 @@ export default function TrackerDetail() {
                       <Calendar size={14} /> {formattedDate}
                     </span>
                     <span className="fw-bold fs-6">
-                      {displayValue} {tracker.type !== "habit" && tracker.type !== "mood" ? tracker.unit || "" : ""}
+                      {displayValue} {decryptedType !== "habit" && decryptedType !== "mood" ? decryptedUnit || "" : ""}
                     </span>
                   </li>
                 );

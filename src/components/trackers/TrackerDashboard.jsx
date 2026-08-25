@@ -1,14 +1,44 @@
 import React, { useMemo } from "react";
 import { TrendingUp, Target, CheckCircle, LayoutGrid, RefreshCw } from "lucide-react";
+import CryptoJS from "crypto-js";
+
+// Must match the secret used in TrackerCard and TrackerForm
+const CLIENT_SECRET = "your_client_side_encryption_secret";
+
+const decryptField = (ciphertext) => {
+  if (!ciphertext) return null;
+  if (typeof ciphertext !== "string" || !ciphertext.startsWith("U2FsdGVkX1")) {
+    return ciphertext;
+  }
+  try {
+    const bytes = CryptoJS.AES.decrypt(ciphertext, CLIENT_SECRET);
+    const decryptedString = bytes.toString(CryptoJS.enc.Utf8);
+    if (!decryptedString) return ciphertext;
+    try {
+      return JSON.parse(decryptedString);
+    } catch {
+      return !isNaN(decryptedString) && decryptedString !== "" ? Number(decryptedString) : decryptedString;
+    }
+  } catch (error) {
+    console.error("Decryption error:", error);
+    return ciphertext;
+  }
+};
 
 export default function TrackerDashboard({ trackers = [], darkMode = false }) {
-  // BULLETPROOF DEBUGGER: Open your browser console (F12) to see if 
-  // your parent component is actually passing updated trackers when you click!
-  console.log("TrackerDashboard Rendered with Trackers:", trackers);
+  console.log("TrackerDashboard Rendered with Raw Trackers:", trackers);
 
   const { total, completedToday, withGoals, activeStreak } = useMemo(() => {
     const safeTrackers = Array.isArray(trackers) ? trackers : [];
-    
+
+    // Decrypt and normalize trackers so dashboard can read entries and target properties
+    const decryptedTrackers = safeTrackers.map((t) => ({
+      ...t,
+      type: decryptField(t?.type),
+      target: decryptField(t?.target),
+      entries: Array.isArray(decryptField(t?.entries)) ? decryptField(t?.entries) : [],
+    }));
+
     // Universal date string formatter (YYYY-MM-DD)
     const getFormattedDate = (val) => {
       if (!val) return "";
@@ -26,11 +56,11 @@ export default function TrackerDashboard({ trackers = [], darkMode = false }) {
     };
 
     const todayStr = getFormattedDate(new Date());
-    const totalCount = safeTrackers.length;
+    const totalCount = decryptedTrackers.length;
 
     // Bulletproof completion checker for a specific date string
     const isCompletedOnDate = (tracker, targetDateStr) => {
-      // Check 1: tracker.entries is an array (objects or strings)
+      // Check 1: decrypted tracker.entries array
       if (Array.isArray(tracker.entries)) {
         const found = tracker.entries.some((entry) => {
           if (!entry) return false;
@@ -41,7 +71,7 @@ export default function TrackerDashboard({ trackers = [], darkMode = false }) {
           // If entry is an object with date/timestamp and optional value
           const entryDate = entry.date || entry.createdAt || entry.timestamp;
           if (!entryDate) return false;
-          
+
           const matchesDate = getFormattedDate(entryDate) === targetDateStr;
           if (!matchesDate) return false;
 
@@ -53,7 +83,7 @@ export default function TrackerDashboard({ trackers = [], darkMode = false }) {
         if (found) return true;
       }
 
-      // Check 2: tracker.completedDates or tracker.history is an array of strings
+      // Check 2: alternative list properties
       const altLists = tracker.completedDates || tracker.history || tracker.dates;
       if (Array.isArray(altLists)) {
         return altLists.some((d) => getFormattedDate(d) === targetDateStr);
@@ -62,13 +92,13 @@ export default function TrackerDashboard({ trackers = [], darkMode = false }) {
       return false;
     };
 
-    const completedCount = safeTrackers.filter((t) => isCompletedOnDate(t, todayStr)).length;
-    const goalsCount = safeTrackers.filter((t) => t.target != null && t.target !== "").length;
+    const completedCount = decryptedTrackers.filter((t) => isCompletedOnDate(t, todayStr)).length;
+    const goalsCount = decryptedTrackers.filter((t) => t.target != null && t.target !== "").length;
 
     // Streak calculation
     let streak = 0;
-    const habitTrackers = safeTrackers.filter((t) => t.type === "habit" || t.entries || t.completedDates);
-    
+    const habitTrackers = decryptedTrackers.filter((t) => t.type === "habit" || t.entries || t.completedDates);
+
     if (habitTrackers.length > 0) {
       let checkDate = new Date();
 
@@ -164,8 +194,8 @@ export default function TrackerDashboard({ trackers = [], darkMode = false }) {
               display: "flex",
               flexDirection: "column",
               gap: "16px",
-              boxShadow: darkMode 
-                ? "0 4px 6px -1px rgba(0, 0, 0, 0.2)" 
+              boxShadow: darkMode
+                ? "0 4px 6px -1px rgba(0, 0, 0, 0.2)"
                 : `0 4px 6px -1px rgba(0,0,0,0.05), 0 0 0 1px ${card.color}22`,
             }}
           >
@@ -224,26 +254,6 @@ export default function TrackerDashboard({ trackers = [], darkMode = false }) {
             </div>
           </div>
         ))}
-      </div>
-
-      {/* Info notice prompting a refresh if counts don't immediately update */}
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: "8px",
-          marginTop: "12px",
-          padding: "10px 14px",
-          borderRadius: "10px",
-          border: darkMode ? "1px solid rgba(51, 65, 85, 0.8)" : "1px solid rgba(59, 130, 246, 0.2)",
-          backgroundColor: darkMode ? "rgba(51, 65, 85, 0.3)" : "rgba(59, 130, 246, 0.06)",
-          color: darkMode ? "#38bdf8" : "#2563eb",
-          fontSize: "0.8rem",
-          fontFamily: "'DM Mono', monospace",
-        }}
-      >
-        <RefreshCw size={14} style={{ flexShrink: 0 }} />
-        <span>Please reload the page if "Done Today" counts don't instantly reflect your changes.</span>
       </div>
     </div>
   );
