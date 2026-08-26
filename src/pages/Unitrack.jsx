@@ -1,6 +1,6 @@
 import React from "react";
 import { Link } from "react-router-dom";
-import { LayoutDashboard, ShieldCheck, Zap, Bell, ArrowRight, UserPlus, LogIn, CheckCircle2, Target, Lock, Code2 } from "lucide-react";
+import { LayoutDashboard, ShieldCheck, Zap, Bell, ArrowRight, UserPlus, LogIn, CheckCircle2, Target, Lock } from "lucide-react";
 
 export default function UnitrackPage() {
   return (
@@ -10,27 +10,11 @@ export default function UnitrackPage() {
         {/* Top Navigation / Auth Quick Links */}
         <div className="d-flex flex-column flex-sm-row justify-content-between align-items-center gap-3 mb-4 p-3 bg-white rounded-4 shadow-sm border">
           <div className="d-flex align-items-center gap-2 text-primary">
-            <LayoutDashboard size={22} className="flex-shrink-0" style={{ color: "#4f46e5" }} />
-            <div className="d-flex flex-column">
-              <span className="fw-bolder fs-5 lh-1" style={{ 
-                letterSpacing: "-0.5px", 
-                whiteSpace: "nowrap",
-                background: "linear-gradient(90deg, #111827 0%, #4f46e5 100%)",
-                WebkitBackgroundClip: "text",
-                WebkitTextFillColor: "transparent"
-              }}>
-                UNI-TRACK
-              </span>
-              <span className="fw-bold" style={{ fontSize: "0.65rem", letterSpacing: "1px", whiteSpace: "nowrap", color: "#6b7280" }}>
-                BY <span style={{ 
-                  fontFamily: "'JetBrains Mono', 'Fira Code', monospace",
-                  fontWeight: "900",
-                  background: "linear-gradient(135deg, #4f46e5 0%, #ec4899 100%)",
-                  WebkitBackgroundClip: "text",
-                  WebkitTextFillColor: "transparent"
-                }}>AD3N1X</span>
-              </span>
-            </div>
+            <LayoutDashboard size={22} className="flex-shrink-0" />
+            <span className="fw-bold fs-5" style={{ letterSpacing: "-0.3px", whiteSpace: "nowrap" }}>UNI-TRACK</span>
+            <span className="fw-bold ms-2" style={{ fontSize: "0.65rem", letterSpacing: "1px", color: "#6b7280", paddingTop: "4px" }}>
+              BY <span style={{ fontFamily: "'JetBrains Mono', 'Fira Code', monospace", fontWeight: "900", background: "linear-gradient(135deg, #4f46e5 0%, #ec4899 100%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>AD3N1X</span>
+            </span>
           </div>
           <div className="d-flex gap-2 w-100 w-sm-auto justify-content-end">
             <Link to="/login" className="btn btn-outline-primary btn-sm d-flex align-items-center justify-content-center gap-1 px-3 fw-semibold flex-grow-1 flex-sm-grow-0">
@@ -49,14 +33,8 @@ export default function UnitrackPage() {
             <Zap size={13} className="flex-shrink-0" /> The Ultimate Productivity & Privacy Ecosystem
           </div>
 
-          <h1 className="fw-bolder mb-3 fs-3 fs-md-2 text-dark" style={{ letterSpacing: "-0.7px", lineHeight: "1.2" }}>
-            <span style={{ 
-              background: "linear-gradient(90deg, #4f46e5 0%, #ec4899 100%)",
-              WebkitBackgroundClip: "text",
-              WebkitTextFillColor: "transparent"
-            }}>
-              UNI-TRACK
-            </span> – Smart End-to-End Encrypted Tracking System
+          <h1 className="fw-bold mb-3 fs-3 fs-md-2 text-dark" style={{ letterSpacing: "-0.7px", lineHeight: "1.2" }}>
+            UNI-TRACK – Smart End-to-End Encrypted Tracking System
           </h1>
 
           <p className="text-secondary mb-4 fs-6 fs-md-5" style={{ lineHeight: "1.65", fontWeight: "400" }}>
@@ -126,7 +104,7 @@ export default function UnitrackPage() {
           {/* The Story / Why UNITRACK Was Created Section */}
           <div className="p-4 rounded-4 bg-primary bg-opacity-10 border border-primary border-opacity-25">
             <div className="d-flex align-items-center gap-2 text-primary mb-3 fw-bold fs-6" style={{ letterSpacing: "-0.2px" }}>
-              <Target size={19} /> Why UNITRACK Was Created
+              <Target size={19} /> Why UNI-TRACK Was Created
             </div>
             <p className="text-secondary small mb-3" style={{ lineHeight: "1.7", fontSize: "0.9rem" }}>
               Most productivity apps fall into a bad habit: they are bloated with social distractions or they sustain themselves by harvesting and monetizing your personal behavioral data. 
@@ -143,21 +121,11 @@ export default function UnitrackPage() {
         </div>
 
         {/* Footer info */}
-        <div className="text-center text-muted small pb-3 d-flex flex-column gap-1" style={{ fontSize: "0.85rem" }}>
-          <div>&copy; {new Date().getFullYear()} UNI-TRACK. Built for privacy, speed, and focus.</div>
-          <div className="text-secondary fw-semibold d-inline-flex align-items-center justify-content-center gap-1">
-            <Code2 size={14} style={{ color: "#4f46e5" }} /> Crafted with precision by 
-            <span style={{ 
-              fontFamily: "'JetBrains Mono', 'Fira Code', monospace",
-              fontWeight: "900",
-              background: "linear-gradient(135deg, #4f46e5 0%, #ec4899 100%)",
-              WebkitBackgroundClip: "text",
-              WebkitTextFillColor: "transparent",
-              letterSpacing: "1px"
-            }}>
-              AD3N1X
-            </span>
-          </div>
+        <div className="text-center text-muted small pb-3" style={{ fontSize: "0.85rem" }}>
+          &copy; {new Date().getFullYear()} UNITRACK. Built for privacy, speed, and focus.<br />
+          <span className="text-secondary fw-semibold mt-2 d-inline-block">
+            Crafted with precision by <span style={{ fontFamily: "'JetBrains Mono', 'Fira Code', monospace", fontWeight: "900", background: "linear-gradient(135deg, #4f46e5 0%, #ec4899 100%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", letterSpacing: "1px" }}>AD3N1X</span>
+          </span>
         </div>
       </div>
     </div>
