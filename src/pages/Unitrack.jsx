@@ -10,8 +10,8 @@ export default function UnitrackPage() {
         {/* Top Navigation / Auth Quick Links */}
         <div className="d-flex flex-column flex-sm-row justify-content-between align-items-center gap-3 mb-4 p-3 bg-white rounded-4 shadow-sm border">
           <div className="d-flex align-items-center gap-2 text-primary">
-            <LayoutDashboard size={22} />
-            <span className="fw-bold fs-5" style={{ letterSpacing: "-0.3px" }}>UNI-TRACK</span>
+            <LayoutDashboard size={22} className="flex-shrink-0" />
+            <span className="fw-bold fs-5" style={{ letterSpacing: "-0.3px", whiteSpace: "nowrap" }}>UNI-TRACK</span>
           </div>
           <div className="d-flex gap-2 w-100 w-sm-auto justify-content-end">
             <Link to="/login" className="btn btn-outline-primary btn-sm d-flex align-items-center justify-content-center gap-1 px-3 fw-semibold flex-grow-1 flex-sm-grow-0">
