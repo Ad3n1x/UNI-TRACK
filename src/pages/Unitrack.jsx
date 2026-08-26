@@ -35,7 +35,7 @@ export default function UnitrackPage() {
           </h1>
 
           <p className="lead text-muted mb-4 fs-6 fs-md-5" style={{ lineHeight: "1.6" }}>
-            <strong>UNITRACK</strong> (widely searched as UniTrack, unitrack, uni-track, or uni track) is a high-performance, React-powered tracking ecosystem engineered specifically for absolute user privacy, zero lag, and total control over your daily habits, goals, tasks, and metrics.
+            <strong>UNITRACK</strong> is a high-performance, React-powered tracking ecosystem engineered specifically for absolute user privacy, zero lag, and total control over your daily habits, goals, tasks, and metrics.
           </p>
 
           <div className="d-flex flex-column flex-sm-row gap-3 mb-4">
