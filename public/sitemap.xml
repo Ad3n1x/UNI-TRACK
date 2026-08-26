@@ -2,33 +2,23 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 
   <url>
-    <loc>https://your-domain.com/</loc>
-    <changefreq>monthly</changefreq>
-    <priority>1.0</priority>
+    <loc>https://my-lv3-project.vercel.app/</loc>
   </url>
 
   <url>
-    <loc>https://your-domain.com/login</loc>
-    <changefreq>monthly</changefreq>
-    <priority>0.9</priority>
+    <loc>https://my-lv3-project.vercel.app/login</loc>
   </url>
 
   <url>
-    <loc>https://your-domain.com/register</loc>
-    <changefreq>monthly</changefreq>
-    <priority>0.8</priority>
+    <loc>https://my-lv3-project.vercel.app/register</loc>
   </url>
 
   <url>
-    <loc>https://your-domain.com/homepage</loc>
-    <changefreq>weekly</changefreq>
-    <priority>0.9</priority>
+    <loc>https://my-lv3-project.vercel.app/homepage</loc>
   </url>
 
   <url>
-    <loc>https://your-domain.com/forgot-password</loc>
-    <changefreq>yearly</changefreq>
-    <priority>0.5</priority>
+    <loc>https://my-lv3-project.vercel.app/forgot-password</loc>
   </url>
 
 </urlset>
