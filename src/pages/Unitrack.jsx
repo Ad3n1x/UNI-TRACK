@@ -9,20 +9,28 @@ export default function UnitrackPage() {
         
         {/* Top Navigation / Auth Quick Links */}
         <div className="d-flex flex-column flex-sm-row justify-content-between align-items-center gap-3 mb-4 p-3 bg-white rounded-4 shadow-sm border">
-          <div className="d-flex align-items-center gap-2 text-primary">
-            <LayoutDashboard size={22} className="flex-shrink-0" />
-            <span className="fw-bold fs-5" style={{ letterSpacing: "-0.3px", whiteSpace: "nowrap" }}>UNI-TRACK</span>
-            <span className="badge rounded-pill ms-1" style={{
-              background: "linear-gradient(135deg, #4f46e5 0%, #ec4899 100%)",
-              color: "#fff",
-              fontSize: "0.65rem",
-              letterSpacing: "1px",
-              fontFamily: "ui-monospace, 'SF Mono', Menlo, Monaco, Consolas, monospace",
-              boxShadow: "0 2px 4px rgba(236,72,153,0.2)"
-            }}>
-              BY AD3N1X
-            </span>
+          <div className="d-flex align-items-center gap-2">
+            <LayoutDashboard size={24} className="text-primary flex-shrink-0" />
+            
+            {/* Stacked Brand Container */}
+            <div className="d-flex flex-column align-items-start leading-tight">
+              <span className="fw-bold fs-5 text-primary" style={{ letterSpacing: "-0.3px", lineHeight: "1.1" }}>
+                UNI-TRACK
+              </span>
+              <span className="badge rounded-pill mt-1" style={{
+                background: "linear-gradient(135deg, #4f46e5 0%, #ec4899 100%)",
+                color: "#fff",
+                fontSize: "0.6rem",
+                letterSpacing: "1px",
+                fontFamily: "ui-monospace, 'SF Mono', Menlo, Monaco, Consolas, monospace",
+                boxShadow: "0 2px 4px rgba(236,72,153,0.2)",
+                padding: "2px 8px"
+              }}>
+                BY AD3N1X
+              </span>
+            </div>
           </div>
+          
           <div className="d-flex gap-2 w-100 w-sm-auto justify-content-end">
             <Link to="/login" className="btn btn-outline-primary btn-sm d-flex align-items-center justify-content-center gap-1 px-3 fw-semibold flex-grow-1 flex-sm-grow-0">
               <LogIn size={15} /> Login
