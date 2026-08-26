@@ -12,20 +12,10 @@ export default function UnitrackPage() {
           <div className="d-flex align-items-center gap-2">
             <LayoutDashboard size={24} className="text-primary flex-shrink-0" />
             
-            {/* Stacked Brand Container */}
-            <div className="d-flex flex-column align-items-start leading-tight">
-              <span className="fw-bold fs-5 text-primary" style={{ letterSpacing: "-0.3px", lineHeight: "1.1" }}>
-                UNI-TRACK
-              </span>
-              <span className="badge rounded-pill mt-1" style={{
-                background: "linear-gradient(135deg, #4f46e5 0%, #ec4899 100%)",
-                color: "#fff",
-                fontSize: "0.6rem",
-                letterSpacing: "1px",
-                fontFamily: "ui-monospace, 'SF Mono', Menlo, Monaco, Consolas, monospace",
-                boxShadow: "0 2px 4px rgba(236,72,153,0.2)",
-                padding: "2px 8px"
-              }}>
+            {/* Stacked Minimalist Brand Container */}
+            <div className="d-flex flex-column">
+              <span className="fw-bold fs-5 text-dark lh-1" style={{ letterSpacing: "-0.3px" }}>UNI-TRACK</span>
+              <span className="text-secondary fw-semibold mt-1" style={{ fontSize: "0.65rem", letterSpacing: "0.5px" }}>
                 BY AD3N1X
               </span>
             </div>
@@ -136,20 +126,10 @@ export default function UnitrackPage() {
         </div>
 
         {/* Footer info */}
-        <div className="text-center text-muted small pb-3 d-flex flex-column align-items-center gap-2" style={{ fontSize: "0.85rem" }}>
+        <div className="text-center text-muted small pb-3 d-flex flex-column align-items-center gap-1" style={{ fontSize: "0.85rem" }}>
           <div>&copy; {new Date().getFullYear()} UNITRACK. Built for privacy, speed, and focus.</div>
-          <div className="fw-semibold d-inline-flex align-items-center gap-1">
-            <span style={{ color: "#9ca3af" }}>Engineered by</span>
-            <span style={{ 
-              fontFamily: "ui-monospace, 'SF Mono', Menlo, Monaco, Consolas, monospace",
-              fontWeight: "900",
-              background: "linear-gradient(135deg, #4f46e5 0%, #ec4899 100%)",
-              WebkitBackgroundClip: "text",
-              WebkitTextFillColor: "transparent",
-              letterSpacing: "0.5px"
-            }}>
-              AD3N1X
-            </span>
+          <div className="text-secondary" style={{ fontSize: "0.75rem", letterSpacing: "0.3px" }}>
+            Crafted by <span className="fw-semibold text-dark">AD3N1X</span>
           </div>
         </div>
       </div>
