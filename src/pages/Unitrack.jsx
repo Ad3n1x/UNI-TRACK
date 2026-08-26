@@ -12,10 +12,10 @@ export default function UnitrackPage() {
           <div className="d-flex align-items-center gap-2">
             <LayoutDashboard size={24} className="text-primary flex-shrink-0" />
             
-            {/* Stacked Minimalist Brand Container */}
-            <div className="d-flex flex-column">
-              <span className="fw-bold fs-5 text-dark lh-1" style={{ letterSpacing: "-0.3px" }}>UNI-TRACK</span>
-              <span className="text-secondary fw-semibold mt-1" style={{ fontSize: "0.65rem", letterSpacing: "0.5px" }}>
+            {/* Minimalist One-Line Brand Container */}
+            <div className="d-flex align-items-baseline gap-2">
+              <span className="fw-bold fs-5 text-dark" style={{ letterSpacing: "-0.3px", whiteSpace: "nowrap" }}>UNI-TRACK</span>
+              <span className="text-secondary fw-semibold" style={{ fontSize: "0.7rem", letterSpacing: "0.5px", whiteSpace: "nowrap" }}>
                 BY AD3N1X
               </span>
             </div>
