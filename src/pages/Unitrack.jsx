@@ -101,7 +101,7 @@ export default function UnitrackPage() {
           {/* The Story / Why UNITRACK Was Created Section */}
           <div className="p-4 rounded-4 bg-primary bg-opacity-10 border border-primary border-opacity-25">
             <div className="d-flex align-items-center gap-2 text-primary mb-3 fw-bold fs-6" style={{ letterSpacing: "-0.2px" }}>
-              <Target size={19} /> Why UNITRACK Was Created
+              <Target size={19} /> Why UNI-TRACK Was Created
             </div>
             <p className="text-secondary small mb-3" style={{ lineHeight: "1.7", fontSize: "0.9rem" }}>
               Most productivity apps fall into a bad habit: they are bloated with social distractions or they sustain themselves by harvesting and monetizing your personal behavioral data. 
