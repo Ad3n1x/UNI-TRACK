@@ -1,6 +1,6 @@
 import React from "react";
 import { Link } from "react-router-dom";
-import { LayoutDashboard, ShieldCheck, Zap, Bell, ArrowRight, UserPlus, LogIn, CheckCircle2, Lock, Cpu, Globe } from "lucide-react";
+import { LayoutDashboard, ShieldCheck, Zap, Bell, ArrowRight, UserPlus, LogIn, CheckCircle2, Heart, Target, Lock } from "lucide-react";
 
 export default function UnitrackPage() {
   return (
@@ -98,14 +98,20 @@ export default function UnitrackPage() {
             </div>
           </div>
 
-          {/* SEO & Keyword Context Footer Section */}
+          {/* The Story / Why UNITRACK Was Created Section */}
           <div className="p-4 rounded-4 bg-primary bg-opacity-10 border border-primary border-opacity-25">
-            <div className="d-flex align-items-center gap-2 text-primary mb-2 fw-bold">
-              <Globe size={18} /> About the UNITRACK Platform
+            <div className="d-flex align-items-center gap-2 text-primary mb-3 fw-bold fs-5">
+              <Target size={20} /> Why UNITRACK Was Created
             </div>
-            <p className="small text-secondary mb-0" style={{ lineHeight: "1.6" }}>
-              Whether you searched for <strong>UNITRACK</strong>, <strong>UniTrack</strong>, <strong>unitrack</strong>, or <strong>uni-track</strong>, you have landed on the official home of the system. Designed with modern web standards, state-of-the-art authentication (OTP verification), and robust backend syncing via Render, UNITRACK gives you the reliability you need. Sign up today or log into your portal to view your secure dashboard stats.
+            <p className="text-secondary small mb-3" style={{ lineHeight: "1.7" }}>
+              Most productivity apps suffer from two major flaws: they are bloated with unnecessary social features that distract you, and they monetize your personal behavioral data by storing your private habits and metrics on insecure cloud databases. 
             </p>
+            <p className="text-secondary small mb-3" style={{ lineHeight: "1.7" }}>
+              <strong>UNITRACK</strong> was built out of a genuine necessity for a sanctuary—a clean, distraction-free environment where you can track your goals without sacrificing your right to privacy. We envisioned a system that combines the speed of modern web design with ironclad security, giving individuals complete ownership over their personal growth journey.
+            </p>
+            <div className="d-flex align-items-center gap-2 text-dark small fw-semibold mt-2">
+              <Lock size={16} className="text-primary" /> Your data belongs to you, and only you. Take back control of your habits today.
+            </div>
           </div>
 
         </div>
