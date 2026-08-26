@@ -22,7 +22,13 @@ export default function UnitrackPage() {
                 UNI-TRACK
               </span>
               <span className="fw-bold" style={{ fontSize: "0.65rem", letterSpacing: "1px", whiteSpace: "nowrap", color: "#6b7280" }}>
-                BY <span style={{ color: "#4f46e5" }}>AD3N1X</span>
+                BY <span style={{ 
+                  fontFamily: "'JetBrains Mono', 'Fira Code', monospace",
+                  fontWeight: "900",
+                  background: "linear-gradient(135deg, #4f46e5 0%, #ec4899 100%)",
+                  WebkitBackgroundClip: "text",
+                  WebkitTextFillColor: "transparent"
+                }}>AD3N1X</span>
               </span>
             </div>
           </div>
@@ -141,11 +147,13 @@ export default function UnitrackPage() {
           <div>&copy; {new Date().getFullYear()} UNI-TRACK. Built for privacy, speed, and focus.</div>
           <div className="text-secondary fw-semibold d-inline-flex align-items-center justify-content-center gap-1">
             <Code2 size={14} style={{ color: "#4f46e5" }} /> Crafted with precision by 
-            <span className="fw-bolder" style={{ 
-              background: "linear-gradient(90deg, #4f46e5 0%, #ec4899 100%)",
+            <span style={{ 
+              fontFamily: "'JetBrains Mono', 'Fira Code', monospace",
+              fontWeight: "900",
+              background: "linear-gradient(135deg, #4f46e5 0%, #ec4899 100%)",
               WebkitBackgroundClip: "text",
               WebkitTextFillColor: "transparent",
-              letterSpacing: "0.5px"
+              letterSpacing: "1px"
             }}>
               AD3N1X
             </span>
