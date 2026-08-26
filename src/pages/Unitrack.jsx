@@ -1,6 +1,6 @@
 import React from "react";
 import { Link } from "react-router-dom";
-import { LayoutDashboard, ShieldCheck, Zap, Bell, ArrowRight, UserPlus, LogIn, CheckCircle2, Target, Lock } from "lucide-react";
+import { LayoutDashboard, ShieldCheck, Zap, Bell, ArrowRight, UserPlus, LogIn, CheckCircle2, Target, Lock, Code2 } from "lucide-react";
 
 export default function UnitrackPage() {
   return (
@@ -11,7 +11,10 @@ export default function UnitrackPage() {
         <div className="d-flex flex-column flex-sm-row justify-content-between align-items-center gap-3 mb-4 p-3 bg-white rounded-4 shadow-sm border">
           <div className="d-flex align-items-center gap-2 text-primary">
             <LayoutDashboard size={22} className="flex-shrink-0" />
-            <span className="fw-bold fs-5" style={{ letterSpacing: "-0.3px", whiteSpace: "nowrap" }}>UNI-TRACK</span>
+            <div className="d-flex flex-column">
+              <span className="fw-bold fs-5 lh-1" style={{ letterSpacing: "-0.3px", whiteSpace: "nowrap" }}>UNI-TRACK</span>
+              <span className="text-muted" style={{ fontSize: "0.7rem", letterSpacing: "0.5px", whiteSpace: "nowrap" }}>BY AD3N1X</span>
+            </div>
           </div>
           <div className="d-flex gap-2 w-100 w-sm-auto justify-content-end">
             <Link to="/login" className="btn btn-outline-primary btn-sm d-flex align-items-center justify-content-center gap-1 px-3 fw-semibold flex-grow-1 flex-sm-grow-0">
@@ -101,7 +104,7 @@ export default function UnitrackPage() {
           {/* The Story / Why UNITRACK Was Created Section */}
           <div className="p-4 rounded-4 bg-primary bg-opacity-10 border border-primary border-opacity-25">
             <div className="d-flex align-items-center gap-2 text-primary mb-3 fw-bold fs-6" style={{ letterSpacing: "-0.2px" }}>
-              <Target size={19} /> Why UNI-TRACK Was Created
+              <Target size={19} /> Why UNITRACK Was Created
             </div>
             <p className="text-secondary small mb-3" style={{ lineHeight: "1.7", fontSize: "0.9rem" }}>
               Most productivity apps fall into a bad habit: they are bloated with social distractions or they sustain themselves by harvesting and monetizing your personal behavioral data. 
@@ -118,8 +121,11 @@ export default function UnitrackPage() {
         </div>
 
         {/* Footer info */}
-        <div className="text-center text-muted small pb-3" style={{ fontSize: "0.85rem" }}>
-          &copy; {new Date().getFullYear()} UNITRACK. Built for privacy, speed, and focus.
+        <div className="text-center text-muted small pb-3 d-flex flex-column gap-1" style={{ fontSize: "0.85rem" }}>
+          <div>&copy; {new Date().getFullYear()} UNI-TRACK. Built for privacy, speed, and focus.</div>
+          <div className="text-secondary fw-semibold d-inline-flex align-items-center justify-content-center gap-1">
+            <Code2 size={14} className="text-primary" /> Crafted with precision by <span className="text-primary fw-bold">AD3N1X</span>
+          </div>
         </div>
       </div>
     </div>
