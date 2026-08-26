@@ -9,7 +9,7 @@ import RegisterForm from "./components/auth/RegisterForm";
 import TrackerDetail from "./components/trackers/TrackerDetail";
 import NotFound from "./pages/Notfound";
 import ForgotPassword from "./components/auth/ForgotPassword";
-import UnitrackPage from "./pages/Unitrack"; // 🚀 Added UNITRACK SEO Landing Page
+import UnitrackPage from "./pages/Unitrack"; // 🚀 UNITRACK SEO Landing Page
 
 const INACTIVITY_LIMIT_MS = 60 * 60 * 1000; // Exactly 1 hour
 
@@ -60,16 +60,16 @@ export default function App() {
   return (
     <AutoLogoutWrapper>
       <Routes>
-        {/* Top-Level Routes */}
-        <Route index element={<LoginForm />} />
+        {/* 🚀 UNITRACK is now the default root landing page */}
+        <Route index element={<UnitrackPage />} />
+        <Route path="/unitrack" element={<UnitrackPage />} />
+
+        {/* Auth & App Routes */}
         <Route path="/login" element={<LoginForm />} />
         <Route path="/register" element={<RegisterForm />} />
         <Route path="/homepage" element={<Homepage />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         
-        {/* 🚀 Dedicated UNITRACK SEO Landing Page Route */}
-        <Route path="/unitrack" element={<UnitrackPage />} />
-
         {/* Dynamic route for individual tracker entries */}
         <Route path="/trackers/:trackerId" element={<TrackerDetail />} />
 
