@@ -4,6 +4,7 @@ import { jwtDecode } from "jwt-decode";
 import Cookies from "universal-cookie";
 import { Link, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
+import { ArrowLeft } from "lucide-react";
 
 const RAW_BASE_URL =
   (typeof process !== "undefined" && process.env && (process.env.REACT_APP_API_URL || process.env.REACT_APP_BASE_URL)) ||
@@ -120,6 +121,14 @@ export default function LoginForm({ onSuccess }) {
 
       <div className="login-container d-flex flex-column align-items-center justify-content-center p-3">
         <div className="login-card p-4 p-md-5 rounded-4 shadow-lg bg-white border-0">
+          
+          {/* Back to Unitrack Link */}
+          <div className="mb-3">
+            <Link to="/unitrack" className="text-secondary text-decoration-none small d-inline-flex align-items-center gap-1 fw-semibold">
+              <ArrowLeft size={14} /> Back to Uni-Track
+            </Link>
+          </div>
+
           <div className="text-center mb-4">
             <h2 className="fw-bold text-dark">Welcome Back</h2>
             <p className="text-muted small">Please enter your details to sign in.</p>

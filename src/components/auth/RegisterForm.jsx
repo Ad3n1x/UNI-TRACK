@@ -4,6 +4,7 @@ import { useFormik } from "formik";
 import * as yup from "yup";
 import { useNavigate, Link } from "react-router-dom";
 import { toast } from "react-toastify";
+import { ArrowLeft } from "lucide-react";
 
 const RAW_BASE_URL =
   (typeof process !== "undefined" && process.env && (process.env.REACT_APP_API_URL || process.env.REACT_APP_BASE_URL)) ||
@@ -141,6 +142,13 @@ const Register = () => {
         
         {step === "register" ? (
           <>
+            {/* Back to Unitrack Link */}
+            <div className="mb-3">
+              <Link to="/unitrack" className="text-secondary text-decoration-none small d-inline-flex align-items-center gap-1 fw-semibold">
+                <ArrowLeft size={14} /> Back to Uni-Track
+              </Link>
+            </div>
+
             <div className="text-center mb-4">
               <h2 className="fw-bold text-dark">Create Account</h2>
               <p className="text-muted small">Join us and start tracking your progress today.</p>
@@ -224,7 +232,7 @@ const Register = () => {
                     {loadingText}
                   </>
                 ) : (
-                  "Register & Send OTP →"
+                  "Register"
                 )}
               </button>
             </form>
