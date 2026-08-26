@@ -1,46 +1,116 @@
 import React from "react";
 import { Link } from "react-router-dom";
-import { LayoutDashboard, ArrowLeft } from "lucide-react";
+import { LayoutDashboard, ShieldCheck, Zap, Bell, ArrowRight, UserPlus, LogIn, CheckCircle2 } from "lucide-react";
 
 export default function UnitrackPage() {
   return (
-    <div className="min-vh-100 bg-light text-dark py-5">
-      <div className="container" style={{ maxWidth: "800px" }}>
+    <div className="min-vh-100 bg-light text-dark py-4 py-md-5">
+      <div className="container" style={{ maxWidth: "900px" }}>
         
-        {/* Back Link */}
-        <Link to="/" className="btn btn-outline-secondary btn-sm mb-4 d-inline-flex align-items-center gap-2">
-          <ArrowLeft size={16} /> Back to Dashboard
-        </Link>
+        {/* Top Navigation / Auth Quick Links */}
+        <div className="d-flex justify-content-between align-items-center mb-4 p-3 bg-white rounded-4 shadow-sm border">
+          <div className="d-flex align-items-center gap-2 text-primary">
+            <LayoutDashboard size={24} />
+            <span className="fw-bold fs-5">UNITRACK</span>
+          </div>
+          <div className="d-flex gap-2">
+            <Link to="/login" className="btn btn-outline-primary btn-sm d-flex align-items-center gap-1 px-3">
+              <LogIn size={16} /> Login
+            </Link>
+            <Link to="/register" className="btn btn-primary btn-sm d-flex align-items-center gap-1 px-3">
+              <UserPlus size={16} /> Register
+            </Link>
+          </div>
+        </div>
 
-        {/* Content Box */}
-        <div className="bg-white p-4 p-md-5 rounded-4 shadow-sm border">
-          <div className="d-flex align-items-center gap-2 mb-3 text-primary">
-            <LayoutDashboard size={32} />
-            <span className="fw-bold fs-4">UNITRACK</span>
+        {/* Main Content Hero Box */}
+        <div className="bg-white p-4 p-md-5 rounded-4 shadow-sm border mb-4">
+          
+          <div className="badge bg-primary bg-opacity-10 text-primary mb-3 px-3 py-2 rounded-pill fw-semibold">
+            🚀 The Ultimate Productivity & Privacy Ecosystem
           </div>
 
-          <h1 className="fw-bold mb-3" style={{ fontSize: "2rem" }}>
-            UNITRACK – Modern Secure Tracking System
+          <h1 className="fw-bold mb-3 display-6" style={{ fontSize: "2.25rem" }}>
+            UNITRACK – Smart End-to-End Encrypted Tracking System
           </h1>
 
           <p className="lead text-muted mb-4">
-            <strong>UNITRACK</strong> (also widely searched as UniTrack, unitrack, uni-track, or uni track) is a fast, secure, React-based tracking ecosystem designed for total user privacy and speed.
+            <strong>UNITRACK</strong> (also known worldwide as UniTrack, unitrack, uni-track, or uni track) is a high-performance, React-powered tracking ecosystem engineered specifically for absolute user privacy, zero lag, and total control over your daily habits, tasks, and metrics.
           </p>
+
+          <div className="d-flex flex-wrap gap-3 mb-4">
+            <Link to="/register" className="btn btn-primary px-4 py-2.5 fw-semibold d-inline-flex align-items-center gap-2 shadow-sm">
+              Create Free Account <ArrowRight size={18} />
+            </Link>
+            <Link to="/login" className="btn btn-outline-secondary px-4 py-2.5 fw-semibold">
+              Sign In to Dashboard
+            </Link>
+          </div>
 
           <hr className="my-4" />
 
-          <h3 className="h5 fw-bold mb-3">Why Choose UNITRACK?</h3>
-          <ul className="list-unstyled mb-4">
-            <li className="mb-2">🔒 <strong>End-to-End Encryption (E2EE):</strong> Your trackers and entries are encrypted locally in your browser.</li>
-            <li className="mb-2">⚡ <strong>Lightning Fast:</strong> Built with modern web standards and React for zero-lag interactions.</li>
-            <li className="mb-2">📱 <strong>PWA & Push Notifications:</strong> Stay on top of your daily goals with built-in push alert capabilities.</li>
-          </ul>
+          {/* Core Features Grid */}
+          <h2 className="h4 fw-bold mb-4">Why UNITRACK Is Built Differently</h2>
+          
+          <div className="row g-4 mb-4">
+            <div className="col-md-6">
+              <div className="p-3 border rounded-3 bg-light h-100">
+                <div className="d-flex align-items-center gap-2 text-primary mb-2 fw-bold">
+                  <ShieldCheck size={20} /> Client-Side E2EE
+                </div>
+                <p className="text-muted small m-0">
+                  Your metrics are encrypted locally right inside your browser. No one—not even server administrators—can read your private tracking data.
+                </p>
+              </div>
+            </div>
 
-          <div className="d-flex gap-3">
-            <Link to="/" className="btn btn-primary px-4 py-2 fw-semibold">
-              Get Started with Uni-Track
-            </Link>
+            <div className="col-md-6">
+              <div className="p-3 border rounded-3 bg-light h-100">
+                <div className="d-flex align-items-center gap-2 text-primary mb-2 fw-bold">
+                  <Zap size={20} /> Lightning-Fast React Core
+                </div>
+                <p className="text-muted small m-0">
+                  Optimized component rendering and clean asynchronous synchronization guarantee zero loading friction or interface lag.
+                </p>
+              </div>
+            </div>
+
+            <div className="col-md-6">
+              <div className="p-3 border rounded-3 bg-light h-100">
+                <div className="d-flex align-items-center gap-2 text-primary mb-2 fw-bold">
+                  <Bell size={20} /> Push Notifications & PWA
+                </div>
+                <p className="text-muted small m-0">
+                  Never miss a habit check-in. Integrated service workers keep your progressive web app synced and alert-ready on all devices.
+                </p>
+              </div>
+            </div>
+
+            <div className="col-md-6">
+              <div className="p-3 border rounded-3 bg-light h-100">
+                <div className="d-flex align-items-center gap-2 text-primary mb-2 fw-bold">
+                  <CheckCircle2 size={20} /> Flexible Tracker Types
+                </div>
+                <p className="text-muted small m-0">
+                  Manage counters, habits, logs, and targeted metrics seamlessly with dynamic color-coded interfaces and custom filters.
+                </p>
+              </div>
+            </div>
           </div>
+
+          {/* SEO & Keyword Context Footer Section */}
+          <div className="p-4 rounded-3 bg-primary bg-opacity-10 border border-primary border-opacity-25">
+            <h3 className="h6 fw-bold text-primary mb-2">About the UNITRACK Platform</h3>
+            <p className="small text-secondary mb-0">
+              Whether you searched for <strong>UNITRACK</strong>, <strong>UniTrack</strong>, <strong>unitrack</strong>, or <strong>uni-track</strong>, you have landed on the official home of the system. Sign up today or log into your portal to view your secure dashboard stats.
+            </p>
+          </div>
+
+        </div>
+
+        {/* Footer info */}
+        <div className="text-center text-muted small">
+          &copy; {new Date().getFullYear()} UNITRACK. Built for privacy, speed, and focus.
         </div>
       </div>
     </div>
