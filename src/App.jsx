@@ -9,6 +9,7 @@ import RegisterForm from "./components/auth/RegisterForm";
 import TrackerDetail from "./components/trackers/TrackerDetail";
 import NotFound from "./pages/Notfound";
 import ForgotPassword from "./components/auth/ForgotPassword";
+import UnitrackPage from "./pages/Unitrack"; // 🚀 Added UNITRACK SEO Landing Page
 
 const INACTIVITY_LIMIT_MS = 60 * 60 * 1000; // Exactly 1 hour
 
@@ -66,6 +67,9 @@ export default function App() {
         <Route path="/homepage" element={<Homepage />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         
+        {/* 🚀 Dedicated UNITRACK SEO Landing Page Route */}
+        <Route path="/unitrack" element={<UnitrackPage />} />
+
         {/* Dynamic route for individual tracker entries */}
         <Route path="/trackers/:trackerId" element={<TrackerDetail />} />
 
