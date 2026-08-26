@@ -11,7 +11,7 @@ export default function UnitrackPage() {
         <div className="d-flex flex-column flex-sm-row justify-content-between align-items-center gap-3 mb-4 p-3 bg-white rounded-4 shadow-sm border">
           <div className="d-flex align-items-center gap-2 text-primary">
             <LayoutDashboard size={24} />
-            <span className="fw-bold fs-5 tracking-wide">UNITRACK</span>
+            <span className="fw-bold fs-5 tracking-wide">UNI-TRACK</span>
           </div>
           <div className="d-flex gap-2 w-100 w-sm-auto justify-content-end">
             <Link to="/login" className="btn btn-outline-primary btn-sm d-flex align-items-center justify-content-center gap-1 px-3 fw-semibold flex-grow-1 flex-sm-grow-0">
@@ -31,7 +31,7 @@ export default function UnitrackPage() {
           </div>
 
           <h1 className="fw-bold mb-3 display-6 fs-3 fs-md-2" style={{ letterSpacing: "-0.5px" }}>
-            UNITRACK – Smart End-to-End Encrypted Tracking System
+            UNI-TRACK – Smart End-to-End Encrypted Tracking System
           </h1>
 
           <p className="lead text-muted mb-4 fs-6 fs-md-5" style={{ lineHeight: "1.6" }}>
@@ -50,7 +50,7 @@ export default function UnitrackPage() {
           <hr className="my-4" />
 
           {/* Core Features Grid */}
-          <h2 className="h4 fw-bold mb-4">Why UNITRACK Is Built Differently</h2>
+          <h2 className="h4 fw-bold mb-4">Why UNI-TRACK Is Built Differently</h2>
           
           <div className="row g-4 mb-4">
             <div className="col-12 col-md-6">
