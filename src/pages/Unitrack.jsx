@@ -12,8 +12,15 @@ export default function UnitrackPage() {
           <div className="d-flex align-items-center gap-2 text-primary">
             <LayoutDashboard size={22} className="flex-shrink-0" />
             <span className="fw-bold fs-5" style={{ letterSpacing: "-0.3px", whiteSpace: "nowrap" }}>UNI-TRACK</span>
-            <span className="fw-bold ms-2" style={{ fontSize: "0.65rem", letterSpacing: "1px", color: "#6b7280", paddingTop: "4px" }}>
-              BY <span style={{ fontFamily: "'JetBrains Mono', 'Fira Code', monospace", fontWeight: "900", background: "linear-gradient(135deg, #4f46e5 0%, #ec4899 100%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>AD3N1X</span>
+            <span className="badge rounded-pill ms-1" style={{
+              background: "linear-gradient(135deg, #4f46e5 0%, #ec4899 100%)",
+              color: "#fff",
+              fontSize: "0.65rem",
+              letterSpacing: "1px",
+              fontFamily: "ui-monospace, 'SF Mono', Menlo, Monaco, Consolas, monospace",
+              boxShadow: "0 2px 4px rgba(236,72,153,0.2)"
+            }}>
+              BY AD3N1X
             </span>
           </div>
           <div className="d-flex gap-2 w-100 w-sm-auto justify-content-end">
@@ -121,11 +128,21 @@ export default function UnitrackPage() {
         </div>
 
         {/* Footer info */}
-        <div className="text-center text-muted small pb-3" style={{ fontSize: "0.85rem" }}>
-          &copy; {new Date().getFullYear()} UNITRACK. Built for privacy, speed, and focus.<br />
-          <span className="text-secondary fw-semibold mt-2 d-inline-block">
-            Crafted with precision by <span style={{ fontFamily: "'JetBrains Mono', 'Fira Code', monospace", fontWeight: "900", background: "linear-gradient(135deg, #4f46e5 0%, #ec4899 100%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", letterSpacing: "1px" }}>AD3N1X</span>
-          </span>
+        <div className="text-center text-muted small pb-3 d-flex flex-column align-items-center gap-2" style={{ fontSize: "0.85rem" }}>
+          <div>&copy; {new Date().getFullYear()} UNITRACK. Built for privacy, speed, and focus.</div>
+          <div className="fw-semibold d-inline-flex align-items-center gap-1">
+            <span style={{ color: "#9ca3af" }}>Engineered by</span>
+            <span style={{ 
+              fontFamily: "ui-monospace, 'SF Mono', Menlo, Monaco, Consolas, monospace",
+              fontWeight: "900",
+              background: "linear-gradient(135deg, #4f46e5 0%, #ec4899 100%)",
+              WebkitBackgroundClip: "text",
+              WebkitTextFillColor: "transparent",
+              letterSpacing: "0.5px"
+            }}>
+              AD3N1X
+            </span>
+          </div>
         </div>
       </div>
     </div>
