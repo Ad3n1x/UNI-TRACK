@@ -1,6 +1,6 @@
 import React from "react";
 import { Link } from "react-router-dom";
-import { LayoutDashboard, ShieldCheck, Zap, Bell, ArrowRight, UserPlus, LogIn, CheckCircle2 } from "lucide-react";
+import { LayoutDashboard, ShieldCheck, Zap, Bell, ArrowRight, UserPlus, LogIn, CheckCircle2, Lock, Cpu, Globe } from "lucide-react";
 
 export default function UnitrackPage() {
   return (
@@ -11,13 +11,13 @@ export default function UnitrackPage() {
         <div className="d-flex justify-content-between align-items-center mb-4 p-3 bg-white rounded-4 shadow-sm border">
           <div className="d-flex align-items-center gap-2 text-primary">
             <LayoutDashboard size={24} />
-            <span className="fw-bold fs-5">UNITRACK</span>
+            <span className="fw-bold fs-5 tracking-wide">UNITRACK</span>
           </div>
           <div className="d-flex gap-2">
-            <Link to="/login" className="btn btn-outline-primary btn-sm d-flex align-items-center gap-1 px-3">
+            <Link to="/login" className="btn btn-outline-primary btn-sm d-flex align-items-center gap-1 px-3 fw-semibold">
               <LogIn size={16} /> Login
             </Link>
-            <Link to="/register" className="btn btn-primary btn-sm d-flex align-items-center gap-1 px-3">
+            <Link to="/register" className="btn btn-primary btn-sm d-flex align-items-center gap-1 px-3 fw-semibold">
               <UserPlus size={16} /> Register
             </Link>
           </div>
@@ -26,16 +26,16 @@ export default function UnitrackPage() {
         {/* Main Content Hero Box */}
         <div className="bg-white p-4 p-md-5 rounded-4 shadow-sm border mb-4">
           
-          <div className="badge bg-primary bg-opacity-10 text-primary mb-3 px-3 py-2 rounded-pill fw-semibold">
-            🚀 The Ultimate Productivity & Privacy Ecosystem
+          <div className="badge bg-primary bg-opacity-10 text-primary mb-3 px-3 py-2 rounded-pill fw-semibold d-inline-flex align-items-center gap-1">
+            <Zap size={14} /> The Ultimate Productivity & Privacy Ecosystem
           </div>
 
-          <h1 className="fw-bold mb-3 display-6" style={{ fontSize: "2.25rem" }}>
+          <h1 className="fw-bold mb-3 display-6" style={{ fontSize: "2.25rem", letterSpacing: "-0.5px" }}>
             UNITRACK – Smart End-to-End Encrypted Tracking System
           </h1>
 
-          <p className="lead text-muted mb-4">
-            <strong>UNITRACK</strong> (also known worldwide as UniTrack, unitrack, uni-track, or uni track) is a high-performance, React-powered tracking ecosystem engineered specifically for absolute user privacy, zero lag, and total control over your daily habits, tasks, and metrics.
+          <p className="lead text-muted mb-4" style={{ fontSize: "1.05rem", lineHeight: "1.6" }}>
+            <strong>UNITRACK</strong> (widely searched as UniTrack, unitrack, uni-track, or uni track) is a high-performance, React-powered tracking ecosystem engineered specifically for absolute user privacy, zero lag, and total control over your daily habits, goals, tasks, and metrics.
           </p>
 
           <div className="d-flex flex-wrap gap-3 mb-4">
@@ -99,10 +99,12 @@ export default function UnitrackPage() {
           </div>
 
           {/* SEO & Keyword Context Footer Section */}
-          <div className="p-4 rounded-3 bg-primary bg-opacity-10 border border-primary border-opacity-25">
-            <h3 className="h6 fw-bold text-primary mb-2">About the UNITRACK Platform</h3>
-            <p className="small text-secondary mb-0">
-              Whether you searched for <strong>UNITRACK</strong>, <strong>UniTrack</strong>, <strong>unitrack</strong>, or <strong>uni-track</strong>, you have landed on the official home of the system. Sign up today or log into your portal to view your secure dashboard stats.
+          <div className="p-4 rounded-4 bg-primary bg-opacity-10 border border-primary border-opacity-25">
+            <div className="d-flex align-items-center gap-2 text-primary mb-2 fw-bold">
+              <Globe size={18} /> About the UNITRACK Platform
+            </div>
+            <p className="small text-secondary mb-0" style={{ lineHeight: "1.6" }}>
+              Whether you searched for <strong>UNITRACK</strong>, <strong>UniTrack</strong>, <strong>unitrack</strong>, or <strong>uni-track</strong>, you have landed on the official home of the system. Designed with modern web standards, state-of-the-art authentication (OTP verification), and robust backend syncing via Render, UNITRACK gives you the reliability you need. Sign up today or log into your portal to view your secure dashboard stats.
             </p>
           </div>
 
