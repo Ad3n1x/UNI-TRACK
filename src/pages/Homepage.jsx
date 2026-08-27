@@ -3,7 +3,7 @@ import TrackerDashboard from "../components/trackers/TrackerDashboard";
 import TrackerForm from "../components/trackers/TrackerForm";
 import TrackerList from "../components/trackers/TrackerList";
 import TrackerFilters from "../components/trackers/TrackerFilters";
-import { PlusCircle, LayoutDashboard, CheckCircle2, LogOut, Sun, Moon } from "lucide-react";
+import { PlusCircle, LayoutDashboard, CheckCircle2, LogOut, Sun, Moon, RefreshCw } from "lucide-react";
 import Cookies from "universal-cookie";
 import { initializeUserKeys, decryptData } from "../utils/e2ee";
 
@@ -15,7 +15,6 @@ const RAW_BASE_URL =
 
 const BASE_URL = RAW_BASE_URL.replace(/\/$/, "");
 
-// Helper to construct request headers with JWT token from cookies or localStorage
 const getAuthHeaders = () => {
   const cookies = new Cookies();
   const token = cookies.get("token") || localStorage.getItem("token");
@@ -35,7 +34,6 @@ const SAMPLE_TRACKER = {
   isSample: true,
 };
 
-// Helper utility to convert VAPID key
 function urlBase64ToUint8Array(base64String) {
   const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
   const base64 = (base64String + padding).replace(/\-/g, "+").replace(/_/g, "/");
@@ -47,7 +45,6 @@ function urlBase64ToUint8Array(base64String) {
   return outputArray;
 }
 
-// Service Worker & Push Notification Subscription Trigger
 async function registerServiceWorkerAndSubscribe() {
   if ("serviceWorker" in navigator && "PushManager" in window) {
     try {
@@ -60,7 +57,6 @@ async function registerServiceWorkerAndSubscribe() {
         applicationServerKey: urlBase64ToUint8Array(publicVapidKey),
       });
 
-      // Send subscription to backend
       await fetch(`${BASE_URL}/api/v1/subscribe`, {
         method: "POST",
         headers: getAuthHeaders(),
@@ -78,7 +74,6 @@ export default function HomePage() {
   const cookies = new Cookies();
   const token = cookies.get("token") || localStorage.getItem("token");
 
-  // 🔒 Route Guard: Redirect unauthenticated users immediately
   if (!token) {
     window.location.href = "/";
     return null;
@@ -86,11 +81,11 @@ export default function HomePage() {
 
   const [trackers, setTrackers] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [typeFilter, setTypeFilter] = useState(null);
   const [newlyAddedId, setNewlyAddedId] = useState(null);
   const [notification, setNotification] = useState(null);
 
-  // 🌙 Dark Mode State with LocalStorage persistence
   const [darkMode, setDarkMode] = useState(() => {
     return localStorage.getItem("theme") === "dark";
   });
@@ -99,7 +94,6 @@ export default function HomePage() {
     localStorage.setItem("theme", darkMode ? "dark" : "light");
   }, [darkMode]);
 
-  // Automatically request push notification permission and register service worker on load
   useEffect(() => {
     registerServiceWorkerAndSubscribe();
   }, []);
@@ -122,9 +116,9 @@ export default function HomePage() {
     window.location.href = "/login";
   };
 
-  const fetchTrackers = async () => {
+  const fetchTrackers = async (isManualRefresh = false) => {
+    if (isManualRefresh) setRefreshing(true);
     try {
-      // 1. Initialize user keys (retrieves local private key or generates a new pair)
       const { privateKey } = await initializeUserKeys();
 
       const response = await fetch(`${BASE_URL}/api/v1/trackers`, {
@@ -136,7 +130,6 @@ export default function HomePage() {
 
       const fetchedArray = Array.isArray(data) ? data : Array.isArray(data.trackers) ? data.trackers : [];
 
-      // 2. Decrypt each encrypted tracker field locally in the browser using E2EE private key
       const decryptedTrackers = await Promise.all(
         fetchedArray.map(async (tracker) => {
           try {
@@ -148,16 +141,21 @@ export default function HomePage() {
             };
           } catch (decryptErr) {
             console.error("Failed to decrypt individual tracker:", decryptErr);
-            return tracker; // Fallback to raw object if decryption fails
+            return tracker;
           }
         })
       );
 
       setTrackers([...decryptedTrackers].reverse());
+      if (isManualRefresh) {
+        setNotification("Trackers updated!");
+        window.setTimeout(() => setNotification(null), 2500);
+      }
     } catch (error) {
       console.error("Error fetching trackers:", error);
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   };
 
@@ -166,7 +164,6 @@ export default function HomePage() {
   }, []);
 
   const handleCreate = (newTracker) => {
-    // Refresh list from server to ensure state matches clean flow
     fetchTrackers();
     const newId = newTracker._id || newTracker.id;
     setNewlyAddedId(newId);
@@ -231,7 +228,8 @@ export default function HomePage() {
       }
 
       if (response.ok) {
-        fetchTrackers();
+        // Delayed refetch fixes database state delay issues on immediate today's updates
+        setTimeout(() => fetchTrackers(), 400);
       } else {
         throw new Error("Failed to sync entries with server.");
       }
@@ -332,7 +330,6 @@ export default function HomePage() {
       className={`min-vh-100 position-relative ${darkMode ? "bg-dark text-light" : "bg-light text-dark"}`}
       data-bs-theme={darkMode ? "dark" : "light"}
     >
-      {/* Notification Toast */}
       {notification && (
         <div
           className="position-fixed top-0 start-50 translate-middle-x p-3"
@@ -345,22 +342,34 @@ export default function HomePage() {
         </div>
       )}
 
-      {/* Navigation Header: Brand & Theme Toggle */}
+      {/* Navigation Header */}
       <nav className={`navbar border-bottom shadow-sm py-3 ${darkMode ? "bg-dark border-secondary" : "bg-white"}`}>
         <div className="container d-flex align-items-center justify-content-between">
           <h1 className="navbar-brand fw-bold d-flex align-items-center gap-2 m-0" style={{ fontSize: "1.25rem" }}>
             <LayoutDashboard className="text-primary" /> UNI-TRACK
           </h1>
 
-          {/* Quick Access Theme Toggle */}
-          <button
-            type="button"
-            className={`btn ${darkMode ? "btn-outline-light" : "btn-outline-secondary"} d-flex align-items-center justify-content-center p-2`}
-            onClick={() => setDarkMode(!darkMode)}
-            title="Toggle Theme"
-          >
-            {darkMode ? <Sun size={18} /> : <Moon size={18} />}
-          </button>
+          <div className="d-flex align-items-center gap-2">
+            <button
+              type="button"
+              className={`btn ${darkMode ? "btn-outline-light" : "btn-outline-secondary"} d-flex align-items-center gap-1 p-2 text-sm`}
+              onClick={() => fetchTrackers(true)}
+              disabled={refreshing}
+              title="Refresh Trackers"
+            >
+              <RefreshCw size={16} className={refreshing ? "spin-icon" : ""} />
+              <span className="d-none d-sm-inline small">Refresh</span>
+            </button>
+
+            <button
+              type="button"
+              className={`btn ${darkMode ? "btn-outline-light" : "btn-outline-secondary"} d-flex align-items-center justify-content-center p-2`}
+              onClick={() => setDarkMode(!darkMode)}
+              title="Toggle Theme"
+            >
+              {darkMode ? <Sun size={18} /> : <Moon size={18} />}
+            </button>
+          </div>
         </div>
       </nav>
 
@@ -369,7 +378,7 @@ export default function HomePage() {
         <div className="row">
           <div className="col-12">
             
-            {/* Friendly User Greeting Banner */}
+            {/* Friendly Greeting & Sync Tip Banner */}
             <div className={`p-4 p-md-5 rounded-4 shadow-sm border mb-4 mb-md-5 position-relative overflow-hidden ${darkMode ? "bg-dark border-secondary" : "bg-white"}`}>
               <div className="position-absolute top-0 end-0 p-4 opacity-10 d-none d-md-block text-primary">
                 <LayoutDashboard size={140} />
@@ -379,9 +388,15 @@ export default function HomePage() {
                   {timeGreeting}
                 </span>
                 <h2 className="fw-bold mb-2 display-6" style={{ fontSize: "1.75rem" }}>Welcome back to Uni-Track!</h2>
-                <p className="text-muted mb-0 lead fs-6">
+                <p className="text-muted mb-2 lead fs-6">
                   Let's make today productive.
                 </p>
+                
+                {/* Notice for immediate updates */}
+                <div className="d-flex align-items-center gap-2 text-muted small mt-3">
+                  <RefreshCw size={14} className="text-primary flex-shrink-0" />
+                  <span>Note: If today's entries don't display immediately after updating, click <strong>Refresh</strong> in the navigation header.</span>
+                </div>
               </div>
             </div>
 
@@ -391,14 +406,12 @@ export default function HomePage() {
             {/* Trackers Toolbar & List Section */}
             <div className={`p-3 p-md-4 rounded-4 shadow-sm border mt-4 ${darkMode ? "bg-dark border-secondary" : "bg-white"}`}>
               
-              {/* Action Toolbar: Filters + New Tracker and Logout buttons */}
               <div className="d-flex flex-column flex-lg-row align-items-stretch align-items-lg-center justify-content-between gap-3 mb-3">
                 <div className="flex-grow-1 overflow-auto">
                   <TrackerFilters typeFilter={typeFilter} onTypeFilterChange={setTypeFilter} darkMode={darkMode} />
                 </div>
                 
                 <div className="d-flex align-items-center flex-wrap gap-2 flex-shrink-0">
-                  {/* New Tracker Button */}
                   <button
                     type="button"
                     className="btn btn-primary d-flex align-items-center justify-content-center gap-2 flex-grow-1 flex-lg-grow-0 px-3 py-2"
@@ -408,7 +421,6 @@ export default function HomePage() {
                     <PlusCircle size={18} /> New Tracker
                   </button>
 
-                  {/* Logout Button */}
                   <button
                     type="button"
                     className="btn btn-outline-danger d-flex align-items-center justify-content-center gap-2 px-3 py-2"
