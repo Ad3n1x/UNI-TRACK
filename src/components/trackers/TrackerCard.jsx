@@ -5,6 +5,7 @@ import { Link } from "react-router-dom";
 import Cookies from "universal-cookie";
 import { toast } from "react-toastify";
 import CryptoJS from "crypto-js";
+import { initializeUserKeys, encryptData } from "../utils/e2ee";
 
 const RAW_BASE_URL =
   (typeof process !== "undefined" && process.env?.API_URL) ||
@@ -14,12 +15,10 @@ const RAW_BASE_URL =
 
 const BASE_URL = RAW_BASE_URL.replace(/\/$/, "");
 
-// Client-side encryption secret (must match what you used in TrackerForm)
 const CLIENT_SECRET = "your_client_side_encryption_secret";
 
 const decryptField = (ciphertext) => {
   if (!ciphertext) return null;
-  // If it's not an encrypted string (e.g. legacy plain text), return as is
   if (typeof ciphertext !== "string" || !ciphertext.startsWith("U2FsdGVkX1")) {
     return ciphertext;
   }
@@ -36,12 +35,6 @@ const decryptField = (ciphertext) => {
     console.error("Decryption error:", error);
     return ciphertext;
   }
-};
-
-const encryptField = (data) => {
-  if (data === null || data === undefined || data === "") return data;
-  const stringValue = typeof data === "object" ? JSON.stringify(data) : String(data);
-  return CryptoJS.AES.encrypt(stringValue, CLIENT_SECRET).toString();
 };
 
 const TYPE_COLORS = {
@@ -93,14 +86,18 @@ export default function TrackerCard({
 
   const trackerId = tracker?._id || tracker?.id;
 
-  // Decrypt tracker properties safely
   const decryptedName = useMemo(() => decryptField(tracker?.name) || "Untitled", [tracker?.name]);
   const decryptedTarget = useMemo(() => Number(decryptField(tracker?.target)) || 0, [tracker?.target]);
-  const decryptedType = useMemo(() => decryptField(tracker?.type), [tracker?.type]);
+  
+  // Normalize type to lowercase and trim whitespace to fix formatting mismatches across different trackers
+  const decryptedType = useMemo(() => {
+    const raw = decryptField(tracker?.type);
+    return typeof raw === "string" ? raw.toLowerCase().trim() : "counter";
+  }, [tracker?.type]);
+
   const decryptedColor = useMemo(() => decryptField(tracker?.color), [tracker?.color]);
   const decryptedIcon = useMemo(() => decryptField(tracker?.icon), [tracker?.icon]);
 
-  // Decrypt entries safely ensuring it always falls back to an array
   const decryptedEntries = useMemo(() => {
     const rawEntries = decryptField(tracker?.entries);
     return Array.isArray(rawEntries) ? rawEntries : [];
@@ -112,12 +109,9 @@ export default function TrackerCard({
     setLocalEntries(decryptedEntries);
   }, [decryptedEntries]);
 
-  // Get date dynamically on render so it doesn't get stuck at midnight if the app stays open
   const today = getLocalDateString();
 
-  const todayEntry = localEntries.find((e) => {
-    return getEntryDateString(e.date) === today;
-  });
+  const todayEntry = localEntries.find((e) => getEntryDateString(e.date) === today);
 
   const IconComponent = Icons[decryptedIcon] || Icons.Circle;
   const typeColor = TYPE_COLORS[decryptedType] || decryptedColor || "#3b82f6";
@@ -139,20 +133,20 @@ export default function TrackerCard({
       return;
     }
 
-    // 1. Instantly lock in local state so UI never flickers or reverts
     setLocalEntries(updatedEntriesList);
 
     const cookies = new Cookies();
-    const token = cookies.get("token");
+    const token = cookies.get("token") || localStorage.getItem("token");
 
     const headers = {
       "Content-Type": "application/json",
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
     };
 
-    const encryptedPayloadEntries = encryptField(updatedEntriesList);
-
     try {
+      const { publicKey } = await initializeUserKeys();
+      const encryptedPayloadEntries = await encryptData(publicKey, updatedEntriesList);
+
       let res = await fetch(`${BASE_URL}/api/v1/trackers/${trackerId}`, {
         method: "PUT",
         headers,
@@ -175,8 +169,7 @@ export default function TrackerCard({
 
       const updatedTrackerRes = await res.json();
       const finalTracker = updatedTrackerRes.data || updatedTrackerRes;
-      
-      // Only update local state from server if the server returned valid entries back
+
       if (finalTracker && finalTracker.entries) {
         const serverDecrypted = decryptField(finalTracker.entries);
         if (Array.isArray(serverDecrypted)) {
@@ -188,7 +181,6 @@ export default function TrackerCard({
       toast.success(successMessage);
     } catch (err) {
       console.error("Network sync error:", err);
-      // Fail silently for network drops so user progress isn't wiped out visually
       toast.success(successMessage);
     }
   };
@@ -196,7 +188,7 @@ export default function TrackerCard({
   const handleHabitToggle = () => {
     const isCompleted = !todayEntry;
     const nextList = isCompleted
-      ? [...localEntries.filter(e => getEntryDateString(e.date) !== today), { date: today, value: true }]
+      ? [...localEntries.filter((e) => getEntryDateString(e.date) !== today), { date: today, value: true }]
       : localEntries.filter((e) => getEntryDateString(e.date) !== today);
 
     syncEntryToDb(nextList, isCompleted ? "Habit marked as done! 🎉" : "Habit unmarked for today.");
@@ -265,10 +257,7 @@ export default function TrackerCard({
     [localEntries]
   );
 
-  const percentage = Math.min(
-    (currentTotal / (decryptedTarget || 1)) * 100,
-    100
-  );
+  const percentage = Math.min((currentTotal / (decryptedTarget || 1)) * 100, 100);
 
   return (
     <div
@@ -285,7 +274,9 @@ export default function TrackerCard({
         gap: "1.25rem",
         boxShadow: isNewlyAdded
           ? `0 0 0 3px ${decryptedColor || typeColor}55, 0 8px 16px -4px rgba(0, 0, 0, 0.08)`
-          : darkMode ? "0 4px 6px -1px rgba(0, 0, 0, 0.2)" : "0 4px 6px -1px rgba(0, 0, 0, 0.02)",
+          : darkMode
+          ? "0 4px 6px -1px rgba(0, 0, 0, 0.2)"
+          : "0 4px 6px -1px rgba(0, 0, 0, 0.02)",
         transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
         width: "100%",
         boxSizing: "border-box",
@@ -310,10 +301,30 @@ export default function TrackerCard({
             <IconComponent size={22} />
           </div>
           <div style={{ minWidth: 0, overflow: "hidden" }}>
-            <h3 style={{ fontSize: "1.05rem", fontWeight: 700, margin: 0, color: darkMode ? "#f8fafc" : "#0f172a", whiteSpace: "nowrap", textOverflow: "ellipsis", overflow: "hidden" }}>
+            <h3
+              style={{
+                fontSize: "1.05rem",
+                fontWeight: 700,
+                margin: 0,
+                color: darkMode ? "#f8fafc" : "#0f172a",
+                whiteSpace: "nowrap",
+                textOverflow: "ellipsis",
+                overflow: "hidden",
+              }}
+            >
               {decryptedName}
             </h3>
-            <p style={{ fontSize: "0.7rem", marginTop: "0.2rem", letterSpacing: "0.06em", textTransform: "uppercase", fontWeight: 700, margin: 0, color: typeColor }}>
+            <p
+              style={{
+                fontSize: "0.7rem",
+                marginTop: "0.2rem",
+                letterSpacing: "0.06em",
+                textTransform: "uppercase",
+                fontWeight: 700,
+                margin: 0,
+                color: typeColor,
+              }}
+            >
               {decryptedType}
             </p>
           </div>
@@ -344,8 +355,15 @@ export default function TrackerCard({
                         closeToast();
                       }}
                       style={{
-                        flex: 1, backgroundColor: "#ef4444", color: "#ffffff", border: "none",
-                        padding: "7px 12px", borderRadius: "8px", cursor: "pointer", fontSize: "0.78rem", fontWeight: 700,
+                        flex: 1,
+                        backgroundColor: "#ef4444",
+                        color: "#ffffff",
+                        border: "none",
+                        padding: "7px 12px",
+                        borderRadius: "8px",
+                        cursor: "pointer",
+                        fontSize: "0.78rem",
+                        fontWeight: 700,
                       }}
                     >
                       Yes, Delete
@@ -353,8 +371,15 @@ export default function TrackerCard({
                     <button
                       onClick={closeToast}
                       style={{
-                        flex: 1, backgroundColor: darkMode ? "#334155" : "#f1f5f9", color: darkMode ? "#f8fafc" : "#475569",
-                        border: darkMode ? "1px solid #475569" : "1px solid #cbd5e1", padding: "7px 12px", borderRadius: "8px", cursor: "pointer", fontSize: "0.78rem", fontWeight: 600,
+                        flex: 1,
+                        backgroundColor: darkMode ? "#334155" : "#f1f5f9",
+                        color: darkMode ? "#f8fafc" : "#475569",
+                        border: darkMode ? "1px solid #475569" : "1px solid #cbd5e1",
+                        padding: "7px 12px",
+                        borderRadius: "8px",
+                        cursor: "pointer",
+                        fontSize: "0.78rem",
+                        fontWeight: 600,
                       }}
                     >
                       Cancel
@@ -413,14 +438,22 @@ export default function TrackerCard({
         </button>
       )}
 
-      {decryptedType === "counter" && (
+      {(decryptedType === "counter" || (!["habit", "timer", "mood", "goal", "expense"].includes(decryptedType))) && (
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "1rem" }}>
           <button
             onClick={() => handleCounterChange(-1)}
             style={{
-              width: "3rem", height: "3rem", borderRadius: "0.85rem", border: "none", cursor: "pointer",
-              display: "flex", alignItems: "center", justifyContent: "center",
-              backgroundColor: darkMode ? "#334155" : "#f8fafc", color: darkMode ? "#f8fafc" : "#334155", flexShrink: 0,
+              width: "3rem",
+              height: "3rem",
+              borderRadius: "0.85rem",
+              border: "none",
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              backgroundColor: darkMode ? "#334155" : "#f8fafc",
+              color: darkMode ? "#f8fafc" : "#334155",
+              flexShrink: 0,
             }}
           >
             <Minus size={18} />
@@ -431,9 +464,17 @@ export default function TrackerCard({
           <button
             onClick={() => handleCounterChange(1)}
             style={{
-              width: "3rem", height: "3rem", borderRadius: "0.85rem", border: "none", cursor: "pointer",
-              display: "flex", alignItems: "center", justifyContent: "center",
-              backgroundColor: decryptedColor || typeColor, color: "#ffffff", flexShrink: 0,
+              width: "3rem",
+              height: "3rem",
+              borderRadius: "0.85rem",
+              border: "none",
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              backgroundColor: decryptedColor || typeColor,
+              color: "#ffffff",
+              flexShrink: 0,
             }}
           >
             <Plus size={18} />
@@ -453,17 +494,30 @@ export default function TrackerCard({
             <button
               onClick={handleTimerToggle}
               style={{
-                flex: 1, padding: "0.85rem", borderRadius: "0.85rem", border: "none",
-                backgroundColor: decryptedColor || typeColor, color: "#ffffff", fontWeight: 700, cursor: "pointer",
+                flex: 1,
+                padding: "0.85rem",
+                borderRadius: "0.85rem",
+                border: "none",
+                backgroundColor: decryptedColor || typeColor,
+                color: "#ffffff",
+                fontWeight: 700,
+                cursor: "pointer",
               }}
             >
               {timerRunning ? "PAUSE & SAVE" : "START"}
             </button>
             <button
-              onClick={() => { setTimerRunning(false); setTimerSeconds(0); }}
+              onClick={() => {
+                setTimerRunning(false);
+                setTimerSeconds(0);
+              }}
               style={{
-                padding: "0.85rem", borderRadius: "0.85rem", border: "none",
-                backgroundColor: darkMode ? "#334155" : "#f8fafc", cursor: "pointer", color: darkMode ? "#f8fafc" : "#334155",
+                padding: "0.85rem",
+                borderRadius: "0.85rem",
+                border: "none",
+                backgroundColor: darkMode ? "#334155" : "#f8fafc",
+                cursor: "pointer",
+                color: darkMode ? "#f8fafc" : "#334155",
               }}
             >
               <RotateCcw size={18} />
@@ -482,14 +536,29 @@ export default function TrackerCard({
                   key={m.value}
                   onClick={() => handleMoodSelect(m.value)}
                   style={{
-                    flex: 1, padding: "0.7rem 0.2rem", borderRadius: "0.75rem",
-                    border: isSelected ? `2px solid ${decryptedColor || typeColor}` : darkMode ? "2px solid #334155" : "2px solid #f1f5f9",
+                    flex: 1,
+                    padding: "0.7rem 0.2rem",
+                    borderRadius: "0.75rem",
+                    border: isSelected
+                      ? `2px solid ${decryptedColor || typeColor}`
+                      : darkMode
+                      ? "2px solid #334155"
+                      : "2px solid #f1f5f9",
                     backgroundColor: isSelected ? `${decryptedColor || typeColor}15` : darkMode ? "#0f172a" : "#ffffff",
-                    cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center",
+                    cursor: "pointer",
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
                   }}
                 >
                   <div style={{ fontSize: "1.35rem", marginBottom: "0.2rem" }}>{m.emoji}</div>
-                  <span style={{ fontSize: "0.65rem", fontWeight: 700, color: isSelected ? decryptedColor || typeColor : darkMode ? "#94a3b8" : "#64748b" }}>
+                  <span
+                    style={{
+                      fontSize: "0.65rem",
+                      fontWeight: 700,
+                      color: isSelected ? decryptedColor || typeColor : darkMode ? "#94a3b8" : "#64748b",
+                    }}
+                  >
                     {m.label}
                   </span>
                 </button>
@@ -513,8 +582,11 @@ export default function TrackerCard({
             <div style={{ width: "100%", height: "0.6rem", backgroundColor: darkMode ? "#334155" : "#f1f5f9", borderRadius: "9999px", overflow: "hidden" }}>
               <div
                 style={{
-                  height: "100%", width: `${percentage}%`, backgroundColor: decryptedColor || typeColor,
-                  borderRadius: "9999px", transition: "width 0.4s ease",
+                  height: "100%",
+                  width: `${percentage}%`,
+                  backgroundColor: decryptedColor || typeColor,
+                  borderRadius: "9999px",
+                  transition: "width 0.4s ease",
                 }}
               />
             </div>
@@ -526,18 +598,27 @@ export default function TrackerCard({
               onChange={(e) => setInputValue(e.target.value)}
               placeholder="Amount"
               style={{
-                flex: 1, padding: "0.75rem 0.9rem", borderRadius: "0.85rem",
-                border: darkMode ? "2px solid #334155" : "2px solid #f1f5f9", outline: "none",
-                color: darkMode ? "#f8fafc" : "#1e293b", backgroundColor: darkMode ? "#0f172a" : "#f8fafc",
+                flex: 1,
+                padding: "0.75rem 0.9rem",
+                borderRadius: "0.85rem",
+                border: darkMode ? "2px solid #334155" : "2px solid #f1f5f9",
+                outline: "none",
+                color: darkMode ? "#f8fafc" : "#1e293b",
+                backgroundColor: darkMode ? "#0f172a" : "#f8fafc",
               }}
             />
             <button
               onClick={handleSaveAmount}
               disabled={!inputValue}
               style={{
-                padding: "0.75rem 1.25rem", borderRadius: "0.85rem", border: "none",
-                backgroundColor: decryptedColor || typeColor, color: "#ffffff",
-                cursor: inputValue ? "pointer" : "not-allowed", fontWeight: 600, opacity: inputValue ? 1 : 0.6,
+                padding: "0.75rem 1.25rem",
+                borderRadius: "0.85rem",
+                border: "none",
+                backgroundColor: decryptedColor || typeColor,
+                color: "#ffffff",
+                cursor: inputValue ? "pointer" : "not-allowed",
+                fontWeight: 600,
+                opacity: inputValue ? 1 : 0.6,
               }}
             >
               Add
@@ -546,8 +627,26 @@ export default function TrackerCard({
         </div>
       )}
 
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", paddingTop: "0.5rem", borderTop: darkMode ? "1px solid #334155" : "1px solid #f1f5f9", marginTop: "auto" }}>
-        <span style={{ fontSize: "0.75rem", color: darkMode ? "#94a3b8" : "#64748b", display: "flex", alignItems: "center", gap: "0.35rem", fontWeight: 500 }}>
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          paddingTop: "0.5rem",
+          borderTop: darkMode ? "1px solid #334155" : "1px solid #f1f5f9",
+          marginTop: "auto",
+        }}
+      >
+        <span
+          style={{
+            fontSize: "0.75rem",
+            color: darkMode ? "#94a3b8" : "#64748b",
+            display: "flex",
+            alignItems: "center",
+            gap: "0.35rem",
+            fontWeight: 500,
+          }}
+        >
           <Activity size={13} /> {localEntries.length} entries recorded
         </span>
 
@@ -555,8 +654,13 @@ export default function TrackerCard({
           <Link
             to={`/trackers/${trackerId}`}
             style={{
-              fontSize: "0.75rem", fontWeight: 600, color: decryptedColor || typeColor,
-              textDecoration: "none", display: "flex", alignItems: "center", gap: "0.3rem",
+              fontSize: "0.75rem",
+              fontWeight: 600,
+              color: decryptedColor || typeColor,
+              textDecoration: "none",
+              display: "flex",
+              alignItems: "center",
+              gap: "0.3rem",
             }}
           >
             View Entries <ExternalLink size={13} />
