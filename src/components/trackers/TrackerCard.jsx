@@ -692,7 +692,7 @@ export default function TrackerCard({
                 onChange={(e) => setInputValue(e.target.value)}
                 placeholder="Amount"
                 style={{
-                  width: "60%",
+                  width: "35%",
                   minWidth: 0,
                   padding: "0.75rem 0.9rem",
                   borderRadius: "0.85rem",
