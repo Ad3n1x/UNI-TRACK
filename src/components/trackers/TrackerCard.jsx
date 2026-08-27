@@ -282,7 +282,7 @@ export default function TrackerCard({
             font-size: 2rem !important;
           }
           .tracker-goal-inputs {
-            flex-direction: column !important;
+            grid-template-columns: 1fr !important;
           }
           .tracker-goal-inputs button {
             width: 100% !important;
@@ -685,14 +685,16 @@ export default function TrackerCard({
                 />
               </div>
             </div>
-            <div className="tracker-goal-inputs" style={{ display: "flex", gap: "0.6rem", width: "100%", minWidth: 0 }}>
+            
+            {/* Replaced flex with CSS Grid to strictly prevent input/button overflow past card boundaries */}
+            <div className="tracker-goal-inputs" style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: "0.6rem", width: "100%", minWidth: 0 }}>
               <input
                 type="number"
                 value={inputValue}
                 onChange={(e) => setInputValue(e.target.value)}
                 placeholder="Amount"
                 style={{
-                  flex: 1,
+                  width: "100%",
                   minWidth: 0,
                   padding: "0.75rem 0.9rem",
                   borderRadius: "0.85rem",
@@ -714,7 +716,7 @@ export default function TrackerCard({
                   cursor: inputValue ? "pointer" : "not-allowed",
                   fontWeight: 600,
                   opacity: inputValue ? 1 : 0.6,
-                  flexShrink: 0,
+                  whiteSpace: "nowrap",
                 }}
               >
                 Add
