@@ -87,7 +87,7 @@ export default function TrackerCard({
 
   const decryptedName = useMemo(() => decryptField(tracker?.name) || "Untitled", [tracker?.name]);
   const decryptedTarget = useMemo(() => Number(decryptField(tracker?.target)) || 0, [tracker?.target]);
-  
+
   const decryptedType = useMemo(() => {
     const raw = decryptField(tracker?.type);
     return typeof raw === "string" ? raw.toLowerCase().trim() : "counter";
@@ -684,7 +684,7 @@ export default function TrackerCard({
                 />
               </div>
             </div>
-            
+
             <div className="tracker-goal-inputs" style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "0.6rem", width: "100%", minWidth: 0, boxSizing: "border-box" }}>
               <input
                 type="number"
