@@ -17,22 +17,13 @@ export default function LoginForm({ onSuccess }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const [loadingText, setLoadingText] = useState("Signing In...");
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    setLoadingText("Signing In...");
-
-    // Render free-tier cold start handler: if server takes > 4s, notify user it's waking up
-    const coldStartTimer = setTimeout(() => {
-      setLoadingText("Waking up server (takes ~30s)...");
-      toast.info("Server is waking up from sleep mode, please wait...", { autoClose: 5000 });
-    }, 4000);
 
     try {
-      // 60-second timeout to accommodate Render free-tier cold starts
       const response = await axios.post(
         `${BASE_URL}/api/v1/auth/login`,
         {
@@ -42,7 +33,6 @@ export default function LoginForm({ onSuccess }) {
         { timeout: 60000 }
       );
 
-      clearTimeout(coldStartTimer);
       toast.success(response.data.message || "Login successful! 🎉");
       const token = response.data.token || response.data.data?.token;
 
@@ -68,14 +58,13 @@ export default function LoginForm({ onSuccess }) {
         navigate("/homepage");
       }
     } catch (err) {
-      clearTimeout(coldStartTimer);
       console.error("Login error details:", err);
 
       let errorMsg = "Invalid credentials or login failed.";
       if (err.code === "ECONNABORTED" || err.message?.includes("timeout")) {
-        errorMsg = "Server took too long to respond. Please try clicking login again.";
+        errorMsg = "Request took too long. Please try again.";
       } else if (!err.response) {
-        errorMsg = "Network error: Unable to reach the server. Check your connection.";
+        errorMsg = "Network error: Unable to complete request. Check your connection.";
       } else {
         errorMsg = err.response?.data?.message || err.response?.data?.error || errorMsg;
       }
@@ -83,7 +72,6 @@ export default function LoginForm({ onSuccess }) {
       toast.error(errorMsg);
     } finally {
       setLoading(false);
-      setLoadingText("Signing In...");
     }
   };
 
@@ -172,7 +160,7 @@ export default function LoginForm({ onSuccess }) {
               {loading ? (
                 <>
                   <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
-                  {loadingText}
+                  Signing In...
                 </>
               ) : (
                 "Login →"

@@ -29,12 +29,6 @@ const ForgotPassword = () => {
     setLoading(true);
     setLoadingText("Sending Code...");
 
-    // Render free-tier cold start handler
-    const coldStartTimer = setTimeout(() => {
-      setLoadingText("Waking up server (~30s)...");
-      toast.info("Server is waking up from sleep mode, please wait...", { autoClose: 5000 });
-    }, 4000);
-
     try {
       const res = await axios.post(
         `${BASE_URL}/api/v1/auth/forgot-password`,
@@ -44,18 +38,16 @@ const ForgotPassword = () => {
         { timeout: 60000 }
       );
 
-      clearTimeout(coldStartTimer);
       toast.success(res.data.message || "Reset code sent! 🎉");
       setStep(2);
     } catch (err) {
-      clearTimeout(coldStartTimer);
       console.error("Forgot password error:", err);
 
       let errorMsg = "Failed to send reset code.";
       if (err.code === "ECONNABORTED" || err.message?.includes("timeout")) {
-        errorMsg = "Server took too long to respond. Please try again.";
+        errorMsg = "Request took too long. Please try again.";
       } else if (!err.response) {
-        errorMsg = "Network error: Unable to reach the server. Check your connection.";
+        errorMsg = "Network error: Unable to complete request. Check your connection.";
       } else {
         errorMsg = err.response?.data?.message || err.response?.data?.error || errorMsg;
       }
@@ -77,11 +69,6 @@ const ForgotPassword = () => {
     setLoading(true);
     setLoadingText("Resetting Password...");
 
-    const coldStartTimer = setTimeout(() => {
-      setLoadingText("Waking up server (~30s)...");
-      toast.info("Server is waking up, please wait a moment...", { autoClose: 5000 });
-    }, 4000);
-
     try {
       const res = await axios.post(
         `${BASE_URL}/api/v1/auth/reset-password`,
@@ -93,18 +80,16 @@ const ForgotPassword = () => {
         { timeout: 60000 }
       );
 
-      clearTimeout(coldStartTimer);
       toast.success(res.data.message || "Password reset successfully! 🎉");
       navigate("/login");
     } catch (err) {
-      clearTimeout(coldStartTimer);
       console.error("Reset password error:", err);
 
       let errorMsg = "Password reset failed.";
       if (err.code === "ECONNABORTED" || err.message?.includes("timeout")) {
         errorMsg = "Request timed out. Please try again.";
       } else if (!err.response) {
-        errorMsg = "Network error: Unable to reach the server.";
+        errorMsg = "Network error: Please check your connection.";
       } else {
         errorMsg = err.response?.data?.message || err.response?.data?.error || errorMsg;
       }
