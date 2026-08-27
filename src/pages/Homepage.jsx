@@ -402,7 +402,7 @@ export default function HomePage() {
               {/* Info Banner */}
               <div className={`alert ${darkMode ? "bg-dark text-info border-info" : "bg-info bg-opacity-10 text-info border-info-subtle"} d-flex align-items-center gap-2 mb-3 py-2 px-3 rounded-3 small border`}>
                 <Info size={18} className="flex-shrink-0" />
-                <span>Use the <strong>Refresh</strong> button to update and sync your tracker without changing anything else!</span>
+                <span>Use the <strong>Refresh</strong> button to update the dashboard metrics!</span>
               </div>
 
               <div className="d-flex flex-column flex-lg-row align-items-stretch align-items-lg-center justify-content-between gap-3 mb-3">
