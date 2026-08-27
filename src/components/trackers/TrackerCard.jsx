@@ -14,7 +14,6 @@ const RAW_BASE_URL =
   "https://lv3node.onrender.com";
 
 const BASE_URL = RAW_BASE_URL.replace(/\/$/, "");
-
 const CLIENT_SECRET = "your_client_side_encryption_secret";
 
 const decryptField = (ciphertext) => {
@@ -686,7 +685,6 @@ export default function TrackerCard({
               </div>
             </div>
             
-            {/* Replaced flex with CSS Grid to strictly prevent input/button overflow past card boundaries */}
             <div className="tracker-goal-inputs" style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: "0.6rem", width: "100%", minWidth: 0 }}>
               <input
                 type="number"
@@ -694,7 +692,7 @@ export default function TrackerCard({
                 onChange={(e) => setInputValue(e.target.value)}
                 placeholder="Amount"
                 style={{
-                  width: "100%",
+                  width: "60%",
                   minWidth: 0,
                   padding: "0.75rem 0.9rem",
                   borderRadius: "0.85rem",
