@@ -1,13 +1,12 @@
 import React, { useMemo } from "react";
-import { TrendingUp, Target, CheckCircle, LayoutGrid } from "lucide-react";
+import { TrendingUp, Target, CheckCircle, LayoutGrid, RefreshCw } from "lucide-react";
 import CryptoJS from "crypto-js";
 
+// Must match the secret used in TrackerCard and TrackerForm
 const CLIENT_SECRET = "your_client_side_encryption_secret";
 
 const decryptField = (ciphertext) => {
   if (!ciphertext) return null;
-  // If already an array or object (already decrypted by HomePage), return as-is immediately
-  if (typeof ciphertext === "object") return ciphertext;
   if (typeof ciphertext !== "string" || !ciphertext.startsWith("U2FsdGVkX1")) {
     return ciphertext;
   }
@@ -21,26 +20,26 @@ const decryptField = (ciphertext) => {
       return !isNaN(decryptedString) && decryptedString !== "" ? Number(decryptedString) : decryptedString;
     }
   } catch (error) {
-    console.error("Decryption error in dashboard:", error);
+    console.error("Decryption error:", error);
     return ciphertext;
   }
 };
 
 export default function TrackerDashboard({ trackers = [], darkMode = false }) {
+  console.log("TrackerDashboard Rendered with Raw Trackers:", trackers);
+
   const { total, completedToday, withGoals, activeStreak } = useMemo(() => {
     const safeTrackers = Array.isArray(trackers) ? trackers : [];
 
-    // Decrypt and normalize trackers safely
-    const decryptedTrackers = safeTrackers.map((t) => {
-      const rawEntries = decryptField(t?.entries);
-      return {
-        ...t,
-        type: decryptField(t?.type),
-        target: decryptField(t?.target),
-        entries: Array.isArray(rawEntries) ? rawEntries : [],
-      };
-    });
+    // Decrypt and normalize trackers so dashboard can read entries and target properties
+    const decryptedTrackers = safeTrackers.map((t) => ({
+      ...t,
+      type: decryptField(t?.type),
+      target: decryptField(t?.target),
+      entries: Array.isArray(decryptField(t?.entries)) ? decryptField(t?.entries) : [],
+    }));
 
+    // Universal date string formatter (YYYY-MM-DD)
     const getFormattedDate = (val) => {
       if (!val) return "";
       if (typeof val === "string" && val.length >= 10) return val.substring(0, 10);
@@ -59,19 +58,24 @@ export default function TrackerDashboard({ trackers = [], darkMode = false }) {
     const todayStr = getFormattedDate(new Date());
     const totalCount = decryptedTrackers.length;
 
+    // Bulletproof completion checker for a specific date string
     const isCompletedOnDate = (tracker, targetDateStr) => {
-      if (Array.isArray(tracker.entries) && tracker.entries.length > 0) {
+      // Check 1: decrypted tracker.entries array
+      if (Array.isArray(tracker.entries)) {
         const found = tracker.entries.some((entry) => {
           if (!entry) return false;
+          // If entry is a direct date string
           if (typeof entry === "string") {
             return getFormattedDate(entry) === targetDateStr;
           }
+          // If entry is an object with date/timestamp and optional value
           const entryDate = entry.date || entry.createdAt || entry.timestamp;
           if (!entryDate) return false;
 
           const matchesDate = getFormattedDate(entryDate) === targetDateStr;
           if (!matchesDate) return false;
 
+          // Check value flag if it exists
           const val = entry.completed ?? entry.value ?? entry.status;
           if (val === false || val === "false" || val === 0 || val === "no") return false;
           return true;
@@ -79,6 +83,7 @@ export default function TrackerDashboard({ trackers = [], darkMode = false }) {
         if (found) return true;
       }
 
+      // Check 2: alternative list properties
       const altLists = tracker.completedDates || tracker.history || tracker.dates;
       if (Array.isArray(altLists)) {
         return altLists.some((d) => getFormattedDate(d) === targetDateStr);
@@ -90,8 +95,9 @@ export default function TrackerDashboard({ trackers = [], darkMode = false }) {
     const completedCount = decryptedTrackers.filter((t) => isCompletedOnDate(t, todayStr)).length;
     const goalsCount = decryptedTrackers.filter((t) => t.target != null && t.target !== "").length;
 
+    // Streak calculation
     let streak = 0;
-    const habitTrackers = decryptedTrackers.filter((t) => t.type === "habit" || t.entries?.length > 0 || t.completedDates);
+    const habitTrackers = decryptedTrackers.filter((t) => t.type === "habit" || t.entries || t.completedDates);
 
     if (habitTrackers.length > 0) {
       let checkDate = new Date();
@@ -101,6 +107,7 @@ export default function TrackerDashboard({ trackers = [], darkMode = false }) {
         return habitTrackers.some((t) => isCompletedOnDate(t, targetStr));
       };
 
+      // Check today; if not done, check yesterday to allow streak preservation
       if (!hasCompletionForDay(checkDate)) {
         checkDate.setDate(checkDate.getDate() - 1);
         if (!hasCompletionForDay(checkDate)) {
@@ -165,7 +172,15 @@ export default function TrackerDashboard({ trackers = [], darkMode = false }) {
 
   return (
     <div style={{ width: "100%", marginBottom: "2rem" }}>
-      <div style={{ display: "flex", flexWrap: "wrap", gap: "16px", width: "100%" }}>
+      {/* Cards Grid */}
+      <div
+        style={{
+          display: "flex",
+          flexWrap: "wrap",
+          gap: "16px",
+          width: "100%",
+        }}
+      >
         {cards.map((card) => (
           <div
             key={card.label}
@@ -213,7 +228,13 @@ export default function TrackerDashboard({ trackers = [], darkMode = false }) {
               </div>
 
               {card.suffix && (
-                <span style={{ fontSize: "0.75rem", color: "#94a3b8", marginLeft: "4px" }}>
+                <span
+                  style={{
+                    fontSize: "0.75rem",
+                    color: "#94a3b8",
+                    marginLeft: "4px",
+                  }}
+                >
                   {card.suffix}
                 </span>
               )}

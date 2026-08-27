@@ -133,16 +133,15 @@ export default function HomePage() {
       const decryptedTrackers = await Promise.all(
         fetchedArray.map(async (tracker) => {
           try {
-            const decryptedEntries = tracker.entries !== undefined ? await decryptData(privateKey, tracker.entries) : [];
             return {
               ...tracker,
               name: await decryptData(privateKey, tracker.name),
               target: tracker.target !== undefined ? await decryptData(privateKey, tracker.target) : tracker.target,
-              entries: Array.isArray(decryptedEntries) ? decryptedEntries : [],
+              entries: tracker.entries !== undefined ? await decryptData(privateKey, tracker.entries) : tracker.entries,
             };
           } catch (decryptErr) {
             console.error("Failed to decrypt individual tracker:", decryptErr);
-            return { ...tracker, entries: [] };
+            return tracker;
           }
         })
       );
@@ -168,6 +167,7 @@ export default function HomePage() {
     fetchTrackers();
     const newId = newTracker._id || newTracker.id;
     setNewlyAddedId(newId);
+
     setNotification("Successfully created tracker!");
 
     if (newId) {
@@ -243,6 +243,7 @@ export default function HomePage() {
     });
     if (!targetTracker) return;
 
+    // Build standardized date fields so TrackerDashboard catches it immediately as "done today"
     const todayDateStr = new Date().toISOString().split("T")[0];
     const newEntryWithId = {
       date: todayDateStr,
@@ -255,6 +256,7 @@ export default function HomePage() {
 
     const updatedEntries = [...(targetTracker.entries || []), newEntryWithId];
 
+    // Optimistic UI update forces instant TrackerDashboard recalculation
     setTrackers((prev) =>
       prev.map((t) => {
         const tId = t._id?.toString() || t.id?.toString() || t._id || t.id;
@@ -269,10 +271,11 @@ export default function HomePage() {
   };
 
   const handleUpdate = async (trackerId, newEntries) => {
-    const todayDateStr = new Date().toISOString().split("T")[0];
+    // Normalize incoming entries from list/card toggles to guarantee date formats exist
     const normalizedEntries = Array.isArray(newEntries)
       ? newEntries.map((e) => {
           if (typeof e === "string") return e;
+          const todayDateStr = new Date().toISOString().split("T")[0];
           return {
             date: e.date || todayDateStr,
             timestamp: e.timestamp || e.createdAt || new Date().toISOString(),
