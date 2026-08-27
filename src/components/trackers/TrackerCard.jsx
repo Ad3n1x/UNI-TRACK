@@ -74,6 +74,7 @@ export default function TrackerCard({
   tracker,
   onDelete = () => {},
   onUpdateTracker = () => {},
+  fetchTrackers = () => {},
   cardRef = null,
   isNewlyAdded = false,
   darkMode = false,
@@ -161,6 +162,7 @@ export default function TrackerCard({
       if (!res.ok) {
         console.warn(`Server sync warning: HTTP ${res.status}. Keeping local state.`);
         toast.success(successMessage);
+        fetchTrackers?.();
         return;
       }
 
@@ -175,10 +177,12 @@ export default function TrackerCard({
       }
 
       onUpdateTracker?.(finalTracker);
+      fetchTrackers?.();
       toast.success(successMessage);
     } catch (err) {
       console.error("Network sync error:", err);
       toast.success(successMessage);
+      fetchTrackers?.();
     }
   };
 
@@ -187,7 +191,6 @@ export default function TrackerCard({
     const nextList = isCompleted
       ? [...localEntries.filter((e) => getEntryDateString(e.date) !== today), { date: today, value: true }]
       : localEntries.filter((e) => getEntryDateString(e.date) !== today);
-
     syncEntryToDb(nextList, isCompleted ? "Habit marked as done! 🎉" : "Habit unmarked for today.");
   };
 
@@ -198,7 +201,6 @@ export default function TrackerCard({
     const nextList = todayEntry
       ? localEntries.map((e) => (getEntryDateString(e.date) === today ? { ...e, value: nextVal } : e))
       : [...localEntries, { date: today, value: nextVal }];
-
     syncEntryToDb(nextList, "Counter updated successfully!");
   };
 
@@ -225,7 +227,6 @@ export default function TrackerCard({
     const nextList = todayEntry
       ? localEntries.map((e) => (getEntryDateString(e.date) === today ? { ...e, value: val } : e))
       : [...localEntries, { date: today, value: val }];
-
     syncEntryToDb(nextList, "Mood logged successfully! ✨");
   };
 
@@ -239,7 +240,6 @@ export default function TrackerCard({
     const nextList = todayEntry
       ? localEntries.map((e) => (getEntryDateString(e.date) === today ? { ...e, value: nextVal } : e))
       : [...localEntries, { date: today, value: nextVal }];
-
     syncEntryToDb(nextList, "Amount added successfully! 🎯");
     setInputValue("");
   };
@@ -304,8 +304,8 @@ export default function TrackerCard({
           boxShadow: isNewlyAdded
             ? `0 0 0 3px ${decryptedColor || typeColor}55, 0 8px 16px -4px rgba(0, 0, 0, 0.08)`
             : darkMode
-            ? "0 4px 6px -1px rgba(0, 0, 0, 0.2)"
-            : "0 4px 6px -1px rgba(0, 0, 0, 0.02)",
+              ? "0 4px 6px -1px rgba(0, 0, 0, 0.2)"
+              : "0 4px 6px -1px rgba(0, 0, 0, 0.02)",
           transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
           scrollMarginTop: "1.5rem",
         }}
@@ -614,8 +614,8 @@ export default function TrackerCard({
                     border: isSelected
                       ? `2px solid ${decryptedColor || typeColor}`
                       : darkMode
-                      ? "2px solid #334155"
-                      : "2px solid #f1f5f9",
+                        ? "2px solid #334155"
+                        : "2px solid #f1f5f9",
                     backgroundColor: isSelected ? `${decryptedColor || typeColor}15` : darkMode ? "#0f172a" : "#ffffff",
                     cursor: "pointer",
                     display: "flex",
@@ -653,73 +653,69 @@ export default function TrackerCard({
         {(decryptedType === "goal" || decryptedType === "expense") && (
           <div style={{ display: "flex", flexDirection: "column", gap: "0.95rem", width: "100%", minWidth: 0, boxSizing: "border-box" }}>
             <div style={{ width: "100%", minWidth: 0 }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.5rem", gap: "0.5rem", width: "100%", minWidth: 0 }}>
-                <span
-                  style={{
-                    fontSize: "0.85rem",
-                    fontWeight: 700,
-                    color: darkMode ? "#f8fafc" : "#1e293b",
-                    overflow: "hidden",
-                    textOverflow: "ellipsis",
-                    whiteSpace: "nowrap",
-                    flex: 1,
-                    minWidth: 0,
-                  }}
-                >
-                  {currentTotal} <span style={{ color: "#94a3b8" }}>/ {decryptedTarget}</span>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.4rem" }}>
+                <span style={{ fontSize: "0.78rem", fontWeight: 700, color: darkMode ? "#94a3b8" : "#64748b" }}>
+                  Progress: {currentTotal} / {decryptedTarget}
                 </span>
-                <span style={{ fontSize: "0.75rem", fontWeight: 700, color: decryptedColor || typeColor, flexShrink: 0 }}>
-                  {percentage.toFixed(0)}%
+                <span style={{ fontSize: "0.78rem", fontWeight: 700, color: decryptedColor || typeColor }}>
+                  {Math.round(percentage)}%
                 </span>
               </div>
-              <div style={{ width: "100%", minWidth: 0, height: "0.6rem", backgroundColor: darkMode ? "#334155" : "#f1f5f9", borderRadius: "9999px", overflow: "hidden" }}>
+              <div
+                style={{
+                  width: "100%",
+                  height: "8px",
+                  backgroundColor: darkMode ? "#334155" : "#f1f5f9",
+                  borderRadius: "4px",
+                  overflow: "hidden",
+                }}
+              >
                 <div
                   style={{
+                    width: `${percentage}%`,
                     height: "100%",
-                    width: `${Math.min(Math.max(percentage, 0), 100)}%`,
                     backgroundColor: decryptedColor || typeColor,
-                    borderRadius: "9999px",
-                    transition: "width 0.4s ease",
+                    borderRadius: "4px",
+                    transition: "width 0.3s ease",
                   }}
                 />
               </div>
             </div>
 
-            <div className="tracker-goal-inputs" style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "0.6rem", width: "100%", minWidth: 0, boxSizing: "border-box" }}>
+            <div className="tracker-goal-inputs" style={{ display: "flex", gap: "0.6rem", width: "100%", minWidth: 0 }}>
               <input
                 type="number"
+                placeholder="Add amount..."
                 value={inputValue}
                 onChange={(e) => setInputValue(e.target.value)}
-                placeholder="Amount"
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") handleSaveAmount();
+                }}
                 style={{
-                  flex: "1 1 120px",
-                  width: "100%",
+                  flex: 1,
                   minWidth: 0,
                   padding: "0.75rem 0.9rem",
                   borderRadius: "0.85rem",
-                  border: darkMode ? "2px solid #334155" : "2px solid #f1f5f9",
+                  border: darkMode ? "1px solid #334155" : "1px solid #cbd5e1",
+                  backgroundColor: darkMode ? "#0f172a" : "#ffffff",
+                  color: darkMode ? "#f8fafc" : "#0f172a",
+                  fontSize: "0.85rem",
                   outline: "none",
-                  color: darkMode ? "#f8fafc" : "#1e293b",
-                  backgroundColor: darkMode ? "#0f172a" : "#f8fafc",
-                  boxSizing: "border-box",
-                  fontSize: "0.9rem",
                 }}
               />
               <button
+                type="button"
                 onClick={handleSaveAmount}
-                disabled={!inputValue}
                 style={{
-                  flex: "0 0 auto",
                   padding: "0.75rem 1.25rem",
                   borderRadius: "0.85rem",
                   border: "none",
                   backgroundColor: decryptedColor || typeColor,
                   color: "#ffffff",
-                  cursor: inputValue ? "pointer" : "not-allowed",
-                  fontWeight: 600,
-                  opacity: inputValue ? 1 : 0.6,
-                  whiteSpace: "nowrap",
-                  fontSize: "0.9rem",
+                  fontWeight: 700,
+                  fontSize: "0.85rem",
+                  cursor: "pointer",
+                  flexShrink: 0,
                 }}
               >
                 Add
@@ -727,59 +723,6 @@ export default function TrackerCard({
             </div>
           </div>
         )}
-
-        {/* Footer Section */}
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            paddingTop: "0.75rem",
-            borderTop: darkMode ? "1px solid #334155" : "1px solid #f1f5f9",
-            marginTop: "auto",
-            width: "100%",
-            minWidth: 0,
-            gap: "0.5rem",
-            boxSizing: "border-box",
-          }}
-        >
-          <span
-            style={{
-              fontSize: "0.75rem",
-              color: darkMode ? "#94a3b8" : "#64748b",
-              display: "flex",
-              alignItems: "center",
-              gap: "0.35rem",
-              fontWeight: 500,
-              overflow: "hidden",
-              textOverflow: "ellipsis",
-              whiteSpace: "nowrap",
-              flex: 1,
-              minWidth: 0,
-            }}
-          >
-            <Activity size={13} style={{ flexShrink: 0 }} /> {localEntries.length} entries recorded
-          </span>
-
-          {trackerId && (
-            <Link
-              to={`/trackers/${trackerId}`}
-              style={{
-                fontSize: "0.75rem",
-                fontWeight: 600,
-                color: decryptedColor || typeColor,
-                textDecoration: "none",
-                display: "flex",
-                alignItems: "center",
-                gap: "0.3rem",
-                flexShrink: 0,
-                whiteSpace: "nowrap",
-              }}
-            >
-              View Entries <ExternalLink size={13} />
-            </Link>
-          )}
-        </div>
       </div>
     </>
   );
