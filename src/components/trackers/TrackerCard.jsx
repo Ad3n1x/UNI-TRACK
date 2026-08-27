@@ -260,8 +260,14 @@ export default function TrackerCard({
   return (
     <>
       <style>{`
-        .tracker-card-item * {
-          box-sizing: border-box;
+        .tracker-card-item, .tracker-card-item * {
+          box-sizing: border-box !important;
+        }
+        .tracker-card-item {
+          width: 100% !important;
+          max-width: 100% !important;
+          min-width: 0 !important;
+          overflow: hidden !important;
         }
         @media (max-width: 480px) {
           .tracker-card-item {
@@ -302,10 +308,6 @@ export default function TrackerCard({
             ? "0 4px 6px -1px rgba(0, 0, 0, 0.2)"
             : "0 4px 6px -1px rgba(0, 0, 0, 0.02)",
           transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
-          width: "100%",
-          maxWidth: "100%",
-          boxSizing: "border-box",
-          overflow: "hidden",
           scrollMarginTop: "1.5rem",
         }}
       >
@@ -338,6 +340,7 @@ export default function TrackerCard({
                   textOverflow: "ellipsis",
                   overflow: "hidden",
                   width: "100%",
+                  minWidth: 0,
                 }}
               >
                 {decryptedName}
@@ -354,6 +357,8 @@ export default function TrackerCard({
                   whiteSpace: "nowrap",
                   textOverflow: "ellipsis",
                   overflow: "hidden",
+                  width: "100%",
+                  minWidth: 0,
                 }}
               >
                 {decryptedType}
@@ -372,14 +377,14 @@ export default function TrackerCard({
 
               toast(
                 ({ closeToast }) => (
-                  <div style={{ display: "flex", flexDirection: "column", gap: "8px", padding: "2px", width: "100%", boxSizing: "border-box" }}>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "8px", padding: "2px", width: "100%", minWidth: 0 }}>
                     <span style={{ fontSize: "0.9rem", fontWeight: 700, color: darkMode ? "#f8fafc" : "#0f172a" }}>
                       Delete Tracker?
                     </span>
                     <p style={{ fontSize: "0.78rem", color: darkMode ? "#94a3b8" : "#64748b", margin: 0, wordBreak: "break-word" }}>
                       Are you sure you want to delete <strong style={{ color: darkMode ? "#f1f5f9" : "#1e293b" }}>"{decryptedName}"</strong>?
                     </p>
-                    <div style={{ display: "flex", gap: "8px", marginTop: "6px" }}>
+                    <div style={{ display: "flex", gap: "8px", marginTop: "6px", width: "100%", minWidth: 0 }}>
                       <button
                         onClick={() => {
                           onDelete(trackerId);
@@ -387,6 +392,7 @@ export default function TrackerCard({
                         }}
                         style={{
                           flex: 1,
+                          minWidth: 0,
                           backgroundColor: "#ef4444",
                           color: "#ffffff",
                           border: "none",
@@ -403,6 +409,7 @@ export default function TrackerCard({
                         onClick={closeToast}
                         style={{
                           flex: 1,
+                          minWidth: 0,
                           backgroundColor: darkMode ? "#334155" : "#f1f5f9",
                           color: darkMode ? "#f8fafc" : "#475569",
                           border: darkMode ? "1px solid #475569" : "1px solid #cbd5e1",
@@ -457,6 +464,7 @@ export default function TrackerCard({
             onClick={handleHabitToggle}
             style={{
               width: "100%",
+              minWidth: 0,
               padding: "0.95rem",
               borderRadius: "0.85rem",
               border: "none",
@@ -465,7 +473,6 @@ export default function TrackerCard({
               backgroundColor: todayEntry ? `${decryptedColor || typeColor}20` : darkMode ? "#334155" : "#f8fafc",
               color: todayEntry ? decryptedColor || typeColor : darkMode ? "#cbd5e1" : "#64748b",
               transition: "all 0.2s ease",
-              boxSizing: "border-box",
             }}
           >
             {todayEntry ? "Completed Today ✓" : "Mark Done"}
@@ -503,7 +510,9 @@ export default function TrackerCard({
                 textAlign: "center",
                 overflow: "hidden",
                 textOverflow: "ellipsis",
+                whiteSpace: "nowrap",
                 flex: 1,
+                minWidth: 0,
               }}
             >
               {Number(todayEntry?.value) || 0}
@@ -531,7 +540,7 @@ export default function TrackerCard({
 
         {/* Timer Type */}
         {decryptedType === "timer" && (
-          <div style={{ textAlign: "center", width: "100%", minWidth: 0 }}>
+          <div style={{ textAlign: "center", width: "100%", minWidth: 0, overflow: "hidden" }}>
             <div
               className="tracker-timer-value"
               style={{
@@ -541,18 +550,21 @@ export default function TrackerCard({
                 color: decryptedColor || typeColor,
                 marginBottom: "0.2rem",
                 wordBreak: "break-all",
+                width: "100%",
+                minWidth: 0,
               }}
             >
               {formatTime(timerSeconds)}
             </div>
-            <p style={{ fontSize: "0.75rem", color: darkMode ? "#94a3b8" : "#64748b", marginBottom: "1rem", fontWeight: 500 }}>
+            <p style={{ fontSize: "0.75rem", color: darkMode ? "#94a3b8" : "#64748b", marginBottom: "1rem", fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", width: "100%", minWidth: 0 }}>
               Saved Today: {formatTime(Number(todayEntry?.value) || 0)}
             </p>
-            <div style={{ display: "flex", gap: "0.6rem", width: "100%" }}>
+            <div style={{ display: "flex", gap: "0.6rem", width: "100%", minWidth: 0 }}>
               <button
                 onClick={handleTimerToggle}
                 style={{
                   flex: 1,
+                  minWidth: 0,
                   padding: "0.85rem",
                   borderRadius: "0.85rem",
                   border: "none",
@@ -560,7 +572,9 @@ export default function TrackerCard({
                   color: "#ffffff",
                   fontWeight: 700,
                   cursor: "pointer",
-                  minWidth: 0,
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  whiteSpace: "nowrap",
                 }}
               >
                 {timerRunning ? "PAUSE & SAVE" : "START"}
@@ -588,7 +602,7 @@ export default function TrackerCard({
 
         {/* Mood Type */}
         {decryptedType === "mood" && (
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(5, minmax(0, 1fr))", gap: "0.35rem", width: "100%" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(5, minmax(0, 1fr))", gap: "0.35rem", width: "100%", minWidth: 0 }}>
             {MOOD_OPTIONS.map((m) => {
               const isSelected = todayEntry?.value === m.value;
               return (
@@ -611,6 +625,7 @@ export default function TrackerCard({
                     justifyContent: "center",
                     minWidth: 0,
                     width: "100%",
+                    overflow: "hidden",
                   }}
                 >
                   <div style={{ fontSize: "1.25rem", marginBottom: "0.15rem", lineHeight: 1 }}>{m.emoji}</div>
@@ -623,6 +638,7 @@ export default function TrackerCard({
                       overflow: "hidden",
                       textOverflow: "ellipsis",
                       width: "100%",
+                      minWidth: 0,
                       textAlign: "center",
                     }}
                   >
@@ -637,8 +653,8 @@ export default function TrackerCard({
         {/* Goal / Expense Type */}
         {(decryptedType === "goal" || decryptedType === "expense") && (
           <div style={{ display: "flex", flexDirection: "column", gap: "0.95rem", width: "100%", minWidth: 0 }}>
-            <div>
-              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.5rem", gap: "0.5rem" }}>
+            <div style={{ width: "100%", minWidth: 0 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.5rem", gap: "0.5rem", width: "100%", minWidth: 0 }}>
                 <span
                   style={{
                     fontSize: "0.85rem",
@@ -647,6 +663,8 @@ export default function TrackerCard({
                     overflow: "hidden",
                     textOverflow: "ellipsis",
                     whiteSpace: "nowrap",
+                    flex: 1,
+                    minWidth: 0,
                   }}
                 >
                   {currentTotal} <span style={{ color: "#94a3b8" }}>/ {decryptedTarget}</span>
@@ -655,7 +673,7 @@ export default function TrackerCard({
                   {percentage.toFixed(0)}%
                 </span>
               </div>
-              <div style={{ width: "100%", height: "0.6rem", backgroundColor: darkMode ? "#334155" : "#f1f5f9", borderRadius: "9999px", overflow: "hidden" }}>
+              <div style={{ width: "100%", minWidth: 0, height: "0.6rem", backgroundColor: darkMode ? "#334155" : "#f1f5f9", borderRadius: "9999px", overflow: "hidden" }}>
                 <div
                   style={{
                     height: "100%",
@@ -667,7 +685,7 @@ export default function TrackerCard({
                 />
               </div>
             </div>
-            <div className="tracker-goal-inputs" style={{ display: "flex", gap: "0.6rem", width: "100%" }}>
+            <div className="tracker-goal-inputs" style={{ display: "flex", gap: "0.6rem", width: "100%", minWidth: 0 }}>
               <input
                 type="number"
                 value={inputValue}
