@@ -89,7 +89,6 @@ export default function TrackerCard({
   const decryptedName = useMemo(() => decryptField(tracker?.name) || "Untitled", [tracker?.name]);
   const decryptedTarget = useMemo(() => Number(decryptField(tracker?.target)) || 0, [tracker?.target]);
   
-  // Normalize type to lowercase and trim whitespace to fix formatting mismatches across different trackers
   const decryptedType = useMemo(() => {
     const raw = decryptField(tracker?.type);
     return typeof raw === "string" ? raw.toLowerCase().trim() : "counter";
@@ -110,7 +109,6 @@ export default function TrackerCard({
   }, [decryptedEntries]);
 
   const today = getLocalDateString();
-
   const todayEntry = localEntries.find((e) => getEntryDateString(e.date) === today);
 
   const IconComponent = Icons[decryptedIcon] || Icons.Circle;
@@ -260,413 +258,438 @@ export default function TrackerCard({
   const percentage = Math.min((currentTotal / (decryptedTarget || 1)) * 100, 100);
 
   return (
-    <div
-      ref={cardRef}
-      className="tracker-card-item"
-      style={{
-        backgroundColor: darkMode ? "#1e293b" : "#ffffff",
-        border: darkMode ? "1px solid rgba(51, 65, 85, 0.8)" : "1px solid rgba(226, 232, 240, 0.8)",
-        borderLeft: `6px solid ${decryptedColor || typeColor}`,
-        borderRadius: "1.25rem",
-        padding: "1.35rem",
-        display: "flex",
-        flexDirection: "column",
-        gap: "1.25rem",
-        boxShadow: isNewlyAdded
-          ? `0 0 0 3px ${decryptedColor || typeColor}55, 0 8px 16px -4px rgba(0, 0, 0, 0.08)`
-          : darkMode
-          ? "0 4px 6px -1px rgba(0, 0, 0, 0.2)"
-          : "0 4px 6px -1px rgba(0, 0, 0, 0.02)",
-        transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
-        width: "100%",
-        boxSizing: "border-box",
-        scrollMarginTop: "1.5rem",
-      }}
-    >
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "0.75rem" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "0.85rem", flex: 1, minWidth: 0 }}>
-          <div
-            style={{
-              width: "3rem",
-              height: "3rem",
-              borderRadius: "1rem",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              backgroundColor: `${decryptedColor || typeColor}15`,
-              color: decryptedColor || typeColor,
-              flexShrink: 0,
-            }}
-          >
-            <IconComponent size={22} />
-          </div>
-          <div style={{ minWidth: 0, overflow: "hidden" }}>
-            <h3
-              style={{
-                fontSize: "1.05rem",
-                fontWeight: 700,
-                margin: 0,
-                color: darkMode ? "#f8fafc" : "#0f172a",
-                whiteSpace: "nowrap",
-                textOverflow: "ellipsis",
-                overflow: "hidden",
-              }}
-            >
-              {decryptedName}
-            </h3>
-            <p
-              style={{
-                fontSize: "0.7rem",
-                marginTop: "0.2rem",
-                letterSpacing: "0.06em",
-                textTransform: "uppercase",
-                fontWeight: 700,
-                margin: 0,
-                color: typeColor,
-              }}
-            >
-              {decryptedType}
-            </p>
-          </div>
-        </div>
-
-        <button
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation();
-            if (!trackerId) {
-              toast.error("Cannot delete: Missing tracker ID");
-              return;
-            }
-
-            toast(
-              ({ closeToast }) => (
-                <div style={{ display: "flex", flexDirection: "column", gap: "8px", padding: "2px" }}>
-                  <span style={{ fontSize: "0.9rem", fontWeight: 700, color: darkMode ? "#f8fafc" : "#0f172a" }}>
-                    Delete Tracker?
-                  </span>
-                  <p style={{ fontSize: "0.78rem", color: darkMode ? "#94a3b8" : "#64748b", margin: 0 }}>
-                    Are you sure you want to delete <strong style={{ color: darkMode ? "#f1f5f9" : "#1e293b" }}>"{decryptedName}"</strong>?
-                  </p>
-                  <div style={{ display: "flex", gap: "8px", marginTop: "6px" }}>
-                    <button
-                      onClick={() => {
-                        onDelete(trackerId);
-                        closeToast();
-                      }}
-                      style={{
-                        flex: 1,
-                        backgroundColor: "#ef4444",
-                        color: "#ffffff",
-                        border: "none",
-                        padding: "7px 12px",
-                        borderRadius: "8px",
-                        cursor: "pointer",
-                        fontSize: "0.78rem",
-                        fontWeight: 700,
-                      }}
-                    >
-                      Yes, Delete
-                    </button>
-                    <button
-                      onClick={closeToast}
-                      style={{
-                        flex: 1,
-                        backgroundColor: darkMode ? "#334155" : "#f1f5f9",
-                        color: darkMode ? "#f8fafc" : "#475569",
-                        border: darkMode ? "1px solid #475569" : "1px solid #cbd5e1",
-                        padding: "7px 12px",
-                        borderRadius: "8px",
-                        cursor: "pointer",
-                        fontSize: "0.78rem",
-                        fontWeight: 600,
-                      }}
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                </div>
-              ),
-              {
-                position: "top-center",
-                autoClose: false,
-                closeOnClick: false,
-                draggable: false,
-                closeButton: false,
-                style: {
-                  backgroundColor: darkMode ? "#1e293b" : "#ffffff",
-                  color: darkMode ? "#f8fafc" : "#0f172a",
-                  border: darkMode ? "1px solid #334155" : "1px solid #e2e8f0",
-                  borderRadius: "1rem",
-                  padding: "1rem",
-                },
-              }
-            );
-          }}
-          style={{
-            backgroundColor: "transparent",
-            border: darkMode ? "1px solid #7f1d1d" : "1px solid #fecdd3",
-            color: "#ef4444",
-            padding: "0.35rem 0.7rem",
-            borderRadius: "0.6rem",
-            cursor: "pointer",
-            fontSize: "0.72rem",
-            fontWeight: 600,
-            flexShrink: 0,
-          }}
-        >
-          Delete
-        </button>
-      </div>
-
-      {decryptedType === "habit" && (
-        <button
-          onClick={handleHabitToggle}
-          style={{
-            width: "100%",
-            padding: "0.95rem",
-            borderRadius: "0.85rem",
-            border: "none",
-            fontWeight: 700,
-            cursor: "pointer",
-            backgroundColor: todayEntry ? `${decryptedColor || typeColor}20` : darkMode ? "#334155" : "#f8fafc",
-            color: todayEntry ? decryptedColor || typeColor : darkMode ? "#cbd5e1" : "#64748b",
-            transition: "all 0.2s ease",
-          }}
-        >
-          {todayEntry ? "Completed Today ✓" : "Mark Done"}
-        </button>
-      )}
-
-      {(decryptedType === "counter" || (!["habit", "timer", "mood", "goal", "expense"].includes(decryptedType))) && (
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "1rem" }}>
-          <button
-            onClick={() => handleCounterChange(-1)}
-            style={{
-              width: "3rem",
-              height: "3rem",
-              borderRadius: "0.85rem",
-              border: "none",
-              cursor: "pointer",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              backgroundColor: darkMode ? "#334155" : "#f8fafc",
-              color: darkMode ? "#f8fafc" : "#334155",
-              flexShrink: 0,
-            }}
-          >
-            <Minus size={18} />
-          </button>
-          <span style={{ fontSize: "2.25rem", fontWeight: 800, fontFamily: "monospace", color: decryptedColor || typeColor }}>
-            {Number(todayEntry?.value) || 0}
-          </span>
-          <button
-            onClick={() => handleCounterChange(1)}
-            style={{
-              width: "3rem",
-              height: "3rem",
-              borderRadius: "0.85rem",
-              border: "none",
-              cursor: "pointer",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              backgroundColor: decryptedColor || typeColor,
-              color: "#ffffff",
-              flexShrink: 0,
-            }}
-          >
-            <Plus size={18} />
-          </button>
-        </div>
-      )}
-
-      {decryptedType === "timer" && (
-        <div style={{ textAlign: "center" }}>
-          <div style={{ fontSize: "2.5rem", fontWeight: 800, fontFamily: "monospace", color: decryptedColor || typeColor, marginBottom: "0.2rem" }}>
-            {formatTime(timerSeconds)}
-          </div>
-          <p style={{ fontSize: "0.75rem", color: darkMode ? "#94a3b8" : "#64748b", marginBottom: "1rem", fontWeight: 500 }}>
-            Saved Today: {formatTime(Number(todayEntry?.value) || 0)}
-          </p>
-          <div style={{ display: "flex", gap: "0.6rem" }}>
-            <button
-              onClick={handleTimerToggle}
-              style={{
-                flex: 1,
-                padding: "0.85rem",
-                borderRadius: "0.85rem",
-                border: "none",
-                backgroundColor: decryptedColor || typeColor,
-                color: "#ffffff",
-                fontWeight: 700,
-                cursor: "pointer",
-              }}
-            >
-              {timerRunning ? "PAUSE & SAVE" : "START"}
-            </button>
-            <button
-              onClick={() => {
-                setTimerRunning(false);
-                setTimerSeconds(0);
-              }}
-              style={{
-                padding: "0.85rem",
-                borderRadius: "0.85rem",
-                border: "none",
-                backgroundColor: darkMode ? "#334155" : "#f8fafc",
-                cursor: "pointer",
-                color: darkMode ? "#f8fafc" : "#334155",
-              }}
-            >
-              <RotateCcw size={18} />
-            </button>
-          </div>
-        </div>
-      )}
-
-      {decryptedType === "mood" && (
-        <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
-          <div className="mood-buttons-grid" style={{ display: "flex", justifyContent: "space-between", gap: "0.4rem" }}>
-            {MOOD_OPTIONS.map((m) => {
-              const isSelected = todayEntry?.value === m.value;
-              return (
-                <button
-                  key={m.value}
-                  onClick={() => handleMoodSelect(m.value)}
-                  style={{
-                    flex: 1,
-                    padding: "0.7rem 0.2rem",
-                    borderRadius: "0.75rem",
-                    border: isSelected
-                      ? `2px solid ${decryptedColor || typeColor}`
-                      : darkMode
-                      ? "2px solid #334155"
-                      : "2px solid #f1f5f9",
-                    backgroundColor: isSelected ? `${decryptedColor || typeColor}15` : darkMode ? "#0f172a" : "#ffffff",
-                    cursor: "pointer",
-                    display: "flex",
-                    flexDirection: "column",
-                    alignItems: "center",
-                  }}
-                >
-                  <div style={{ fontSize: "1.35rem", marginBottom: "0.2rem" }}>{m.emoji}</div>
-                  <span
-                    style={{
-                      fontSize: "0.65rem",
-                      fontWeight: 700,
-                      color: isSelected ? decryptedColor || typeColor : darkMode ? "#94a3b8" : "#64748b",
-                    }}
-                  >
-                    {m.label}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      )}
-
-      {(decryptedType === "goal" || decryptedType === "expense") && (
-        <div style={{ display: "flex", flexDirection: "column", gap: "0.95rem" }}>
-          <div>
-            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.5rem" }}>
-              <span style={{ fontSize: "0.85rem", fontWeight: 700, color: darkMode ? "#f8fafc" : "#1e293b" }}>
-                {currentTotal} <span style={{ color: "#94a3b8" }}>/ {decryptedTarget}</span>
-              </span>
-              <span style={{ fontSize: "0.75rem", fontWeight: 700, color: decryptedColor || typeColor }}>
-                {percentage.toFixed(0)}%
-              </span>
-            </div>
-            <div style={{ width: "100%", height: "0.6rem", backgroundColor: darkMode ? "#334155" : "#f1f5f9", borderRadius: "9999px", overflow: "hidden" }}>
-              <div
-                style={{
-                  height: "100%",
-                  width: `${percentage}%`,
-                  backgroundColor: decryptedColor || typeColor,
-                  borderRadius: "9999px",
-                  transition: "width 0.4s ease",
-                }}
-              />
-            </div>
-          </div>
-          <div style={{ display: "flex", gap: "0.6rem" }}>
-            <input
-              type="number"
-              value={inputValue}
-              onChange={(e) => setInputValue(e.target.value)}
-              placeholder="Amount"
-              style={{
-                flex: 1,
-                padding: "0.75rem 0.9rem",
-                borderRadius: "0.85rem",
-                border: darkMode ? "2px solid #334155" : "2px solid #f1f5f9",
-                outline: "none",
-                color: darkMode ? "#f8fafc" : "#1e293b",
-                backgroundColor: darkMode ? "#0f172a" : "#f8fafc",
-              }}
-            />
-            <button
-              onClick={handleSaveAmount}
-              disabled={!inputValue}
-              style={{
-                padding: "0.75rem 1.25rem",
-                borderRadius: "0.85rem",
-                border: "none",
-                backgroundColor: decryptedColor || typeColor,
-                color: "#ffffff",
-                cursor: inputValue ? "pointer" : "not-allowed",
-                fontWeight: 600,
-                opacity: inputValue ? 1 : 0.6,
-              }}
-            >
-              Add
-            </button>
-          </div>
-        </div>
-      )}
+    <>
+      <style>{`
+        @media (max-width: 480px) {
+          .tracker-card-item {
+            padding: 1rem !important;
+            gap: 1rem !important;
+            border-radius: 1rem !important;
+          }
+          .tracker-counter-value {
+            font-size: 1.8rem !important;
+          }
+          .tracker-timer-value {
+            font-size: 2rem !important;
+          }
+          .tracker-goal-inputs {
+            flex-direction: column !important;
+          }
+          .tracker-goal-inputs button {
+            width: 100% !important;
+          }
+        }
+      `}</style>
 
       <div
+        ref={cardRef}
+        className="tracker-card-item"
         style={{
+          backgroundColor: darkMode ? "#1e293b" : "#ffffff",
+          border: darkMode ? "1px solid rgba(51, 65, 85, 0.8)" : "1px solid rgba(226, 232, 240, 0.8)",
+          borderLeft: `6px solid ${decryptedColor || typeColor}`,
+          borderRadius: "1.25rem",
+          padding: "1.35rem",
           display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          paddingTop: "0.5rem",
-          borderTop: darkMode ? "1px solid #334155" : "1px solid #f1f5f9",
-          marginTop: "auto",
+          flexDirection: "column",
+          gap: "1.25rem",
+          boxShadow: isNewlyAdded
+            ? `0 0 0 3px ${decryptedColor || typeColor}55, 0 8px 16px -4px rgba(0, 0, 0, 0.08)`
+            : darkMode
+            ? "0 4px 6px -1px rgba(0, 0, 0, 0.2)"
+            : "0 4px 6px -1px rgba(0, 0, 0, 0.02)",
+          transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+          width: "100%",
+          boxSizing: "border-box",
+          scrollMarginTop: "1.5rem",
         }}
       >
-        <span
-          style={{
-            fontSize: "0.75rem",
-            color: darkMode ? "#94a3b8" : "#64748b",
-            display: "flex",
-            alignItems: "center",
-            gap: "0.35rem",
-            fontWeight: 500,
-          }}
-        >
-          <Activity size={13} /> {localEntries.length} entries recorded
-        </span>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "0.75rem" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "0.85rem", flex: 1, minWidth: 0 }}>
+            <div
+              style={{
+                width: "3rem",
+                height: "3rem",
+                borderRadius: "1rem",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                backgroundColor: `${decryptedColor || typeColor}15`,
+                color: decryptedColor || typeColor,
+                flexShrink: 0,
+              }}
+            >
+              <IconComponent size={22} />
+            </div>
+            <div style={{ minWidth: 0, overflow: "hidden", flex: 1 }}>
+              <h3
+                style={{
+                  fontSize: "1.05rem",
+                  fontWeight: 700,
+                  margin: 0,
+                  color: darkMode ? "#f8fafc" : "#0f172a",
+                  whiteSpace: "nowrap",
+                  textOverflow: "ellipsis",
+                  overflow: "hidden",
+                }}
+              >
+                {decryptedName}
+              </h3>
+              <p
+                style={{
+                  fontSize: "0.7rem",
+                  marginTop: "0.2rem",
+                  letterSpacing: "0.06em",
+                  textTransform: "uppercase",
+                  fontWeight: 700,
+                  margin: 0,
+                  color: typeColor,
+                }}
+              >
+                {decryptedType}
+              </p>
+            </div>
+          </div>
 
-        {trackerId && (
-          <Link
-            to={`/trackers/${trackerId}`}
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              if (!trackerId) {
+                toast.error("Cannot delete: Missing tracker ID");
+                return;
+              }
+
+              toast(
+                ({ closeToast }) => (
+                  <div style={{ display: "flex", flexDirection: "column", gap: "8px", padding: "2px" }}>
+                    <span style={{ fontSize: "0.9rem", fontWeight: 700, color: darkMode ? "#f8fafc" : "#0f172a" }}>
+                      Delete Tracker?
+                    </span>
+                    <p style={{ fontSize: "0.78rem", color: darkMode ? "#94a3b8" : "#64748b", margin: 0 }}>
+                      Are you sure you want to delete <strong style={{ color: darkMode ? "#f1f5f9" : "#1e293b" }}>"{decryptedName}"</strong>?
+                    </p>
+                    <div style={{ display: "flex", gap: "8px", marginTop: "6px" }}>
+                      <button
+                        onClick={() => {
+                          onDelete(trackerId);
+                          closeToast();
+                        }}
+                        style={{
+                          flex: 1,
+                          backgroundColor: "#ef4444",
+                          color: "#ffffff",
+                          border: "none",
+                          padding: "7px 12px",
+                          borderRadius: "8px",
+                          cursor: "pointer",
+                          fontSize: "0.78rem",
+                          fontWeight: 700,
+                        }}
+                      >
+                        Yes, Delete
+                      </button>
+                      <button
+                        onClick={closeToast}
+                        style={{
+                          flex: 1,
+                          backgroundColor: darkMode ? "#334155" : "#f1f5f9",
+                          color: darkMode ? "#f8fafc" : "#475569",
+                          border: darkMode ? "1px solid #475569" : "1px solid #cbd5e1",
+                          padding: "7px 12px",
+                          borderRadius: "8px",
+                          cursor: "pointer",
+                          fontSize: "0.78rem",
+                          fontWeight: 600,
+                        }}
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                ),
+                {
+                  position: "top-center",
+                  autoClose: false,
+                  closeOnClick: false,
+                  draggable: false,
+                  closeButton: false,
+                  style: {
+                    backgroundColor: darkMode ? "#1e293b" : "#ffffff",
+                    color: darkMode ? "#f8fafc" : "#0f172a",
+                    border: darkMode ? "1px solid #334155" : "1px solid #e2e8f0",
+                    borderRadius: "1rem",
+                    padding: "1rem",
+                  },
+                }
+              );
+            }}
             style={{
-              fontSize: "0.75rem",
+              backgroundColor: "transparent",
+              border: darkMode ? "1px solid #7f1d1d" : "1px solid #fecdd3",
+              color: "#ef4444",
+              padding: "0.35rem 0.7rem",
+              borderRadius: "0.6rem",
+              cursor: "pointer",
+              fontSize: "0.72rem",
               fontWeight: 600,
-              color: decryptedColor || typeColor,
-              textDecoration: "none",
-              display: "flex",
-              alignItems: "center",
-              gap: "0.3rem",
+              flexShrink: 0,
             }}
           >
-            View Entries <ExternalLink size={13} />
-          </Link>
+            Delete
+          </button>
+        </div>
+
+        {decryptedType === "habit" && (
+          <button
+            onClick={handleHabitToggle}
+            style={{
+              width: "100%",
+              padding: "0.95rem",
+              borderRadius: "0.85rem",
+              border: "none",
+              fontWeight: 700,
+              cursor: "pointer",
+              backgroundColor: todayEntry ? `${decryptedColor || typeColor}20` : darkMode ? "#334155" : "#f8fafc",
+              color: todayEntry ? decryptedColor || typeColor : darkMode ? "#cbd5e1" : "#64748b",
+              transition: "all 0.2s ease",
+            }}
+          >
+            {todayEntry ? "Completed Today ✓" : "Mark Done"}
+          </button>
         )}
+
+        {(decryptedType === "counter" || (!["habit", "timer", "mood", "goal", "expense"].includes(decryptedType))) && (
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "1rem" }}>
+            <button
+              onClick={() => handleCounterChange(-1)}
+              style={{
+                width: "3rem",
+                height: "3rem",
+                borderRadius: "0.85rem",
+                border: "none",
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                backgroundColor: darkMode ? "#334155" : "#f8fafc",
+                color: darkMode ? "#f8fafc" : "#334155",
+                flexShrink: 0,
+              }}
+            >
+              <Minus size={18} />
+            </button>
+            <span className="tracker-counter-value" style={{ fontSize: "2.25rem", fontWeight: 800, fontFamily: "monospace", color: decryptedColor || typeColor }}>
+              {Number(todayEntry?.value) || 0}
+            </span>
+            <button
+              onClick={() => handleCounterChange(1)}
+              style={{
+                width: "3rem",
+                height: "3rem",
+                borderRadius: "0.85rem",
+                border: "none",
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                backgroundColor: decryptedColor || typeColor,
+                color: "#ffffff",
+                flexShrink: 0,
+              }}
+            >
+              <Plus size={18} />
+            </button>
+          </div>
+        )}
+
+        {decryptedType === "timer" && (
+          <div style={{ textAlign: "center" }}>
+            <div className="tracker-timer-value" style={{ fontSize: "2.5rem", fontWeight: 800, fontFamily: "monospace", color: decryptedColor || typeColor, marginBottom: "0.2rem" }}>
+              {formatTime(timerSeconds)}
+            </div>
+            <p style={{ fontSize: "0.75rem", color: darkMode ? "#94a3b8" : "#64748b", marginBottom: "1rem", fontWeight: 500 }}>
+              Saved Today: {formatTime(Number(todayEntry?.value) || 0)}
+            </p>
+            <div style={{ display: "flex", gap: "0.6rem" }}>
+              <button
+                onClick={handleTimerToggle}
+                style={{
+                  flex: 1,
+                  padding: "0.85rem",
+                  borderRadius: "0.85rem",
+                  border: "none",
+                  backgroundColor: decryptedColor || typeColor,
+                  color: "#ffffff",
+                  fontWeight: 700,
+                  cursor: "pointer",
+                }}
+              >
+                {timerRunning ? "PAUSE & SAVE" : "START"}
+              </button>
+              <button
+                onClick={() => {
+                  setTimerRunning(false);
+                  setTimerSeconds(0);
+                }}
+                style={{
+                  padding: "0.85rem",
+                  borderRadius: "0.85rem",
+                  border: "none",
+                  backgroundColor: darkMode ? "#334155" : "#f8fafc",
+                  cursor: "pointer",
+                  color: darkMode ? "#f8fafc" : "#334155",
+                }}
+              >
+                <RotateCcw size={18} />
+              </button>
+            </div>
+          </div>
+        )}
+
+        {decryptedType === "mood" && (
+          <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+            <div className="mood-buttons-grid" style={{ display: "flex", justifyContent: "space-between", gap: "0.4rem", flexWrap: "wrap" }}>
+              {MOOD_OPTIONS.map((m) => {
+                const isSelected = todayEntry?.value === m.value;
+                return (
+                  <button
+                    key={m.value}
+                    onClick={() => handleMoodSelect(m.value)}
+                    style={{
+                      flex: "1 1 0",
+                      minWidth: "50px",
+                      padding: "0.7rem 0.2rem",
+                      borderRadius: "0.75rem",
+                      border: isSelected
+                        ? `2px solid ${decryptedColor || typeColor}`
+                        : darkMode
+                        ? "2px solid #334155"
+                        : "2px solid #f1f5f9",
+                      backgroundColor: isSelected ? `${decryptedColor || typeColor}15` : darkMode ? "#0f172a" : "#ffffff",
+                      cursor: "pointer",
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "center",
+                    }}
+                  >
+                    <div style={{ fontSize: "1.35rem", marginBottom: "0.2rem" }}>{m.emoji}</div>
+                    <span
+                      style={{
+                        fontSize: "0.65rem",
+                        fontWeight: 700,
+                        color: isSelected ? decryptedColor || typeColor : darkMode ? "#94a3b8" : "#64748b",
+                      }}
+                    >
+                      {m.label}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {(decryptedType === "goal" || decryptedType === "expense") && (
+          <div style={{ display: "flex", flexDirection: "column", gap: "0.95rem" }}>
+            <div>
+              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.5rem" }}>
+                <span style={{ fontSize: "0.85rem", fontWeight: 700, color: darkMode ? "#f8fafc" : "#1e293b" }}>
+                  {currentTotal} <span style={{ color: "#94a3b8" }}>/ {decryptedTarget}</span>
+                </span>
+                <span style={{ fontSize: "0.75rem", fontWeight: 700, color: decryptedColor || typeColor }}>
+                  {percentage.toFixed(0)}%
+                </span>
+              </div>
+              <div style={{ width: "100%", height: "0.6rem", backgroundColor: darkMode ? "#334155" : "#f1f5f9", borderRadius: "9999px", overflow: "hidden" }}>
+                <div
+                  style={{
+                    height: "100%",
+                    width: `${percentage}%`,
+                    backgroundColor: decryptedColor || typeColor,
+                    borderRadius: "9999px",
+                    transition: "width 0.4s ease",
+                  }}
+                />
+              </div>
+            </div>
+            <div className="tracker-goal-inputs" style={{ display: "flex", gap: "0.6rem" }}>
+              <input
+                type="number"
+                value={inputValue}
+                onChange={(e) => setInputValue(e.target.value)}
+                placeholder="Amount"
+                style={{
+                  flex: 1,
+                  padding: "0.75rem 0.9rem",
+                  borderRadius: "0.85rem",
+                  border: darkMode ? "2px solid #334155" : "2px solid #f1f5f9",
+                  outline: "none",
+                  color: darkMode ? "#f8fafc" : "#1e293b",
+                  backgroundColor: darkMode ? "#0f172a" : "#f8fafc",
+                }}
+              />
+              <button
+                onClick={handleSaveAmount}
+                disabled={!inputValue}
+                style={{
+                  padding: "0.75rem 1.25rem",
+                  borderRadius: "0.85rem",
+                  border: "none",
+                  backgroundColor: decryptedColor || typeColor,
+                  color: "#ffffff",
+                  cursor: inputValue ? "pointer" : "not-allowed",
+                  fontWeight: 600,
+                  opacity: inputValue ? 1 : 0.6,
+                }}
+              >
+                Add
+              </button>
+            </div>
+          </div>
+        )}
+
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            paddingTop: "0.5rem",
+            borderTop: darkMode ? "1px solid #334155" : "1px solid #f1f5f9",
+            marginTop: "auto",
+          }}
+        >
+          <span
+            style={{
+              fontSize: "0.75rem",
+              color: darkMode ? "#94a3b8" : "#64748b",
+              display: "flex",
+              alignItems: "center",
+              gap: "0.35rem",
+              fontWeight: 500,
+            }}
+          >
+            <Activity size={13} /> {localEntries.length} entries recorded
+          </span>
+
+          {trackerId && (
+            <Link
+              to={`/trackers/${trackerId}`}
+              style={{
+                fontSize: "0.75rem",
+                fontWeight: 600,
+                color: decryptedColor || typeColor,
+                textDecoration: "none",
+                display: "flex",
+                alignItems: "center",
+                gap: "0.3rem",
+              }}
+            >
+              View Entries <ExternalLink size={13} />
+            </Link>
+          )}
+        </div>
       </div>
-    </div>
+    </>
   );
 }
