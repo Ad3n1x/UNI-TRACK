@@ -117,9 +117,9 @@ export default function HomePage() {
   };
 
   const handleLogout = () => {
-    cookies.remove("token", { path: "/" });
+    cookies.remove("token", { path: "/login" });
     localStorage.removeItem("token");
-    window.location.href = "/";
+    window.location.href = "/login";
   };
 
   const fetchTrackers = async () => {
