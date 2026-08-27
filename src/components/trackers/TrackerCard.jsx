@@ -5,7 +5,7 @@ import { Link } from "react-router-dom";
 import Cookies from "universal-cookie";
 import { toast } from "react-toastify";
 import CryptoJS from "crypto-js";
-import { initializeUserKeys, encryptData } from "../utils/e2ee";
+import { initializeUserKeys, encryptData } from "../../utils/e2ee";
 
 const RAW_BASE_URL =
   (typeof process !== "undefined" && process.env?.API_URL) ||
@@ -651,9 +651,9 @@ export default function TrackerCard({
 
         {/* Goal / Expense Type */}
         {(decryptedType === "goal" || decryptedType === "expense") && (
-          <div style={{ display: "flex", flexDirection: "column", gap: "0.95rem", width: "100%", minWidth: 0 }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: "0.95rem", width: "100%", minWidth: 0, boxSizing: "border-box" }}>
             <div style={{ width: "100%", minWidth: 0 }}>
-              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.5rem", gap: "0.5rem", width: "100%", minWidth: 0 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.5rem", gap: "0.5rem", width: "100%", minWidth: 0 }}>
                 <span
                   style={{
                     fontSize: "0.85rem",
@@ -676,7 +676,7 @@ export default function TrackerCard({
                 <div
                   style={{
                     height: "100%",
-                    width: `${percentage}%`,
+                    width: `${Math.min(Math.max(percentage, 0), 100)}%`,
                     backgroundColor: decryptedColor || typeColor,
                     borderRadius: "9999px",
                     transition: "width 0.4s ease",
@@ -685,14 +685,14 @@ export default function TrackerCard({
               </div>
             </div>
             
-            <div className="tracker-goal-inputs" style={{ display: "flex", alignItems: "center", gap: "0.6rem", width: "100%", minWidth: 0 }}>
+            <div className="tracker-goal-inputs" style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "0.6rem", width: "100%", minWidth: 0, boxSizing: "border-box" }}>
               <input
                 type="number"
                 value={inputValue}
                 onChange={(e) => setInputValue(e.target.value)}
                 placeholder="Amount"
                 style={{
-                  flex: 1,
+                  flex: "1 1 120px",
                   width: "100%",
                   minWidth: 0,
                   padding: "0.75rem 0.9rem",
@@ -701,13 +701,15 @@ export default function TrackerCard({
                   outline: "none",
                   color: darkMode ? "#f8fafc" : "#1e293b",
                   backgroundColor: darkMode ? "#0f172a" : "#f8fafc",
+                  boxSizing: "border-box",
+                  fontSize: "0.9rem",
                 }}
               />
               <button
                 onClick={handleSaveAmount}
                 disabled={!inputValue}
                 style={{
-                  flexShrink: 0,
+                  flex: "0 0 auto",
                   padding: "0.75rem 1.25rem",
                   borderRadius: "0.85rem",
                   border: "none",
@@ -717,6 +719,7 @@ export default function TrackerCard({
                   fontWeight: 600,
                   opacity: inputValue ? 1 : 0.6,
                   whiteSpace: "nowrap",
+                  fontSize: "0.9rem",
                 }}
               >
                 Add
@@ -731,12 +734,13 @@ export default function TrackerCard({
             display: "flex",
             justifyContent: "space-between",
             alignItems: "center",
-            paddingTop: "0.5rem",
+            paddingTop: "0.75rem",
             borderTop: darkMode ? "1px solid #334155" : "1px solid #f1f5f9",
             marginTop: "auto",
             width: "100%",
             minWidth: 0,
             gap: "0.5rem",
+            boxSizing: "border-box",
           }}
         >
           <span
@@ -769,6 +773,7 @@ export default function TrackerCard({
                 alignItems: "center",
                 gap: "0.3rem",
                 flexShrink: 0,
+                whiteSpace: "nowrap",
               }}
             >
               View Entries <ExternalLink size={13} />
