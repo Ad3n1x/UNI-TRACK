@@ -5,7 +5,7 @@ import TrackerList from "../components/trackers/TrackerList";
 import TrackerFilters from "../components/trackers/TrackerFilters";
 import { PlusCircle, LayoutDashboard, CheckCircle2, LogOut, Sun, Moon, RefreshCw } from "lucide-react";
 import Cookies from "universal-cookie";
-import { initializeUserKeys, decryptData } from "../utils/e2ee";
+import { initializeUserKeys, decryptData, encryptData } from "../utils/e2ee"; // Make sure encryptData is imported!
 
 const RAW_BASE_URL =
   (typeof process !== "undefined" && process.env?.API_URL) ||
@@ -164,7 +164,7 @@ export default function HomePage() {
   }, []);
 
   const handleCreate = (newTracker) => {
-    fetchTrackers();
+    fetchTrackers(); // Need to fetch here to get the real DB ID for the whole tracker
     const newId = newTracker._id || newTracker.id;
     setNewlyAddedId(newId);
 
@@ -204,7 +204,7 @@ export default function HomePage() {
     } catch (error) {
       console.error("Error deleting tracker:", error);
       alert("Failed to delete tracker. Please check your connection.");
-      setTrackers(previousTrackers);
+      setTrackers(previousTrackers); // Revert UI if failed
     }
   };
 
@@ -227,15 +227,17 @@ export default function HomePage() {
         });
       }
 
-      if (response.ok) {
-        // Delayed refetch fixes database state delay issues on immediate today's updates
-        setTimeout(() => fetchTrackers(), 400);
-      } else {
+      if (!response.ok) {
         throw new Error("Failed to sync entries with server.");
       }
+      
+      // Removed the delayed fetchTrackers() call here! 
+      // The local UI state is already perfectly updated and we don't want to overwrite it with stale DB data.
+      
     } catch (error) {
       console.error("Error syncing entry modification:", error);
-      fetchTrackers();
+      // Only refetch if the save actually failed, so we can revert the optimistic UI update
+      fetchTrackers(); 
     }
   };
 
@@ -246,9 +248,16 @@ export default function HomePage() {
     });
     if (!targetTracker) return;
 
-    const newEntryWithId = { ...entry, _id: Date.now().toString() };
+    // Ensure we attach a timestamp so the Dashboard immediately recognizes it as a "today" entry
+    const newEntryWithId = { 
+      timestamp: new Date().toISOString(), 
+      ...entry, 
+      _id: Date.now().toString() 
+    };
+    
     const updatedEntries = [...(targetTracker.entries || []), newEntryWithId];
 
+    // Optimistic UI Update - this instantly updates the Dashboard and List!
     setTrackers((prev) =>
       prev.map((t) => {
         const tId = t._id?.toString() || t.id?.toString() || t._id || t.id;
@@ -259,6 +268,7 @@ export default function HomePage() {
       })
     );
 
+    // Sync in background without interrupting the UI
     await syncTrackerEntriesWithBackend(trackerId, updatedEntries);
   };
 
@@ -378,7 +388,7 @@ export default function HomePage() {
         <div className="row">
           <div className="col-12">
             
-            {/* Friendly Greeting & Sync Tip Banner */}
+            {/* Friendly Greeting */}
             <div className={`p-4 p-md-5 rounded-4 shadow-sm border mb-4 mb-md-5 position-relative overflow-hidden ${darkMode ? "bg-dark border-secondary" : "bg-white"}`}>
               <div className="position-absolute top-0 end-0 p-4 opacity-10 d-none d-md-block text-primary">
                 <LayoutDashboard size={140} />
@@ -388,15 +398,9 @@ export default function HomePage() {
                   {timeGreeting}
                 </span>
                 <h2 className="fw-bold mb-2 display-6" style={{ fontSize: "1.75rem" }}>Welcome back to Uni-Track!</h2>
-                <p className="text-muted mb-2 lead fs-6">
+                <p className="text-muted mb-0 lead fs-6">
                   Let's make today productive.
                 </p>
-                
-                {/* Notice for immediate updates */}
-                <div className="d-flex align-items-center gap-2 text-muted small mt-3">
-                  <RefreshCw size={14} className="text-primary flex-shrink-0" />
-                  <span>Note: If today's entries don't display immediately after updating, click <strong>Refresh</strong> in the navigation header.</span>
-                </div>
               </div>
             </div>
 
