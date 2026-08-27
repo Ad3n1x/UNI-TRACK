@@ -5,7 +5,7 @@ import TrackerList from "../components/trackers/TrackerList";
 import TrackerFilters from "../components/trackers/TrackerFilters";
 import { PlusCircle, LayoutDashboard, CheckCircle2, LogOut, Sun, Moon, RefreshCw, Info } from "lucide-react";
 import Cookies from "universal-cookie";
-import { initializeUserKeys, decryptData, encryptData } from "../utils/e2ee";
+import { initializeUserKeys, decryptData, encryptData } from "../utils/e2ee"; // Make sure encryptData is imported!
 
 const RAW_BASE_URL =
   (typeof process !== "undefined" && process.env?.API_URL) ||
@@ -133,23 +133,22 @@ export default function HomePage() {
       const decryptedTrackers = await Promise.all(
         fetchedArray.map(async (tracker) => {
           try {
-            const decryptedEntries = tracker.entries !== undefined ? await decryptData(privateKey, tracker.entries) : [];
             return {
               ...tracker,
               name: await decryptData(privateKey, tracker.name),
               target: tracker.target !== undefined ? await decryptData(privateKey, tracker.target) : tracker.target,
-              entries: Array.isArray(decryptedEntries) ? decryptedEntries : [],
+              entries: tracker.entries !== undefined ? await decryptData(privateKey, tracker.entries) : tracker.entries,
             };
           } catch (decryptErr) {
             console.error("Failed to decrypt individual tracker:", decryptErr);
-            return { ...tracker, entries: [] };
+            return tracker;
           }
         })
       );
 
       setTrackers([...decryptedTrackers].reverse());
       if (isManualRefresh) {
-        setNotification("Trackers updated successfully!");
+        setNotification("Trackers updated!");
         window.setTimeout(() => setNotification(null), 2500);
       }
     } catch (error) {
@@ -165,9 +164,10 @@ export default function HomePage() {
   }, []);
 
   const handleCreate = (newTracker) => {
-    fetchTrackers();
+    fetchTrackers(); // Need to fetch here to get the real DB ID for the whole tracker
     const newId = newTracker._id || newTracker.id;
     setNewlyAddedId(newId);
+
     setNotification("Successfully created tracker!");
 
     if (newId) {
@@ -204,7 +204,7 @@ export default function HomePage() {
     } catch (error) {
       console.error("Error deleting tracker:", error);
       alert("Failed to delete tracker. Please check your connection.");
-      setTrackers(previousTrackers);
+      setTrackers(previousTrackers); // Revert UI if failed
     }
   };
 
@@ -230,9 +230,14 @@ export default function HomePage() {
       if (!response.ok) {
         throw new Error("Failed to sync entries with server.");
       }
+      
+      // Removed the delayed fetchTrackers() call here! 
+      // The local UI state is already perfectly updated and we don't want to overwrite it with stale DB data.
+      
     } catch (error) {
       console.error("Error syncing entry modification:", error);
-      fetchTrackers();
+      // Only refetch if the save actually failed, so we can revert the optimistic UI update
+      fetchTrackers(); 
     }
   };
 
@@ -243,18 +248,16 @@ export default function HomePage() {
     });
     if (!targetTracker) return;
 
-    const todayDateStr = new Date().toISOString().split("T")[0];
-    const newEntryWithId = {
-      date: todayDateStr,
-      timestamp: new Date().toISOString(),
-      completed: true,
-      value: true,
-      ...entry,
-      _id: Date.now().toString(),
+    // Ensure we attach a timestamp so the Dashboard immediately recognizes it as a "today" entry
+    const newEntryWithId = { 
+      timestamp: new Date().toISOString(), 
+      ...entry, 
+      _id: Date.now().toString() 
     };
-
+    
     const updatedEntries = [...(targetTracker.entries || []), newEntryWithId];
 
+    // Optimistic UI Update - this instantly updates the Dashboard and List!
     setTrackers((prev) =>
       prev.map((t) => {
         const tId = t._id?.toString() || t.id?.toString() || t._id || t.id;
@@ -265,35 +268,22 @@ export default function HomePage() {
       })
     );
 
+    // Sync in background without interrupting the UI
     await syncTrackerEntriesWithBackend(trackerId, updatedEntries);
   };
 
   const handleUpdate = async (trackerId, newEntries) => {
-    const todayDateStr = new Date().toISOString().split("T")[0];
-    const normalizedEntries = Array.isArray(newEntries)
-      ? newEntries.map((e) => {
-          if (typeof e === "string") return e;
-          return {
-            date: e.date || todayDateStr,
-            timestamp: e.timestamp || e.createdAt || new Date().toISOString(),
-            completed: e.completed ?? e.value ?? true,
-            value: e.value ?? e.completed ?? true,
-            ...e,
-          };
-        })
-      : newEntries;
-
     setTrackers((prev) =>
       prev.map((t) => {
         const tId = t._id?.toString() || t.id?.toString() || t._id || t.id;
         if (tId === trackerId.toString()) {
-          return { ...t, entries: normalizedEntries };
+          return { ...t, entries: newEntries };
         }
         return t;
       })
     );
 
-    await syncTrackerEntriesWithBackend(trackerId, normalizedEntries);
+    await syncTrackerEntriesWithBackend(trackerId, newEntries);
   };
 
   const handleDeleteEntry = async (trackerId, entryId) => {
@@ -406,15 +396,15 @@ export default function HomePage() {
             {/* Dashboard Stats */}
             <TrackerDashboard trackers={trackers} darkMode={darkMode} />
 
-            {/* Refresh Helper Info Banner */}
-            <div className={`alert ${darkMode ? "bg-dark text-info border-info" : "bg-info bg-opacity-10 text-info border-info-subtle"} d-flex align-items-center gap-2 mb-4 py-2 px-3 rounded-3 small border`}>
-              <Info size={18} className="flex-shrink-0" />
-              <span>Use the <strong>Refresh</strong> button below to instantly update and sync your dashboard stats with your latest tracker entries!</span>
-            </div>
-
             {/* Trackers Toolbar & List Section */}
             <div className={`p-3 p-md-4 rounded-4 shadow-sm border mt-4 ${darkMode ? "bg-dark border-secondary" : "bg-white"}`}>
               
+              {/* Info Banner */}
+              <div className={`alert ${darkMode ? "bg-dark text-info border-info" : "bg-info bg-opacity-10 text-info border-info-subtle"} d-flex align-items-center gap-2 mb-3 py-2 px-3 rounded-3 small border`}>
+                <Info size={18} className="flex-shrink-0" />
+                <span>Use the <strong>Refresh</strong> button to update and sync your tracker without changing anything else!</span>
+              </div>
+
               <div className="d-flex flex-column flex-lg-row align-items-stretch align-items-lg-center justify-content-between gap-3 mb-3">
                 <div className="flex-grow-1 overflow-auto">
                   <TrackerFilters typeFilter={typeFilter} onTypeFilterChange={setTypeFilter} darkMode={darkMode} />
@@ -432,7 +422,7 @@ export default function HomePage() {
 
                   <button
                     type="button"
-                    className={`btn ${darkMode ? "btn-outline-light" : "btn-outline-secondary"} d-flex align-items-center gap-1 px-3 py-2`}
+                    className={`btn ${darkMode ? "btn-outline-light" : "btn-outline-secondary"} d-flex align-items-center gap-2 px-3 py-2`}
                     onClick={() => fetchTrackers(true)}
                     disabled={refreshing}
                     title="Refresh Trackers"
