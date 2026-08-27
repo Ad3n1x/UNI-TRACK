@@ -155,7 +155,7 @@ export default function HomePage() {
 
       setTrackers([...decryptedTrackers].reverse());
     } catch (error) {
-      console.error("Error fetching/decrypting trackers:", error);
+      console.error("Error fetching trackers:", error);
     } finally {
       setLoading(false);
     }
@@ -166,12 +166,12 @@ export default function HomePage() {
   }, []);
 
   const handleCreate = (newTracker) => {
-    // Refresh list from server to ensure encryption state matches clean flow
+    // Refresh list from server to ensure state matches clean flow
     fetchTrackers();
     const newId = newTracker._id || newTracker.id;
     setNewlyAddedId(newId);
 
-    setNotification("Successfully created encrypted tracker!");
+    setNotification("Successfully created tracker!");
 
     if (newId) {
       window.setTimeout(() => {
@@ -213,7 +213,6 @@ export default function HomePage() {
 
   const syncTrackerEntriesWithBackend = async (trackerId, updatedEntries) => {
     try {
-      // Note: Entries should ideally be encrypted before PUT payload transmission if fully E2EE on entries
       const { publicKey } = await initializeUserKeys();
       const encryptedEntries = await encryptData(publicKey, updatedEntries);
 
@@ -313,7 +312,7 @@ export default function HomePage() {
         <div className="spinner-border text-primary mb-3" role="status" style={{ width: "3rem", height: "3rem" }}>
           <span className="visually-hidden">Loading...</span>
         </div>
-        <p className="text-muted small m-0">Synchronizing & decrypting your secure trackers...</p>
+        <p className="text-muted small m-0">Loading your trackers...</p>
       </div>
     );
   }
@@ -381,7 +380,7 @@ export default function HomePage() {
                 </span>
                 <h2 className="fw-bold mb-2 display-6" style={{ fontSize: "1.75rem" }}>Welcome back to Uni-Track!</h2>
                 <p className="text-muted mb-0 lead fs-6">
-                  Your trackers are protected with client-side end-to-end encryption. Let's make today productive.
+                  Let's make today productive.
                 </p>
               </div>
             </div>
@@ -434,7 +433,7 @@ export default function HomePage() {
 
               {!hasTrackers && (
                 <div className="mt-3 p-3 bg-info bg-opacity-10 rounded text-info small text-center">
-                  💡 This is a sample tracker. Create your own secure tracker to get started!
+                  💡 This is a sample tracker. Create your own tracker to get started!
                 </div>
               )}
             </div>
@@ -447,7 +446,7 @@ export default function HomePage() {
         <div className="modal-dialog modal-dialog-centered modal-dialog-scrollable">
           <div className={`modal-content ${darkMode ? "bg-dark text-light border-secondary" : ""}`}>
             <div className="modal-header">
-              <h5 className="modal-title">Configure Secure Tracker</h5>
+              <h5 className="modal-title">Configure Tracker</h5>
               <button
                 type="button"
                 className={`btn-close ${darkMode ? "btn-close-white" : ""}`}
