@@ -68,9 +68,6 @@ export default function App() {
         <Route path="/register" element={<RegisterForm />} />
         <Route path="/homepage" element={<Homepage />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
-        
-        {/* Dynamic route for individual tracker entries */}
-        <Route path="/trackers/:trackerId" element={<TrackerDetail />} />
 
         {/* Catch-All 404 Route */}
         <Route path="*" element={<NotFound />} />
