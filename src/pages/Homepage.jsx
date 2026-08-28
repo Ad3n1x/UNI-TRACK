@@ -80,6 +80,7 @@ export default function HomePage() {
   }
 
   const [trackers, setTrackers] = useState([]);
+  const [sampleTrackerState, setSampleTrackerState] = useState(SAMPLE_TRACKER);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [typeFilter, setTypeFilter] = useState(null);
@@ -242,6 +243,19 @@ export default function HomePage() {
   };
 
   const handleAddEntry = async (trackerId, entry) => {
+    if (trackerId.toString() === SAMPLE_TRACKER._id) {
+      const newEntryWithId = { 
+        timestamp: new Date().toISOString(), 
+        ...entry, 
+        _id: Date.now().toString() 
+      };
+      setSampleTrackerState((prev) => ({
+        ...prev,
+        entries: [...(prev.entries || []), newEntryWithId],
+      }));
+      return;
+    }
+
     let targetTracker = trackers.find((t) => {
       const tId = t._id?.toString() || t.id?.toString() || t._id || t.id;
       return tId === trackerId.toString();
@@ -273,6 +287,11 @@ export default function HomePage() {
   };
 
   const handleUpdate = async (trackerId, newEntries) => {
+    if (trackerId.toString() === SAMPLE_TRACKER._id) {
+      setSampleTrackerState((prev) => ({ ...prev, entries: newEntries }));
+      return;
+    }
+
     setTrackers((prev) =>
       prev.map((t) => {
         const tId = t._id?.toString() || t.id?.toString() || t._id || t.id;
@@ -287,6 +306,16 @@ export default function HomePage() {
   };
 
   const handleDeleteEntry = async (trackerId, entryId) => {
+    if (trackerId.toString() === SAMPLE_TRACKER._id) {
+      setSampleTrackerState((prev) => ({
+        ...prev,
+        entries: (prev.entries || []).filter(
+          (e) => (e._id?.toString() || e.id?.toString() || e._id || e.id) !== entryId.toString()
+        ),
+      }));
+      return;
+    }
+
     let targetTracker = trackers.find((t) => {
       const tId = t._id?.toString() || t.id?.toString() || t._id || t.id;
       return tId === trackerId.toString();
@@ -329,7 +358,7 @@ export default function HomePage() {
   const filteredTrackers = typeFilter
     ? trackers.filter((t) => t.type === typeFilter)
     : trackers;
-  const displayTrackers = hasTrackers ? filteredTrackers : [SAMPLE_TRACKER];
+  const displayTrackers = hasTrackers ? filteredTrackers : [sampleTrackerState];
 
   const currentHour = new Date().getHours();
   const timeGreeting =
@@ -393,8 +422,10 @@ export default function HomePage() {
               </div>
             </div>
 
-            {/* Dashboard Stats */}
-            <TrackerDashboard trackers={trackers} darkMode={darkMode} />
+            {/* Dashboard Stats (Wrapped in matching border style) */}
+            <div className={`p-3 p-md-4 rounded-4 shadow-sm border ${darkMode ? "bg-dark border-secondary" : "bg-white"}`}>
+              <TrackerDashboard trackers={displayTrackers} darkMode={darkMode} />
+            </div>
 
             {/* Trackers Toolbar & List Section */}
             <div className={`p-3 p-md-4 rounded-4 shadow-sm border mt-4 ${darkMode ? "bg-dark border-secondary" : "bg-white"}`}>
