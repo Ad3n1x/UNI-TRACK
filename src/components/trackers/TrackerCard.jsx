@@ -5,7 +5,7 @@ import { Link } from "react-router-dom";
 import Cookies from "universal-cookie";
 import { toast } from "react-toastify";
 import CryptoJS from "crypto-js";
-import { initializeUserKeys, encryptData } from "../utils/e2ee";
+import { initializeUserKeys, encryptData } from "../../utils/e2ee";
 
 const RAW_BASE_URL =
   (typeof process !== "undefined" && process.env?.API_URL) ||
@@ -260,9 +260,6 @@ export default function TrackerCard({
   return (
     <>
       <style>{`
-        .tracker-card-item * {
-          box-sizing: border-box;
-        }
         @media (max-width: 480px) {
           .tracker-card-item {
             padding: 1rem !important;
@@ -303,15 +300,12 @@ export default function TrackerCard({
             : "0 4px 6px -1px rgba(0, 0, 0, 0.02)",
           transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
           width: "100%",
-          maxWidth: "100%",
           boxSizing: "border-box",
-          overflow: "hidden",
           scrollMarginTop: "1.5rem",
         }}
       >
-        {/* Header Section */}
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "0.75rem", width: "100%", minWidth: 0 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "0.85rem", flex: 1, minWidth: 0, overflow: "hidden" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "0.75rem" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "0.85rem", flex: 1, minWidth: 0 }}>
             <div
               style={{
                 width: "3rem",
@@ -337,7 +331,6 @@ export default function TrackerCard({
                   whiteSpace: "nowrap",
                   textOverflow: "ellipsis",
                   overflow: "hidden",
-                  width: "100%",
                 }}
               >
                 {decryptedName}
@@ -351,9 +344,6 @@ export default function TrackerCard({
                   fontWeight: 700,
                   margin: 0,
                   color: typeColor,
-                  whiteSpace: "nowrap",
-                  textOverflow: "ellipsis",
-                  overflow: "hidden",
                 }}
               >
                 {decryptedType}
@@ -372,11 +362,11 @@ export default function TrackerCard({
 
               toast(
                 ({ closeToast }) => (
-                  <div style={{ display: "flex", flexDirection: "column", gap: "8px", padding: "2px", width: "100%", boxSizing: "border-box" }}>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "8px", padding: "2px" }}>
                     <span style={{ fontSize: "0.9rem", fontWeight: 700, color: darkMode ? "#f8fafc" : "#0f172a" }}>
                       Delete Tracker?
                     </span>
-                    <p style={{ fontSize: "0.78rem", color: darkMode ? "#94a3b8" : "#64748b", margin: 0, wordBreak: "break-word" }}>
+                    <p style={{ fontSize: "0.78rem", color: darkMode ? "#94a3b8" : "#64748b", margin: 0 }}>
                       Are you sure you want to delete <strong style={{ color: darkMode ? "#f1f5f9" : "#1e293b" }}>"{decryptedName}"</strong>?
                     </p>
                     <div style={{ display: "flex", gap: "8px", marginTop: "6px" }}>
@@ -430,7 +420,6 @@ export default function TrackerCard({
                     border: darkMode ? "1px solid #334155" : "1px solid #e2e8f0",
                     borderRadius: "1rem",
                     padding: "1rem",
-                    maxWidth: "90vw",
                   },
                 }
               );
@@ -451,7 +440,6 @@ export default function TrackerCard({
           </button>
         </div>
 
-        {/* Habit Type */}
         {decryptedType === "habit" && (
           <button
             onClick={handleHabitToggle}
@@ -465,16 +453,14 @@ export default function TrackerCard({
               backgroundColor: todayEntry ? `${decryptedColor || typeColor}20` : darkMode ? "#334155" : "#f8fafc",
               color: todayEntry ? decryptedColor || typeColor : darkMode ? "#cbd5e1" : "#64748b",
               transition: "all 0.2s ease",
-              boxSizing: "border-box",
             }}
           >
             {todayEntry ? "Completed Today ✓" : "Mark Done"}
           </button>
         )}
 
-        {/* Counter Type */}
         {(decryptedType === "counter" || (!["habit", "timer", "mood", "goal", "expense"].includes(decryptedType))) && (
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "1rem", width: "100%", minWidth: 0 }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "1rem" }}>
             <button
               onClick={() => handleCounterChange(-1)}
               style={{
@@ -493,19 +479,7 @@ export default function TrackerCard({
             >
               <Minus size={18} />
             </button>
-            <span
-              className="tracker-counter-value"
-              style={{
-                fontSize: "2.25rem",
-                fontWeight: 800,
-                fontFamily: "monospace",
-                color: decryptedColor || typeColor,
-                textAlign: "center",
-                overflow: "hidden",
-                textOverflow: "ellipsis",
-                flex: 1,
-              }}
-            >
+            <span className="tracker-counter-value" style={{ fontSize: "2.25rem", fontWeight: 800, fontFamily: "monospace", color: decryptedColor || typeColor }}>
               {Number(todayEntry?.value) || 0}
             </span>
             <button
@@ -529,26 +503,15 @@ export default function TrackerCard({
           </div>
         )}
 
-        {/* Timer Type */}
         {decryptedType === "timer" && (
-          <div style={{ textAlign: "center", width: "100%", minWidth: 0 }}>
-            <div
-              className="tracker-timer-value"
-              style={{
-                fontSize: "2.5rem",
-                fontWeight: 800,
-                fontFamily: "monospace",
-                color: decryptedColor || typeColor,
-                marginBottom: "0.2rem",
-                wordBreak: "break-all",
-              }}
-            >
+          <div style={{ textAlign: "center" }}>
+            <div className="tracker-timer-value" style={{ fontSize: "2.5rem", fontWeight: 800, fontFamily: "monospace", color: decryptedColor || typeColor, marginBottom: "0.2rem" }}>
               {formatTime(timerSeconds)}
             </div>
             <p style={{ fontSize: "0.75rem", color: darkMode ? "#94a3b8" : "#64748b", marginBottom: "1rem", fontWeight: 500 }}>
               Saved Today: {formatTime(Number(todayEntry?.value) || 0)}
             </p>
-            <div style={{ display: "flex", gap: "0.6rem", width: "100%" }}>
+            <div style={{ display: "flex", gap: "0.6rem" }}>
               <button
                 onClick={handleTimerToggle}
                 style={{
@@ -560,7 +523,6 @@ export default function TrackerCard({
                   color: "#ffffff",
                   fontWeight: 700,
                   cursor: "pointer",
-                  minWidth: 0,
                 }}
               >
                 {timerRunning ? "PAUSE & SAVE" : "START"}
@@ -577,7 +539,6 @@ export default function TrackerCard({
                   backgroundColor: darkMode ? "#334155" : "#f8fafc",
                   cursor: "pointer",
                   color: darkMode ? "#f8fafc" : "#334155",
-                  flexShrink: 0,
                 }}
               >
                 <RotateCcw size={18} />
@@ -586,72 +547,57 @@ export default function TrackerCard({
           </div>
         )}
 
-        {/* Mood Type */}
         {decryptedType === "mood" && (
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(5, minmax(0, 1fr))", gap: "0.35rem", width: "100%" }}>
-            {MOOD_OPTIONS.map((m) => {
-              const isSelected = todayEntry?.value === m.value;
-              return (
-                <button
-                  key={m.value}
-                  onClick={() => handleMoodSelect(m.value)}
-                  style={{
-                    padding: "0.6rem 0.1rem",
-                    borderRadius: "0.75rem",
-                    border: isSelected
-                      ? `2px solid ${decryptedColor || typeColor}`
-                      : darkMode
-                      ? "2px solid #334155"
-                      : "2px solid #f1f5f9",
-                    backgroundColor: isSelected ? `${decryptedColor || typeColor}15` : darkMode ? "#0f172a" : "#ffffff",
-                    cursor: "pointer",
-                    display: "flex",
-                    flexDirection: "column",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    minWidth: 0,
-                    width: "100%",
-                  }}
-                >
-                  <div style={{ fontSize: "1.25rem", marginBottom: "0.15rem", lineHeight: 1 }}>{m.emoji}</div>
-                  <span
+          <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+            <div className="mood-buttons-grid" style={{ display: "flex", justifyContent: "space-between", gap: "0.4rem", flexWrap: "wrap" }}>
+              {MOOD_OPTIONS.map((m) => {
+                const isSelected = todayEntry?.value === m.value;
+                return (
+                  <button
+                    key={m.value}
+                    onClick={() => handleMoodSelect(m.value)}
                     style={{
-                      fontSize: "0.6rem",
-                      fontWeight: 700,
-                      color: isSelected ? decryptedColor || typeColor : darkMode ? "#94a3b8" : "#64748b",
-                      whiteSpace: "nowrap",
-                      overflow: "hidden",
-                      textOverflow: "ellipsis",
-                      width: "100%",
-                      textAlign: "center",
+                      flex: "1 1 0",
+                      minWidth: "50px",
+                      padding: "0.7rem 0.2rem",
+                      borderRadius: "0.75rem",
+                      border: isSelected
+                        ? `2px solid ${decryptedColor || typeColor}`
+                        : darkMode
+                        ? "2px solid #334155"
+                        : "2px solid #f1f5f9",
+                      backgroundColor: isSelected ? `${decryptedColor || typeColor}15` : darkMode ? "#0f172a" : "#ffffff",
+                      cursor: "pointer",
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "center",
                     }}
                   >
-                    {m.label}
-                  </span>
-                </button>
-              );
-            })}
+                    <div style={{ fontSize: "1.35rem", marginBottom: "0.2rem" }}>{m.emoji}</div>
+                    <span
+                      style={{
+                        fontSize: "0.65rem",
+                        fontWeight: 700,
+                        color: isSelected ? decryptedColor || typeColor : darkMode ? "#94a3b8" : "#64748b",
+                      }}
+                    >
+                      {m.label}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
           </div>
         )}
 
-        {/* Goal / Expense Type */}
         {(decryptedType === "goal" || decryptedType === "expense") && (
-          <div style={{ display: "flex", flexDirection: "column", gap: "0.95rem", width: "100%", minWidth: 0 }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: "0.95rem" }}>
             <div>
-              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.5rem", gap: "0.5rem" }}>
-                <span
-                  style={{
-                    fontSize: "0.85rem",
-                    fontWeight: 700,
-                    color: darkMode ? "#f8fafc" : "#1e293b",
-                    overflow: "hidden",
-                    textOverflow: "ellipsis",
-                    whiteSpace: "nowrap",
-                  }}
-                >
+              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.5rem" }}>
+                <span style={{ fontSize: "0.85rem", fontWeight: 700, color: darkMode ? "#f8fafc" : "#1e293b" }}>
                   {currentTotal} <span style={{ color: "#94a3b8" }}>/ {decryptedTarget}</span>
                 </span>
-                <span style={{ fontSize: "0.75rem", fontWeight: 700, color: decryptedColor || typeColor, flexShrink: 0 }}>
+                <span style={{ fontSize: "0.75rem", fontWeight: 700, color: decryptedColor || typeColor }}>
                   {percentage.toFixed(0)}%
                 </span>
               </div>
@@ -667,7 +613,7 @@ export default function TrackerCard({
                 />
               </div>
             </div>
-            <div className="tracker-goal-inputs" style={{ display: "flex", gap: "0.6rem", width: "100%" }}>
+            <div className="tracker-goal-inputs" style={{ display: "flex", gap: "0.6rem" }}>
               <input
                 type="number"
                 value={inputValue}
@@ -675,7 +621,6 @@ export default function TrackerCard({
                 placeholder="Amount"
                 style={{
                   flex: 1,
-                  minWidth: 0,
                   padding: "0.75rem 0.9rem",
                   borderRadius: "0.85rem",
                   border: darkMode ? "2px solid #334155" : "2px solid #f1f5f9",
@@ -696,7 +641,6 @@ export default function TrackerCard({
                   cursor: inputValue ? "pointer" : "not-allowed",
                   fontWeight: 600,
                   opacity: inputValue ? 1 : 0.6,
-                  flexShrink: 0,
                 }}
               >
                 Add
@@ -705,7 +649,6 @@ export default function TrackerCard({
           </div>
         )}
 
-        {/* Footer Section */}
         <div
           style={{
             display: "flex",
@@ -714,9 +657,6 @@ export default function TrackerCard({
             paddingTop: "0.5rem",
             borderTop: darkMode ? "1px solid #334155" : "1px solid #f1f5f9",
             marginTop: "auto",
-            width: "100%",
-            minWidth: 0,
-            gap: "0.5rem",
           }}
         >
           <span
@@ -727,14 +667,9 @@ export default function TrackerCard({
               alignItems: "center",
               gap: "0.35rem",
               fontWeight: 500,
-              overflow: "hidden",
-              textOverflow: "ellipsis",
-              whiteSpace: "nowrap",
-              flex: 1,
-              minWidth: 0,
             }}
           >
-            <Activity size={13} style={{ flexShrink: 0 }} /> {localEntries.length} entries recorded
+            <Activity size={13} /> {localEntries.length} entries recorded
           </span>
 
           {trackerId && (
@@ -748,7 +683,6 @@ export default function TrackerCard({
                 display: "flex",
                 alignItems: "center",
                 gap: "0.3rem",
-                flexShrink: 0,
               }}
             >
               View Entries <ExternalLink size={13} />
