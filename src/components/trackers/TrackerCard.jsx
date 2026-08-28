@@ -1,11 +1,10 @@
 import React, { useState, useEffect, useRef, useMemo } from "react";
-import { Minus, Plus, RotateCcw, ExternalLink, Activity } from "lucide-react";
+import { Minus, Plus, RotateCcw, ExternalLink, Activity, X } from "lucide-react";
 import * as Icons from "lucide-react";
-import { Link } from "react-router-dom";
 import Cookies from "universal-cookie";
 import { toast } from "react-toastify";
 import CryptoJS from "crypto-js";
-import { initializeUserKeys, encryptData } from "../../utils/e2ee";
+import { initializeUserKeys, encryptData, decryptData } from "../../utils/e2ee";
 
 const RAW_BASE_URL =
   (typeof process !== "undefined" && process.env?.API_URL) ||
@@ -82,6 +81,7 @@ export default function TrackerCard({
   const [inputValue, setInputValue] = useState("");
   const [timerRunning, setTimerRunning] = useState(false);
   const [timerSeconds, setTimerSeconds] = useState(0);
+  const [showEntriesModal, setShowEntriesModal] = useState(false);
   const intervalRef = useRef(null);
 
   const trackerId = tracker?._id || tracker?.id;
@@ -97,16 +97,40 @@ export default function TrackerCard({
   const decryptedColor = useMemo(() => decryptField(tracker?.color), [tracker?.color]);
   const decryptedIcon = useMemo(() => decryptField(tracker?.icon), [tracker?.icon]);
 
-  const decryptedEntries = useMemo(() => {
-    const rawEntries = decryptField(tracker?.entries);
-    return Array.isArray(rawEntries) ? rawEntries : [];
-  }, [tracker?.entries]);
+  const [localEntries, setLocalEntries] = useState([]);
 
-  const [localEntries, setLocalEntries] = useState(decryptedEntries);
-
+  // Safely decrypt E2EE encrypted entries
   useEffect(() => {
-    setLocalEntries(decryptedEntries);
-  }, [decryptedEntries]);
+    let isMounted = true;
+    const loadEntries = async () => {
+      if (!tracker?.entries) {
+        if (isMounted) setLocalEntries([]);
+        return;
+      }
+      try {
+        const { privateKey } = await initializeUserKeys();
+        const decrypted = await decryptData(privateKey, tracker.entries);
+        if (isMounted) {
+          if (Array.isArray(decrypted)) {
+            setLocalEntries(decrypted);
+          } else {
+            const fallbackParsed = decryptField(tracker.entries);
+            setLocalEntries(Array.isArray(fallbackParsed) ? fallbackParsed : []);
+          }
+        }
+      } catch (err) {
+        console.error("Error decrypting entries:", err);
+        const fallbackParsed = decryptField(tracker.entries);
+        if (isMounted) {
+          setLocalEntries(Array.isArray(fallbackParsed) ? fallbackParsed : []);
+        }
+      }
+    };
+    loadEntries();
+    return () => {
+      isMounted = false;
+    };
+  }, [tracker?.entries]);
 
   const today = getLocalDateString();
   const todayEntry = localEntries.find((e) => getEntryDateString(e.date) === today);
@@ -170,7 +194,8 @@ export default function TrackerCard({
       const finalTracker = updatedTrackerRes.data || updatedTrackerRes;
 
       if (finalTracker && finalTracker.entries) {
-        const serverDecrypted = decryptField(finalTracker.entries);
+        const { privateKey } = await initializeUserKeys();
+        const serverDecrypted = await decryptData(privateKey, finalTracker.entries);
         if (Array.isArray(serverDecrypted)) {
           setLocalEntries(serverDecrypted);
         }
@@ -248,6 +273,16 @@ export default function TrackerCard({
     [Math.floor(s / 3600), Math.floor((s % 3600) / 60), s % 60]
       .map((v) => v.toString().padStart(2, "0"))
       .join(":");
+
+  const formatEntryValue = (val) => {
+    if (decryptedType === "timer") return formatTime(Number(val) || 0);
+    if (decryptedType === "mood") {
+      const match = MOOD_OPTIONS.find((m) => m.value === Number(val));
+      return match ? `${match.emoji} ${match.label}` : val;
+    }
+    if (decryptedType === "habit") return val ? "Completed ✓" : "Not Done";
+    return val;
+  };
 
   const currentTotal = useMemo(
     () => localEntries.reduce((sum, e) => sum + (Number(e.value) || 0), 0),
@@ -557,7 +592,6 @@ export default function TrackerCard({
                   color: "#ffffff",
                   fontWeight: 700,
                   cursor: "pointer",
-                  minWidth: 0,
                 }}
               >
                 {timerRunning ? "PAUSE & SAVE" : "START"}
@@ -743,24 +777,178 @@ export default function TrackerCard({
           </span>
 
           {trackerId && (
-            <Link
-              to={`/trackers/${trackerId}`}
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowEntriesModal(true);
+              }}
               style={{
+                background: "transparent",
+                border: "none",
                 fontSize: "0.75rem",
                 fontWeight: 600,
                 color: decryptedColor || typeColor,
-                textDecoration: "none",
+                cursor: "pointer",
                 display: "flex",
                 alignItems: "center",
                 gap: "0.3rem",
+                padding: 0,
                 flexShrink: 0,
               }}
             >
               View Entries <ExternalLink size={13} />
-            </Link>
+            </button>
           )}
         </div>
       </div>
+
+      {/* Entries Popup Modal */}
+      {showEntriesModal && (
+        <div
+          onClick={() => setShowEntriesModal(false)}
+          style={{
+            position: "fixed",
+            inset: 0,
+            backgroundColor: "rgba(0, 0, 0, 0.6)",
+            backdropFilter: "blur(4px)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 9999,
+            padding: "1rem",
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              backgroundColor: darkMode ? "#1e293b" : "#ffffff",
+              border: darkMode ? "1px solid #334155" : "1px solid #e2e8f0",
+              borderRadius: "1.25rem",
+              width: "100%",
+              maxWidth: "440px",
+              maxHeight: "80vh",
+              display: "flex",
+              flexDirection: "column",
+              boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.2), 0 10px 10px -5px rgba(0, 0, 0, 0.1)",
+              overflow: "hidden",
+            }}
+          >
+            {/* Modal Header */}
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                padding: "1.25rem",
+                borderBottom: darkMode ? "1px solid #334155" : "1px solid #f1f5f9",
+              }}
+            >
+              <div>
+                <h4 style={{ margin: 0, fontSize: "1.05rem", fontWeight: 700, color: darkMode ? "#f8fafc" : "#0f172a" }}>
+                  {decryptedName} Entries
+                </h4>
+                <p style={{ margin: "0.15rem 0 0 0", fontSize: "0.75rem", color: darkMode ? "#94a3b8" : "#64748b" }}>
+                  Total Recorded: {localEntries.length}
+                </p>
+              </div>
+              <button
+                onClick={() => setShowEntriesModal(false)}
+                style={{
+                  background: darkMode ? "#334155" : "#f1f5f9",
+                  border: "none",
+                  borderRadius: "50%",
+                  width: "2rem",
+                  height: "2rem",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  cursor: "pointer",
+                  color: darkMode ? "#f8fafc" : "#64748b",
+                }}
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            {/* Modal Body / Entry List */}
+            <div
+              style={{
+                padding: "1.25rem",
+                overflowY: "auto",
+                display: "flex",
+                flexDirection: "column",
+                gap: "0.75rem",
+                flex: 1,
+              }}
+            >
+              {localEntries.length === 0 ? (
+                <div style={{ textAlign: "center", padding: "2rem 0", color: darkMode ? "#94a3b8" : "#64748b", fontSize: "0.85rem" }}>
+                  No entries found for this tracker yet.
+                </div>
+              ) : (
+                localEntries
+                  .slice()
+                  .sort((a, b) => new Date(b.date) - new Date(a.date))
+                  .map((entry, idx) => (
+                    <div
+                      key={idx}
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                        padding: "0.85rem 1rem",
+                        borderRadius: "0.75rem",
+                        backgroundColor: darkMode ? "#0f172a" : "#f8fafc",
+                        border: darkMode ? "1px solid #334155" : "1px solid #e2e8f0",
+                      }}
+                    >
+                      <span style={{ fontSize: "0.85rem", fontWeight: 600, color: darkMode ? "#cbd5e1" : "#334155" }}>
+                        {getEntryDateString(entry.date) || entry.date}
+                      </span>
+                      <span
+                        style={{
+                          fontSize: "0.85rem",
+                          fontWeight: 700,
+                          color: decryptedColor || typeColor,
+                          fontFamily: "monospace",
+                        }}
+                      >
+                        {formatEntryValue(entry.value)}
+                      </span>
+                    </div>
+                  ))
+              )}
+            </div>
+
+            {/* Modal Footer */}
+            <div
+              style={{
+                padding: "1rem 1.25rem",
+                borderTop: darkMode ? "1px solid #334155" : "1px solid #f1f5f9",
+                display: "flex",
+                justifyContent: "flex-end",
+              }}
+            >
+              <button
+                onClick={() => setShowEntriesModal(false)}
+                style={{
+                  padding: "0.6rem 1.25rem",
+                  borderRadius: "0.75rem",
+                  border: "none",
+                  backgroundColor: decryptedColor || typeColor,
+                  color: "#ffffff",
+                  fontSize: "0.8rem",
+                  fontWeight: 600,
+                  cursor: "pointer",
+                }}
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }

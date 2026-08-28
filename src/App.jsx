@@ -6,7 +6,6 @@ import { toast } from "react-toastify";
 import Homepage from "./pages/Homepage";
 import LoginForm from "./components/auth/LoginForm";
 import RegisterForm from "./components/auth/RegisterForm";
-import TrackerDetail from "./components/trackers/TrackerDetail";
 import NotFound from "./pages/Notfound";
 import ForgotPassword from "./components/auth/ForgotPassword";
 import UnitrackPage from "./pages/Unitrack"; // 🚀 UNITRACK SEO Landing Page
