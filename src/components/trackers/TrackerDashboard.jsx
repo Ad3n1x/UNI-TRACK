@@ -6,7 +6,6 @@ import {
   LayoutGrid,
   Search,
   ArrowLeft,
-  Calendar,
   ListTodo
 } from "lucide-react";
 import CryptoJS from "crypto-js";
@@ -225,15 +224,24 @@ export default function DashboardPage({ trackers = [], darkMode = false, onBack 
       style={{
         width: "100%",
         minHeight: "100vh",
-        padding: "32px 24px",
+        padding: "clamp(16px, 3vw, 32px) clamp(12px, 3vw, 24px)",
         backgroundColor: darkMode ? "transparent" : "#f8fafc",
         color: darkMode ? "#f8fafc" : "#1e293b",
         boxSizing: "border-box",
       }}
     >
       {/* Page Header */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "32px" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+      <div 
+        style={{ 
+          display: "flex", 
+          justifyContent: "space-between", 
+          alignItems: "flex-start", 
+          flexWrap: "wrap", 
+          gap: "16px", 
+          marginBottom: "24px" 
+        }}
+      >
+        <div style={{ display: "flex", alignItems: "flex-start", gap: "12px", flexWrap: "wrap" }}>
           {onBack && (
             <button
               onClick={onBack}
@@ -255,7 +263,7 @@ export default function DashboardPage({ trackers = [], darkMode = false, onBack 
             </button>
           )}
           <div>
-            <h1 style={{ margin: 0, fontSize: "1.75rem", fontWeight: "800", tracking: "-0.025em" }}>
+            <h1 style={{ margin: 0, fontSize: "clamp(1.35rem, 2.5vw, 1.75rem)", fontWeight: "800", letterSpacing: "-0.025em" }}>
               Analytics Dashboard
             </h1>
             <p style={{ margin: "4px 0 0 0", fontSize: "0.875rem", color: darkMode ? "#94a3b8" : "#64748b" }}>
@@ -269,9 +277,9 @@ export default function DashboardPage({ trackers = [], darkMode = false, onBack 
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+          gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))",
           gap: "16px",
-          marginBottom: "32px",
+          marginBottom: "24px",
         }}
       >
         {cards.map((card) => {
@@ -291,10 +299,10 @@ export default function DashboardPage({ trackers = [], darkMode = false, onBack 
                   ? "1px solid rgba(255, 255, 255, 0.08)"
                   : "1px solid #e2e8f0",
                 borderRadius: "16px",
-                padding: "20px",
+                padding: "16px",
                 display: "flex",
                 flexDirection: "column",
-                gap: "16px",
+                gap: "12px",
                 boxShadow: darkMode
                   ? "0 4px 12px rgba(0, 0, 0, 0.15)"
                   : `0 4px 6px -1px rgba(0,0,0,0.05), 0 0 0 1px ${card.color}22`,
@@ -304,9 +312,9 @@ export default function DashboardPage({ trackers = [], darkMode = false, onBack 
             >
               <div
                 style={{
-                  width: "42px",
-                  height: "42px",
-                  borderRadius: "12px",
+                  width: "38px",
+                  height: "38px",
+                  borderRadius: "10px",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
@@ -320,7 +328,7 @@ export default function DashboardPage({ trackers = [], darkMode = false, onBack 
               <div>
                 <div
                   style={{
-                    fontSize: "1.875rem",
+                    fontSize: "clamp(1.4rem, 2vw, 1.875rem)",
                     fontWeight: "800",
                     lineHeight: "1",
                     fontFamily: "'DM Mono', monospace",
@@ -329,7 +337,7 @@ export default function DashboardPage({ trackers = [], darkMode = false, onBack 
                 >
                   {card.value}
                   {card.suffix && (
-                    <span style={{ fontSize: "0.75rem", color: "#94a3b8", marginLeft: "6px" }}>
+                    <span style={{ fontSize: "0.75rem", color: "#94a3b8", marginLeft: "4px" }}>
                       {card.suffix}
                     </span>
                   )}
@@ -339,7 +347,7 @@ export default function DashboardPage({ trackers = [], darkMode = false, onBack 
                   style={{
                     fontSize: "0.65rem",
                     color: darkMode ? "#94a3b8" : "#64748b",
-                    marginTop: "8px",
+                    marginTop: "6px",
                     textTransform: "uppercase",
                     letterSpacing: "0.15em",
                     fontWeight: "700",
@@ -357,20 +365,21 @@ export default function DashboardPage({ trackers = [], darkMode = false, onBack 
       <div
         style={{
           display: "flex",
-          justify: "space-between",
+          justifyContent: "space-between",
           alignItems: "center",
           flexWrap: "wrap",
           gap: "16px",
           marginBottom: "24px",
         }}
       >
-        <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+        <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", width: "100%", sm: { width: "auto" } }}>
           {["all", "completed", "goals", "streak"].map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveFilter(tab)}
               style={{
-                padding: "8px 16px",
+                flex: "1 1 auto",
+                padding: "8px 14px",
                 borderRadius: "20px",
                 border: activeFilter === tab ? "none" : darkMode ? "1px solid rgba(255, 255, 255, 0.1)" : "1px solid #cbd5e1",
                 backgroundColor: activeFilter === tab ? "#7c3aed" : darkMode ? "rgba(255, 255, 255, 0.05)" : "#ffffff",
@@ -380,6 +389,7 @@ export default function DashboardPage({ trackers = [], darkMode = false, onBack 
                 fontSize: "0.85rem",
                 textTransform: "capitalize",
                 transition: "all 0.15s ease",
+                textAlign: "center",
               }}
             >
               {tab === "all" ? "All Trackers" : tab.replace("-", " ")}
@@ -387,7 +397,7 @@ export default function DashboardPage({ trackers = [], darkMode = false, onBack 
           ))}
         </div>
 
-        <div style={{ position: "relative", minWidth: "260px" }}>
+        <div style={{ position: "relative", width: "100%", maxWidth: "300px" }}>
           <Search size={16} style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)", color: "#94a3b8" }} />
           <input
             type="text"
@@ -413,8 +423,8 @@ export default function DashboardPage({ trackers = [], darkMode = false, onBack 
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))",
-          gap: "20px",
+          gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))",
+          gap: "16px",
         }}
       >
         {filteredTrackers.map((tracker) => {
@@ -429,7 +439,7 @@ export default function DashboardPage({ trackers = [], darkMode = false, onBack 
                 backgroundColor: darkMode ? "rgba(255, 255, 255, 0.03)" : "#ffffff",
                 border: darkMode ? "1px solid rgba(255, 255, 255, 0.08)" : "1px solid #e2e8f0",
                 borderRadius: "16px",
-                padding: "20px",
+                padding: "16px",
                 display: "flex",
                 flexDirection: "column",
                 justifyContent: "space-between",
@@ -437,17 +447,18 @@ export default function DashboardPage({ trackers = [], darkMode = false, onBack 
               }}
             >
               <div>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "8px" }}>
-                  <h3 style={{ margin: 0, fontSize: "1.1rem", fontWeight: "700" }}>{tracker.name}</h3>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "8px", marginBottom: "8px" }}>
+                  <h3 style={{ margin: 0, fontSize: "1.05rem", fontWeight: "700", wordBreak: "break-word" }}>{tracker.name}</h3>
                   <span
                     style={{
-                      fontSize: "0.65rem",
-                      padding: "4px 8px",
+                      fontSize: "0.6rem",
+                      padding: "3px 6px",
                       borderRadius: "6px",
                       backgroundColor: isDoneToday ? "rgba(16,185,129,0.15)" : "rgba(124,58,237,0.15)",
                       color: isDoneToday ? "#10b981" : "#7c3aed",
                       fontWeight: "700",
                       textTransform: "uppercase",
+                      whiteSpace: "nowrap",
                     }}
                   >
                     {isDoneToday ? "Done Today" : tracker.type}
@@ -455,7 +466,7 @@ export default function DashboardPage({ trackers = [], darkMode = false, onBack 
                 </div>
 
                 {tracker.description && (
-                  <p style={{ fontSize: "0.85rem", color: darkMode ? "#94a3b8" : "#64748b", margin: "0 0 16px 0" }}>
+                  <p style={{ fontSize: "0.85rem", color: darkMode ? "#94a3b8" : "#64748b", margin: "0 0 12px 0", wordBreak: "break-word" }}>
                     {tracker.description}
                   </p>
                 )}
@@ -463,19 +474,21 @@ export default function DashboardPage({ trackers = [], darkMode = false, onBack 
 
               <div
                 style={{
-                  paddingTop: "12px",
+                  paddingTop: "10px",
                   borderTop: darkMode ? "1px solid rgba(255, 255, 255, 0.08)" : "1px solid #f1f5f9",
                   display: "flex",
-                  justify: "space-between",
-                  fontSize: "0.8rem",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  fontSize: "0.78rem",
                   color: "#94a3b8",
+                  gap: "8px",
                 }}
               >
                 <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-                  <Target size={14} /> Goal: {tracker.target != null ? tracker.target : "N/A"}
+                  <Target size={13} /> Goal: {tracker.target != null ? tracker.target : "N/A"}
                 </div>
                 <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-                  <ListTodo size={14} /> Logs: {tracker.entries.length}
+                  <ListTodo size={13} /> Logs: {tracker.entries.length}
                 </div>
               </div>
             </div>
