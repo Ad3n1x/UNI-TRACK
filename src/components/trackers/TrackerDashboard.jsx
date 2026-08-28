@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useRef } from "react";
 import {
   TrendingUp,
   Target,
@@ -59,6 +59,9 @@ const getFormattedDate = (val) => {
 export default function DashboardPage({ trackers = [], darkMode = false, onBack }) {
   const [activeFilter, setActiveFilter] = useState("all");
   const [searchTerm, setSearchTerm] = useState("");
+
+  // Ref to target the results section for smooth scrolling
+  const resultsRef = useRef(null);
 
   const todayStr = getFormattedDate(new Date());
 
@@ -183,6 +186,14 @@ export default function DashboardPage({ trackers = [], darkMode = false, onBack 
     });
   }, [decryptedTrackers, activeFilter, searchTerm, todayStr]);
 
+  // Handler to change filter and smoothly scroll down to results
+  const handleCardClick = (id) => {
+    setActiveFilter(id);
+    if (resultsRef.current) {
+      resultsRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  };
+
   const cards = [
     {
       id: "all",
@@ -287,10 +298,10 @@ export default function DashboardPage({ trackers = [], darkMode = false, onBack 
           return (
             <div
               key={card.id}
-              onClick={() => setActiveFilter(card.id)}
+              onClick={() => handleCardClick(card.id)}
               role="button"
               tabIndex={0}
-              onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && setActiveFilter(card.id)}
+              onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && handleCardClick(card.id)}
               style={{
                 backgroundColor: darkMode ? "rgba(255, 255, 255, 0.03)" : "#ffffff",
                 border: isSelected
@@ -360,6 +371,9 @@ export default function DashboardPage({ trackers = [], darkMode = false, onBack 
           );
         })}
       </div>
+
+      {/* Target anchor ref placed right above the filters and search results section */}
+      <div ref={resultsRef} style={{ scrollMarginTop: "24px" }} />
 
       {/* Filter and Search Bar */}
       <div
