@@ -16,11 +16,8 @@ import {
   Download, 
   Lock,
   Sparkles,
-  Zap,
   Headphones,
-  MessageSquare,
   Mail,
-  Send,
   MessageCircle
 } from "lucide-react";
 
@@ -143,12 +140,6 @@ export default function HomePage() {
   const [isPremium, setIsPremium] = useState(false);
   const [upgrading, setUpgrading] = useState(false);
 
-  // Customer Support State
-  const [supportCategory, setSupportCategory] = useState("General Query");
-  const [supportSubject, setSupportSubject] = useState("");
-  const [supportMessage, setSupportMessage] = useState("");
-  const [submittingSupport, setSubmittingSupport] = useState(false);
-
   const [userLocation, setUserLocation] = useState({
     currency: "NGN",
     amount: 5000, 
@@ -254,46 +245,6 @@ export default function HomePage() {
   }, [token, fetchTrackers, fetchUserSubscriptionStatus]);
 
   // --- ACTIONS ---
-  const handleSupportSubmit = async (e) => {
-    e.preventDefault();
-    if (!supportSubject.trim() || !supportMessage.trim()) {
-      alert("Please fill in both the subject and message.");
-      return;
-    }
-
-    setSubmittingSupport(true);
-    try {
-      const res = await fetch(`${BASE_URL}/api/v1/support`, {
-        method: "POST",
-        headers: getAuthHeaders(),
-        body: JSON.stringify({
-          email: currentUserEmail,
-          category: supportCategory,
-          subject: supportSubject,
-          message: supportMessage,
-        }),
-      });
-
-      if (res.ok) {
-        setNotification("Support ticket submitted! We will contact you shortly.");
-        setSupportSubject("");
-        setSupportMessage("");
-        toggleBootstrapModal("supportModal", "hide");
-      } else {
-        throw new Error("Failed to send message.");
-      }
-    } catch (err) {
-      // Fallback response handling
-      setNotification("Support ticket created successfully!");
-      setSupportSubject("");
-      setSupportMessage("");
-      toggleBootstrapModal("supportModal", "hide");
-    } finally {
-      setSubmittingSupport(false);
-      setTimeout(() => setNotification(null), 4000);
-    }
-  };
-
   const handleAlatPayPayment = async () => {
     if (!currentUserEmail) {
       alert("No logged-in user email detected. Please log in again.");
@@ -343,7 +294,7 @@ export default function HomePage() {
             });
 
             setIsPremium(true);
-            setNotification(`Upgrade successful! Welcome to PRO.`);
+            setNotification("Upgrade successful! Welcome to PRO.");
             toggleBootstrapModal("premiumModal", "hide");
           } catch (err) {
             console.error("ALAT Pay verification error:", err);
@@ -564,13 +515,13 @@ export default function HomePage() {
         data-bs-theme={darkMode ? "dark" : "light"}
       >
         <div className="d-flex align-items-center gap-2 mb-3">
-          <LayoutDashboard className="text-primary animate-pulse" size={36} />
-          <h2 className="fw-extrabold m-0 fs-3 tracking-wide">UNI-TRACK</h2>
+          <LayoutDashboard className="text-primary" size={36} />
+          <h2 className="fw-bold m-0 fs-3 tracking-wide">UNI-TRACK</h2>
         </div>
         <div className="spinner-border text-primary mb-3" role="status" style={{ width: "2.5rem", height: "2.5rem" }}>
           <span className="visually-hidden">Loading...</span>
         </div>
-        <p className="text-muted small m-0 fw-medium">Securing and decrypting your workspace...</p>
+        <p className="text-muted small m-0 fw-medium">Securing and decrypting workspace...</p>
       </div>
     );
   }
@@ -630,11 +581,6 @@ export default function HomePage() {
           border: 1px solid #f59e0b;
         }
 
-        .btn-pro-active:hover {
-          background: rgba(245, 158, 11, 0.25);
-          color: #fef08a !important;
-        }
-
         .btn-alat {
           background-color: #820263;
           color: #ffffff !important;
@@ -671,7 +617,7 @@ export default function HomePage() {
         }
       `}</style>
 
-      {/* Floating Alert Badge */}
+      {/* Floating Notification */}
       {notification && (
         <div className="position-fixed top-0 start-50 translate-middle-x p-3 animated-toast" style={{ zIndex: 1080 }}>
           <div className="alert alert-primary border-0 shadow-lg d-flex align-items-center gap-2 mb-0 py-2.5 px-4 rounded-pill text-white bg-primary">
@@ -692,7 +638,7 @@ export default function HomePage() {
             <h1 className="navbar-brand fw-bold m-0 fs-5 tracking-tight d-flex align-items-center gap-2">
               UNI-TRACK
               <span className={`badge ${isPremium ? "bg-warning text-dark" : "bg-secondary text-light"} d-inline-flex align-items-center gap-1 fs-7 fw-semibold`}>
-                {isPremium ? <Crown size={12} /> : null}
+                {isPremium && <Crown size={12} />}
                 {isPremium ? "PRO" : "REGULAR"}
               </span>
             </h1>
@@ -729,25 +675,14 @@ export default function HomePage() {
               <span>{subscribing ? "Enabling..." : subscribed ? "Alerts Active" : "Enable Alerts"}</span>
             </button>
 
-            {!isPremium ? (
-              <button
-                type="button"
-                className="btn btn-pro-upgrade btn-custom-nav"
-                onClick={() => toggleBootstrapModal("premiumModal", "show")}
-              >
-                <Crown size={15} />
-                <span>Upgrade PRO</span>
-              </button>
-            ) : (
-              <button
-                type="button"
-                className="btn btn-pro-active btn-custom-nav"
-                onClick={() => toggleBootstrapModal("premiumModal", "show")}
-              >
-                <Crown size={15} />
-                <span>PRO Active</span>
-              </button>
-            )}
+            <button
+              type="button"
+              className={`btn ${isPremium ? "btn-pro-active" : "btn-pro-upgrade"} btn-custom-nav`}
+              onClick={() => toggleBootstrapModal("premiumModal", "show")}
+            >
+              <Crown size={15} />
+              <span>{isPremium ? "PRO Active" : "Upgrade PRO"}</span>
+            </button>
           </div>
 
         </div>
@@ -756,7 +691,7 @@ export default function HomePage() {
       {/* Main Workspace */}
       <main className="container py-4">
         
-        {/* Welcome Header Component */}
+        {/* Welcome Banner */}
         <div className={`p-4 p-md-5 glass-card shadow-sm border mb-4 position-relative overflow-hidden ${darkMode ? "bg-dark border-secondary" : "bg-white"}`}>
           <div className="position-absolute top-0 end-0 p-4 opacity-10 d-none d-md-block text-primary">
             <Sparkles size={160} />
@@ -773,12 +708,12 @@ export default function HomePage() {
           </div>
         </div>
 
-        {/* Dynamic Analytics Visualizer */}
+        {/* Analytics Visualizer */}
         <div className={`p-3 p-md-4 glass-card shadow-sm border ${darkMode ? "bg-dark border-secondary" : "bg-white"}`}>
           <TrackerDashboard trackers={displayTrackers} darkMode={darkMode} />
         </div>
 
-        {/* Interactive Controls & Trackers Container */}
+        {/* Controls & Trackers */}
         <div className={`p-3 p-md-4 glass-card shadow-sm border mt-4 ${darkMode ? "bg-dark border-secondary" : "bg-white"}`}>
           
           <div className={`alert ${darkMode ? "bg-dark text-info border-info" : "bg-info bg-opacity-10 text-info border-info-subtle"} d-flex align-items-center gap-2 mb-4 py-2 px-3 rounded-3 small border`}>
@@ -786,7 +721,7 @@ export default function HomePage() {
             <span>Changes sync automatically end-to-end. Tap <strong>Refresh</strong> to sync analytics manually.</span>
           </div>
 
-          {/* Compact Inline Limit Indicator Bar directly contextualized above controls */}
+          {/* Tracker Limit Indicator */}
           {!isPremium && (
             <div className={`p-3 rounded-3 border mb-4 ${darkMode ? "bg-secondary bg-opacity-10 border-secondary" : "bg-light border-border"}`}>
               <div className="d-flex justify-content-between align-items-center mb-1.5 small fw-semibold">
@@ -806,7 +741,7 @@ export default function HomePage() {
               
               <div className="d-flex justify-content-between align-items-center mt-2">
                 <span className={`small ${darkMode ? "text-white-50" : "text-muted"}`} style={{ fontSize: "0.75rem" }}>
-                  {trackerUsagePercent >= 100 ? "Free tier full limit reached." : `${REGULAR_TRACKER_LIMIT - usedTrackersCount} remaining on free plan.`}
+                  {trackerUsagePercent >= 100 ? "Free tier limit reached." : `${REGULAR_TRACKER_LIMIT - usedTrackersCount} remaining on free plan.`}
                 </span>
                 <button 
                   type="button" 
@@ -875,7 +810,7 @@ export default function HomePage() {
 
           <hr className="my-4 opacity-25" />
 
-          {/* Active Tracker List Component */}
+          {/* Tracker List */}
           <TrackerList
             trackers={displayTrackers}
             onDeleteTracker={handleDeleteTracker}
@@ -896,7 +831,7 @@ export default function HomePage() {
 
       </main>
 
-      {/* Floating Customer Support Action Button */}
+      {/* Floating Support Button */}
       <button
         type="button"
         className="btn btn-primary p-3 support-fab d-flex align-items-center gap-2"
@@ -916,7 +851,7 @@ export default function HomePage() {
             </div>
             <div className="modal-body">
               <TrackerForm
-                onCreate={(createdTracker) => handleCreate(createdTracker)}
+                onCreate={handleCreate}
                 onClose={() => toggleBootstrapModal("trackerModal", "hide")}
                 darkMode={darkMode}
               />
@@ -940,18 +875,17 @@ export default function HomePage() {
               <button type="button" className={`btn-close ${darkMode ? "btn-close-white" : ""}`} data-bs-dismiss="modal" aria-label="Close" />
             </div>
 
-            <div className="modal-body pt-3">
-              <p className="text-muted small mb-3">
-                Need assistance or have feedback? Reach out directly using WhatsApp or Email, or leave a support message below.
+            <div className="modal-body pt-3 pb-4">
+              <p className="text-muted small mb-4">
+                Need assistance or have feedback? Reach out directly via WhatsApp or Email below:
               </p>
 
-              {/* DIRECT CONTACT CHANNELS */}
-              <div className="d-grid gap-2 mb-4">
+              <div className="d-grid gap-3">
                 <a 
                   href="https://wa.me/2347039237610?text=Hello%2C%20I%20need%20support%20with%20Uni-Track." 
                   target="_blank" 
                   rel="noopener noreferrer"
-                  className="btn btn-success fw-semibold d-flex align-items-center justify-content-center gap-2 py-2"
+                  className="btn btn-success fw-semibold d-flex align-items-center justify-content-center gap-2 py-2.5"
                 >
                   <MessageCircle size={18} />
                   <span>Chat on WhatsApp (+234 703 923 7610)</span>
@@ -959,67 +893,12 @@ export default function HomePage() {
 
                 <a 
                   href="mailto:adenix271@gmail.com?subject=Uni-Track%20Support%20Inquiry" 
-                  className={`btn ${darkMode ? "btn-outline-light" : "btn-outline-secondary"} fw-semibold d-flex align-items-center justify-content-center gap-2 py-2`}
+                  className={`btn ${darkMode ? "btn-outline-light" : "btn-outline-secondary"} fw-semibold d-flex align-items-center justify-content-center gap-2 py-2.5`}
                 >
                   <Mail size={18} />
                   <span>Email adenix271@gmail.com</span>
                 </a>
               </div>
-
-              <div className="d-flex align-items-center gap-2 my-3">
-                <hr className="flex-grow-1 opacity-25 m-0" />
-                <span className="small text-muted fw-semibold">OR SEND TICKET</span>
-                <hr className="flex-grow-1 opacity-25 m-0" />
-              </div>
-
-              <form onSubmit={handleSupportSubmit}>
-                <div className="mb-3">
-                  <label className="form-label small fw-semibold">Support Category</label>
-                  <select 
-                    className={`form-select ${darkMode ? "bg-dark text-light border-secondary" : ""}`}
-                    value={supportCategory}
-                    onChange={(e) => setSupportCategory(e.target.value)}
-                  >
-                    <option value="General Query">General Query</option>
-                    <option value="Account & Billing">Account & Billing</option>
-                    <option value="Technical Issue">Technical Issue</option>
-                    <option value="Feature Request">Feature Request</option>
-                  </select>
-                </div>
-
-                <div className="mb-3">
-                  <label className="form-label small fw-semibold">Subject</label>
-                  <input 
-                    type="text" 
-                    className={`form-control ${darkMode ? "bg-dark text-light border-secondary" : ""}`} 
-                    placeholder="Brief summary of your query"
-                    value={supportSubject}
-                    onChange={(e) => setSupportSubject(e.target.value)}
-                    required
-                  />
-                </div>
-
-                <div className="mb-3">
-                  <label className="form-label small fw-semibold">Message</label>
-                  <textarea 
-                    className={`form-control ${darkMode ? "bg-dark text-light border-secondary" : ""}`} 
-                    rows="3" 
-                    placeholder="Describe how we can help..."
-                    value={supportMessage}
-                    onChange={(e) => setSupportMessage(e.target.value)}
-                    required
-                  ></textarea>
-                </div>
-
-                <button 
-                  type="submit" 
-                  className="btn btn-primary w-100 d-flex align-items-center justify-content-center gap-2"
-                  disabled={submittingSupport}
-                >
-                  <Send size={16} />
-                  <span>{submittingSupport ? "Sending Ticket..." : "Submit Ticket"}</span>
-                </button>
-              </form>
             </div>
 
           </div>
