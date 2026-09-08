@@ -5,7 +5,7 @@ import TrackerList from "../components/trackers/TrackerList";
 import TrackerFilters from "../components/trackers/TrackerFilters";
 import { 
   PlusCircle, LayoutDashboard, CheckCircle2, LogOut, 
-  Sun, Moon, RefreshCw, Info, Bell, Crown, Sparkles, Check, Globe, ShieldAlert, CreditCard
+  Sun, Moon, RefreshCw, Info, Bell, Crown, Check, Globe, ShieldAlert, CreditCard
 } from "lucide-react";
 import Cookies from "universal-cookie";
 import { initializeUserKeys, decryptData, encryptData } from "../utils/e2ee";
@@ -18,12 +18,7 @@ const RAW_BASE_URL =
 
 const BASE_URL = RAW_BASE_URL.replace(/\/$/, "");
 
-// Environment Variables
-const PAYSTACK_PUBLIC_KEY = 
-  (typeof import.meta !== "undefined" && import.meta.env?.VITE_PAYSTACK_PUBLIC_KEY) ||
-  process.env.REACT_APP_PAYSTACK_PUBLIC_KEY || 
-  "pk_test_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx";
-
+// ALATPay Environment Variables
 const ALAT_BUSINESS_ID = 
   (typeof import.meta !== "undefined" && import.meta.env?.VITE_ALAT_BUSINESS_ID) ||
   process.env.REACT_APP_ALAT_BUSINESS_ID || 
@@ -69,7 +64,7 @@ function urlBase64ToUint8Array(base64String) {
   return outputArray;
 }
 
-// Dynamically load external scripts (such as ALAT Pay SDK)
+// Robust script loader with fallbacks for ALATPay SDK versions
 const loadScript = (src) => {
   return new Promise((resolve, reject) => {
     if (document.querySelector(`script[src="${src}"]`)) {
@@ -78,10 +73,31 @@ const loadScript = (src) => {
     }
     const script = document.createElement("script");
     script.src = src;
+    script.async = true;
     script.onload = () => resolve(true);
     script.onerror = () => reject(false);
     document.body.appendChild(script);
   });
+};
+
+const loadAlatPaySdk = async () => {
+  const scriptUrls = [
+    "https://alatpay.developer.azure-api.net/alat-pay.js",
+    "https://checkout.alatpay.ng/alat-pay.js",
+    "https://popup.alatpay.ng/alat-pay.js"
+  ];
+
+  for (const url of scriptUrls) {
+    try {
+      const loaded = await loadScript(url);
+      if (loaded && (window.Popup || window.AlatPay)) {
+        return true;
+      }
+    } catch {
+      continue;
+    }
+  }
+  return false;
 };
 
 async function registerServiceWorkerAndSubscribe() {
@@ -140,10 +156,10 @@ export default function HomePage() {
   const [upgrading, setUpgrading] = useState(false);
   
   const [userLocation, setUserLocation] = useState({
-    currency: "USD",
-    amount: 499, 
-    symbol: "$",
-    displayAmount: "4.99"
+    currency: "NGN",
+    amount: 500000, 
+    symbol: "₦",
+    displayAmount: "5,000"
   });
 
   const [darkMode, setDarkMode] = useState(() => localStorage.getItem("theme") === "dark");
@@ -195,7 +211,7 @@ export default function HomePage() {
           break;
       }
     } catch (err) {
-      console.warn("Could not determine region currency, defaulting to USD:", err);
+      console.warn("Could not determine region currency, defaulting to NGN:", err);
     }
   };
 
@@ -264,52 +280,6 @@ export default function HomePage() {
     }
   };
 
-  const handlePaystackPayment = () => {
-    if (!currentUserEmail) {
-      alert("No logged-in user email detected. Please log in again.");
-      return;
-    }
-
-    if (!window.PaystackPop) {
-      alert("Paystack SDK failed to load. Please check your internet connection.");
-      return;
-    }
-
-    setUpgrading(true);
-
-    const paystack = new window.PaystackPop();
-    paystack.newTransaction({
-      key: PAYSTACK_PUBLIC_KEY,
-      email: currentUserEmail,
-      amount: userLocation.amount,
-      currency: userLocation.currency,
-      onSuccess: async (transaction) => {
-        try {
-          await fetch(`${BASE_URL}/api/v1/payments/verify`, {
-            method: "POST",
-            headers: getAuthHeaders(),
-            body: JSON.stringify({ reference: transaction.reference, provider: "paystack" }),
-          });
-
-          setIsPremium(true);
-          setNotification(`Payment successful! PRO access activated for ${currentUserEmail}`);
-          closeModal("premiumModal");
-        } catch (err) {
-          console.error("Payment verification failed:", err);
-          alert("Payment completed but verification failed. Contact support.");
-        } finally {
-          setUpgrading(false);
-          setTimeout(() => setNotification(null), 4000);
-        }
-      },
-      onCancel: () => setUpgrading(false),
-      onError: (error) => {
-        setUpgrading(false);
-        alert(error?.message || "Payment transaction failed.");
-      }
-    });
-  };
-
   // ALAT Pay Integration Handler
   const handleAlatPayPayment = async () => {
     if (!currentUserEmail) {
@@ -320,16 +290,17 @@ export default function HomePage() {
     setUpgrading(true);
 
     try {
-      const scriptLoaded = await loadScript("https://popup.alatpay.ng/alat-pay.js");
-      if (!scriptLoaded || !window.Popup) {
-        throw new Error("Failed to load ALAT Pay SDK script.");
+      const isLoaded = await loadAlatPaySdk();
+      const AlatPopup = window.Popup || window.AlatPay;
+
+      if (!isLoaded || !AlatPopup) {
+        throw new Error("Unable to reach ALAT Pay server. Check your internet connection or ad-blocker settings.");
       }
 
-      // Convert kobo/cents back to main currency unit if required by ALAT Pay setup
       const numericAmount = userLocation.currency === "NGN" ? userLocation.amount / 100 : userLocation.amount;
       const transactionRef = `alat_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
 
-      const popup = new window.Popup({
+      const popup = new AlatPopup({
         apiKey: ALAT_API_KEY,
         businessId: ALAT_BUSINESS_ID,
         email: currentUserEmail,
@@ -777,18 +748,6 @@ export default function HomePage() {
 
               {!isPremium ? (
                 <div className="d-flex flex-column gap-2">
-                  <button
-                    type="button"
-                    className="btn btn-warning w-100 py-2 fw-bold text-dark d-flex align-items-center justify-content-center gap-2"
-                    onClick={handlePaystackPayment}
-                    disabled={upgrading}
-                  >
-                    <Sparkles size={18} />
-                    {upgrading
-                      ? "Processing..."
-                      : `Pay ${userLocation.symbol}${userLocation.displayAmount} with Paystack`}
-                  </button>
-
                   <button
                     type="button"
                     className="btn btn-purple border-0 text-white w-100 py-2 fw-bold d-flex align-items-center justify-content-center gap-2"
