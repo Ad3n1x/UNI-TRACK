@@ -3,7 +3,7 @@ import TrackerDashboard from "../components/trackers/TrackerDashboard";
 import TrackerForm from "../components/trackers/TrackerForm";
 import TrackerList from "../components/trackers/TrackerList";
 import TrackerFilters from "../components/trackers/TrackerFilters";
-import { PlusCircle, LayoutDashboard, CheckCircle2, LogOut, Sun, Moon, RefreshCw, Info } from "lucide-react";
+import { PlusCircle, LayoutDashboard, CheckCircle2, LogOut, Sun, Moon, RefreshCw, Info, Bell } from "lucide-react";
 import Cookies from "universal-cookie";
 import { initializeUserKeys, decryptData, encryptData } from "../utils/e2ee"; // Make sure encryptData is imported!
 
@@ -64,9 +64,13 @@ async function registerServiceWorkerAndSubscribe() {
       });
 
       console.log("Push Registered Successfully!");
+      return true;
     } catch (err) {
       console.error("Failed to register push notifications:", err);
+      throw err;
     }
+  } else {
+    throw new Error("Push notifications not supported by this browser.");
   }
 }
 
@@ -87,6 +91,10 @@ export default function HomePage() {
   const [newlyAddedId, setNewlyAddedId] = useState(null);
   const [notification, setNotification] = useState(null);
 
+  // Push subscription state
+  const [subscribing, setSubscribing] = useState(false);
+  const [subscribed, setSubscribed] = useState(false);
+
   const [darkMode, setDarkMode] = useState(() => {
     return localStorage.getItem("theme") === "dark";
   });
@@ -96,8 +104,24 @@ export default function HomePage() {
   }, [darkMode]);
 
   useEffect(() => {
-    registerServiceWorkerAndSubscribe();
+    registerServiceWorkerAndSubscribe()
+      .then(() => setSubscribed(true))
+      .catch(() => setSubscribed(false));
   }, []);
+
+  const handleSubscribeNotifications = async () => {
+    setSubscribing(true);
+    try {
+      await registerServiceWorkerAndSubscribe();
+      setSubscribed(true);
+      setNotification("Successfully subscribed to notifications!");
+    } catch (err) {
+      setNotification("Notification permission denied or unsupported.");
+    } finally {
+      setSubscribing(false);
+      window.setTimeout(() => setNotification(null), 3000);
+    }
+  };
 
   const closeModal = () => {
     const modalElement = document.getElementById("trackerModal");
@@ -165,7 +189,7 @@ export default function HomePage() {
   }, []);
 
   const handleCreate = (newTracker) => {
-    fetchTrackers(); // Need to fetch here to get the real DB ID for the whole tracker
+    fetchTrackers();
     const newId = newTracker._id || newTracker.id;
     setNewlyAddedId(newId);
 
@@ -205,7 +229,7 @@ export default function HomePage() {
     } catch (error) {
       console.error("Error deleting tracker:", error);
       alert("Failed to delete tracker. Please check your connection.");
-      setTrackers(previousTrackers); // Revert UI if failed
+      setTrackers(previousTrackers);
     }
   };
 
@@ -231,13 +255,8 @@ export default function HomePage() {
       if (!response.ok) {
         throw new Error("Failed to sync entries with server.");
       }
-      
-      // Removed the delayed fetchTrackers() call here! 
-      // The local UI state is already perfectly updated and we don't want to overwrite it with stale DB data.
-      
     } catch (error) {
       console.error("Error syncing entry modification:", error);
-      // Only refetch if the save actually failed, so we can revert the optimistic UI update
       fetchTrackers(); 
     }
   };
@@ -262,7 +281,6 @@ export default function HomePage() {
     });
     if (!targetTracker) return;
 
-    // Ensure we attach a timestamp so the Dashboard immediately recognizes it as a "today" entry
     const newEntryWithId = { 
       timestamp: new Date().toISOString(), 
       ...entry, 
@@ -271,7 +289,6 @@ export default function HomePage() {
     
     const updatedEntries = [...(targetTracker.entries || []), newEntryWithId];
 
-    // Optimistic UI Update - this instantly updates the Dashboard and List!
     setTrackers((prev) =>
       prev.map((t) => {
         const tId = t._id?.toString() || t.id?.toString() || t._id || t.id;
@@ -282,7 +299,6 @@ export default function HomePage() {
       })
     );
 
-    // Sync in background without interrupting the UI
     await syncTrackerEntriesWithBackend(trackerId, updatedEntries);
   };
 
@@ -389,6 +405,21 @@ export default function HomePage() {
           </h1>
 
           <div className="d-flex align-items-center gap-2">
+            {/* Subscribe Notifications Button */}
+            <button
+              type="button"
+              className={`btn ${subscribed ? "btn-outline-success" : "btn-outline-primary"} d-flex align-items-center gap-2 px-3 py-2`}
+              onClick={handleSubscribeNotifications}
+              disabled={subscribing}
+              title="Subscribe to Push Notifications"
+            >
+              <Bell size={18} className={subscribing ? "spin-icon" : ""} />
+              <span className="d-none d-sm-inline">
+                {subscribing ? "Subscribing..." : subscribed ? "Subscribed" : "Subscribe Notifications"}
+              </span>
+            </button>
+
+            {/* Dark Mode Toggle */}
             <button
               type="button"
               className={`btn ${darkMode ? "btn-outline-light" : "btn-outline-secondary"} d-flex align-items-center justify-content-center p-2`}
@@ -422,7 +453,7 @@ export default function HomePage() {
               </div>
             </div>
 
-            {/* Dashboard Stats (Wrapped in matching border style) */}
+            {/* Dashboard Stats */}
             <div className={`p-3 p-md-4 rounded-4 shadow-sm border ${darkMode ? "bg-dark border-secondary" : "bg-white"}`}>
               <TrackerDashboard trackers={displayTrackers} darkMode={darkMode} />
             </div>
