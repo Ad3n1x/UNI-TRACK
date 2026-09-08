@@ -3,9 +3,9 @@ import TrackerDashboard from "../components/trackers/TrackerDashboard";
 import TrackerForm from "../components/trackers/TrackerForm";
 import TrackerList from "../components/trackers/TrackerList";
 import TrackerFilters from "../components/trackers/TrackerFilters";
-import { PlusCircle, LayoutDashboard, CheckCircle2, LogOut, Sun, Moon, RefreshCw, Info, Bell } from "lucide-react";
+import { PlusCircle, LayoutDashboard, CheckCircle2, LogOut, Sun, Moon, RefreshCw, Info, Bell, Crown, Sparkles, Check } from "lucide-react";
 import Cookies from "universal-cookie";
-import { initializeUserKeys, decryptData, encryptData } from "../utils/e2ee"; // Make sure encryptData is imported!
+import { initializeUserKeys, decryptData, encryptData } from "../utils/e2ee";
 
 const RAW_BASE_URL =
   (typeof process !== "undefined" && process.env?.API_URL) ||
@@ -46,31 +46,35 @@ function urlBase64ToUint8Array(base64String) {
 }
 
 async function registerServiceWorkerAndSubscribe() {
-  if ("serviceWorker" in navigator && "PushManager" in window) {
-    try {
-      await navigator.serviceWorker.register("/sw.js");
-      const registration = await navigator.serviceWorker.ready;
+  if (!("serviceWorker" in navigator) || !("PushManager" in window)) {
+    throw new Error("Push notifications are not supported by this browser.");
+  }
 
-      const publicVapidKey = "BEaflZfmm8QfrFsL7r06HB-QrsdDAefJpRk2vw-zcHIKD-t8evj3TIS7k9k0w0am9BboNqiqbZ99Y-1WxYNcZcw";
-      const subscription = await registration.pushManager.subscribe({
-        userVisibleOnly: true,
-        applicationServerKey: urlBase64ToUint8Array(publicVapidKey),
-      });
+  if (Notification.permission === "denied") {
+    throw new Error("Notification permission blocked in browser settings.");
+  }
 
-      await fetch(`${BASE_URL}/api/v1/subscribe`, {
-        method: "POST",
-        headers: getAuthHeaders(),
-        body: JSON.stringify(subscription),
-      });
+  try {
+    await navigator.serviceWorker.register("/sw.js");
+    const registration = await navigator.serviceWorker.ready;
 
-      console.log("Push Registered Successfully!");
-      return true;
-    } catch (err) {
-      console.error("Failed to register push notifications:", err);
-      throw err;
-    }
-  } else {
-    throw new Error("Push notifications not supported by this browser.");
+    const publicVapidKey = "BEaflZfmm8QfrFsL7r06HB-QrsdDAefJpRk2vw-zcHIKD-t8evj3TIS7k9k0w0am9BboNqiqbZ99Y-1WxYNcZcw";
+    const subscription = await registration.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: urlBase64ToUint8Array(publicVapidKey),
+    });
+
+    await fetch(`${BASE_URL}/api/v1/subscribe`, {
+      method: "POST",
+      headers: getAuthHeaders(),
+      body: JSON.stringify(subscription),
+    });
+
+    console.log("Push Registered Successfully!");
+    return true;
+  } catch (err) {
+    console.error("Failed to register push notifications:", err);
+    throw err;
   }
 }
 
@@ -95,6 +99,12 @@ export default function HomePage() {
   const [subscribing, setSubscribing] = useState(false);
   const [subscribed, setSubscribed] = useState(false);
 
+  // Premium Membership State
+  const [isPremium, setIsPremium] = useState(() => {
+    return localStorage.getItem("isPremium") === "true";
+  });
+  const [upgrading, setUpgrading] = useState(false);
+
   const [darkMode, setDarkMode] = useState(() => {
     return localStorage.getItem("theme") === "dark";
   });
@@ -116,11 +126,32 @@ export default function HomePage() {
       setSubscribed(true);
       setNotification("Successfully subscribed to notifications!");
     } catch (err) {
-      setNotification("Notification permission denied or unsupported.");
+      setNotification(err.message || "Failed to subscribe to notifications.");
     } finally {
       setSubscribing(false);
-      window.setTimeout(() => setNotification(null), 3000);
+      window.setTimeout(() => setNotification(null), 4000);
     }
+  };
+
+  const handleUpgradePremium = () => {
+    setUpgrading(true);
+    setTimeout(() => {
+      setIsPremium(true);
+      localStorage.setItem("isPremium", "true");
+      setUpgrading(false);
+      setNotification("Welcome to UNI-TRACK Premium!");
+
+      // Close modal
+      const modalElement = document.getElementById("premiumModal");
+      if (modalElement && window.bootstrap) {
+        const modalInstance = window.bootstrap.Modal.getInstance(modalElement);
+        modalInstance?.hide();
+      } else {
+        document.querySelector("#premiumModal .btn-close")?.click();
+      }
+
+      window.setTimeout(() => setNotification(null), 3500);
+    }, 1500);
   };
 
   const closeModal = () => {
@@ -402,9 +433,37 @@ export default function HomePage() {
         <div className="container d-flex align-items-center justify-content-between">
           <h1 className="navbar-brand fw-bold d-flex align-items-center gap-2 m-0" style={{ fontSize: "1.25rem" }}>
             <LayoutDashboard className="text-primary" /> UNI-TRACK
+            {isPremium && (
+              <span className="badge bg-warning text-dark d-flex align-items-center gap-1 ms-1 fs-7">
+                <Crown size={12} /> PRO
+              </span>
+            )}
           </h1>
 
           <div className="d-flex align-items-center gap-2">
+            {/* Premium Button */}
+            {!isPremium ? (
+              <button
+                type="button"
+                className="btn btn-warning text-dark fw-bold d-flex align-items-center gap-1 px-3 py-2 shadow-sm"
+                data-bs-toggle="modal"
+                data-bs-target="#premiumModal"
+              >
+                <Crown size={16} />
+                <span className="d-none d-sm-inline">Upgrade to Premium</span>
+              </button>
+            ) : (
+              <button
+                type="button"
+                className="btn btn-outline-warning d-flex align-items-center gap-1 px-3 py-2 fw-semibold"
+                data-bs-toggle="modal"
+                data-bs-target="#premiumModal"
+              >
+                <Crown size={16} />
+                <span className="d-none d-sm-inline">PRO Plan</span>
+              </button>
+            )}
+
             {/* Subscribe Notifications Button */}
             <button
               type="button"
@@ -415,7 +474,7 @@ export default function HomePage() {
             >
               <Bell size={18} className={subscribing ? "spin-icon" : ""} />
               <span className="d-none d-sm-inline">
-                {subscribing ? "Subscribing..." : subscribed ? "Subscribed" : "Subscribe Notifications"}
+                {subscribing ? "Subscribing..." : subscribed ? "Subscribed" : "Notifications"}
               </span>
             </button>
 
@@ -446,7 +505,9 @@ export default function HomePage() {
                 <span className="badge bg-primary bg-opacity-10 text-primary mb-3 px-3 py-2 rounded-pill fw-semibold">
                   {timeGreeting}
                 </span>
-                <h2 className="fw-bold mb-2 display-6" style={{ fontSize: "1.75rem" }}>Welcome back to Uni-Track!</h2>
+                <h2 className="fw-bold mb-2 display-6" style={{ fontSize: "1.75rem" }}>
+                  Welcome back to Uni-Track!
+                </h2>
                 <p className="text-muted mb-0 lead fs-6">
                   Let's make today productive.
                 </p>
@@ -544,6 +605,70 @@ export default function HomePage() {
                 onClose={() => closeModal()}
                 darkMode={darkMode}
               />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Premium Upgrade Modal */}
+      <div className="modal fade" id="premiumModal" tabIndex="-1" aria-hidden="true">
+        <div className="modal-dialog modal-dialog-centered">
+          <div className={`modal-content ${darkMode ? "bg-dark text-light border-secondary" : ""}`}>
+            <div className="modal-header border-0 pb-0">
+              <button
+                type="button"
+                className={`btn-close ${darkMode ? "btn-close-white" : ""}`}
+                data-bs-dismiss="modal"
+                aria-label="Close"
+              ></button>
+            </div>
+            <div className="modal-body text-center pt-0 px-4 pb-4">
+              <div className="d-inline-flex p-3 bg-warning bg-opacity-10 text-warning rounded-circle mb-3">
+                <Crown size={40} />
+              </div>
+              <h4 className="fw-bold mb-1">
+                {isPremium ? "You are on UNI-TRACK PRO" : "Upgrade to UNI-TRACK PRO"}
+              </h4>
+              <p className="text-muted small mb-4">
+                {isPremium
+                  ? "Enjoy unlimited encryption, advanced analytics, and custom notifications."
+                  : "Unlock powerful analytics, unlimited encrypted trackers, and automatic data cloud backups."}
+              </p>
+
+              <div className="text-start bg-body-tertiary p-3 rounded-3 mb-4 border">
+                <div className="d-flex align-items-center gap-2 mb-2">
+                  <Check size={18} className="text-success flex-shrink-0" />
+                  <span className="small">Unlimited E2E Encrypted Trackers</span>
+                </div>
+                <div className="d-flex align-items-center gap-2 mb-2">
+                  <Check size={18} className="text-success flex-shrink-0" />
+                  <span className="small">Advanced Dashboard Analytics & Charts</span>
+                </div>
+                <div className="d-flex align-items-center gap-2 mb-2">
+                  <Check size={18} className="text-success flex-shrink-0" />
+                  <span className="small">Priority Instant Push Reminders</span>
+                </div>
+                <div className="d-flex align-items-center gap-2">
+                  <Check size={18} className="text-success flex-shrink-0" />
+                  <span className="small">Custom Categorization & Data Exports</span>
+                </div>
+              </div>
+
+              {!isPremium ? (
+                <button
+                  type="button"
+                  className="btn btn-warning w-100 py-2 fw-bold text-dark d-flex align-items-center justify-content-center gap-2"
+                  onClick={handleUpgradePremium}
+                  disabled={upgrading}
+                >
+                  <Sparkles size={18} />
+                  {upgrading ? "Processing Upgrade..." : "Upgrade Now ($4.99/mo)"}
+                </button>
+              ) : (
+                <div className="alert alert-success m-0 py-2 small fw-semibold d-flex align-items-center justify-content-center gap-2">
+                  <CheckCircle2 size={18} /> Your PRO subscription is active
+                </div>
+              )}
             </div>
           </div>
         </div>
