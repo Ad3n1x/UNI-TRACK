@@ -3,7 +3,7 @@ import TrackerDashboard from "../components/trackers/TrackerDashboard";
 import TrackerForm from "../components/trackers/TrackerForm";
 import TrackerList from "../components/trackers/TrackerList";
 import TrackerFilters from "../components/trackers/TrackerFilters";
-import { PlusCircle, LayoutDashboard, CheckCircle2, LogOut, Sun, Moon, RefreshCw, Info, Bell, Crown, Sparkles, Check } from "lucide-react";
+import { PlusCircle, LayoutDashboard, CheckCircle2, LogOut, Sun, Moon, RefreshCw, Info, Bell, Crown, Sparkles, Check, Globe } from "lucide-react";
 import Cookies from "universal-cookie";
 import { initializeUserKeys, decryptData, encryptData } from "../utils/e2ee";
 
@@ -14,6 +14,9 @@ const RAW_BASE_URL =
   "https://lv3node.onrender.com";
 
 const BASE_URL = RAW_BASE_URL.replace(/\/$/, "");
+
+// REPLACE THIS WITH YOUR PAYSTACK PUBLIC KEY FROM DASHBOARD
+const PAYSTACK_PUBLIC_KEY = "pk_test_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx";
 
 const getAuthHeaders = () => {
   const cookies = new Cookies();
@@ -70,7 +73,6 @@ async function registerServiceWorkerAndSubscribe() {
       body: JSON.stringify(subscription),
     });
 
-    console.log("Push Registered Successfully!");
     return true;
   } catch (err) {
     console.error("Failed to register push notifications:", err);
@@ -99,15 +101,17 @@ export default function HomePage() {
   const [subscribing, setSubscribing] = useState(false);
   const [subscribed, setSubscribed] = useState(false);
 
-  // Premium Membership State
-  const [isPremium, setIsPremium] = useState(() => {
-    return localStorage.getItem("isPremium") === "true";
-  });
+  // Region-based Pricing & Paystack State
+  const [isPremium, setIsPremium] = useState(() => localStorage.getItem("isPremium") === "true");
   const [upgrading, setUpgrading] = useState(false);
-
-  const [darkMode, setDarkMode] = useState(() => {
-    return localStorage.getItem("theme") === "dark";
+  const [userLocation, setUserLocation] = useState({
+    currency: "USD",
+    amount: 499, // in lowest currency unit (i.e. 499 cents = $4.99)
+    symbol: "$",
+    displayAmount: "4.99"
   });
+
+  const [darkMode, setDarkMode] = useState(() => localStorage.getItem("theme") === "dark");
 
   useEffect(() => {
     localStorage.setItem("theme", darkMode ? "dark" : "light");
@@ -117,7 +121,84 @@ export default function HomePage() {
     registerServiceWorkerAndSubscribe()
       .then(() => setSubscribed(true))
       .catch(() => setSubscribed(false));
+
+    // Detect user region/currency on mount
+    fetchRegionAndCurrency();
   }, []);
+
+  const fetchRegionAndCurrency = async () => {
+    try {
+      const res = await fetch("https://ipapi.co/json/");
+      const data = await res.json();
+      const countryCode = data.country_code;
+
+      // Determine regional pricing and currency mapping
+      switch (countryCode) {
+        case "NG":
+          setUserLocation({ currency: "NGN", amount: 500000, symbol: "₦", displayAmount: "5,000" }); // ₦5000
+          break;
+        case "GH":
+          setUserLocation({ currency: "GHS", amount: 7500, symbol: "GH₵", displayAmount: "75" }); // GH₵75
+          break;
+        case "ZA":
+          setUserLocation({ currency: "ZAR", amount: 9500, symbol: "R", displayAmount: "95" }); // R95
+          break;
+        case "KE":
+          setUserLocation({ currency: "KES", amount: 65000, symbol: "KSh", displayAmount: "650" }); // KSh650
+          break;
+        default:
+          setUserLocation({ currency: "USD", amount: 499, symbol: "$", displayAmount: "4.99" }); // $4.99
+          break;
+      }
+    } catch (err) {
+      console.warn("Unable to detect region for currency, falling back to USD:", err);
+    }
+  };
+
+  const handlePaystackPayment = () => {
+    if (!window.PaystackPop) {
+      alert("Paystack SDK failed to load. Please check your network connection.");
+      return;
+    }
+
+    setUpgrading(true);
+
+    const userEmail = localStorage.getItem("userEmail") || "customer@example.com";
+
+    const paystack = new window.PaystackPop();
+    paystack.newTransaction({
+      key: PAYSTACK_PUBLIC_KEY,
+      email: userEmail,
+      amount: userLocation.amount,
+      currency: userLocation.currency,
+      onSuccess: (transaction) => {
+        console.log("Paystack Success:", transaction);
+        setIsPremium(true);
+        localStorage.setItem("isPremium", "true");
+        setUpgrading(false);
+        setNotification("Payment Successful! Welcome to UNI-TRACK PRO");
+
+        // Close Modal
+        const modalElement = document.getElementById("premiumModal");
+        if (modalElement && window.bootstrap) {
+          const modalInstance = window.bootstrap.Modal.getInstance(modalElement);
+          modalInstance?.hide();
+        } else {
+          document.querySelector("#premiumModal .btn-close")?.click();
+        }
+
+        window.setTimeout(() => setNotification(null), 4000);
+      },
+      onCancel: () => {
+        setUpgrading(false);
+        console.log("Paystack payment cancelled.");
+      },
+      onError: (error) => {
+        setUpgrading(false);
+        alert(error?.message || "Payment transaction failed.");
+      }
+    });
+  };
 
   const handleSubscribeNotifications = async () => {
     setSubscribing(true);
@@ -131,27 +212,6 @@ export default function HomePage() {
       setSubscribing(false);
       window.setTimeout(() => setNotification(null), 4000);
     }
-  };
-
-  const handleUpgradePremium = () => {
-    setUpgrading(true);
-    setTimeout(() => {
-      setIsPremium(true);
-      localStorage.setItem("isPremium", "true");
-      setUpgrading(false);
-      setNotification("Welcome to UNI-TRACK Premium!");
-
-      // Close modal
-      const modalElement = document.getElementById("premiumModal");
-      if (modalElement && window.bootstrap) {
-        const modalInstance = window.bootstrap.Modal.getInstance(modalElement);
-        modalInstance?.hide();
-      } else {
-        document.querySelector("#premiumModal .btn-close")?.click();
-      }
-
-      window.setTimeout(() => setNotification(null), 3500);
-    }, 1500);
   };
 
   const closeModal = () => {
@@ -441,7 +501,6 @@ export default function HomePage() {
           </h1>
 
           <div className="d-flex align-items-center gap-2">
-            {/* Premium Button */}
             {!isPremium ? (
               <button
                 type="button"
@@ -464,7 +523,6 @@ export default function HomePage() {
               </button>
             )}
 
-            {/* Subscribe Notifications Button */}
             <button
               type="button"
               className={`btn ${subscribed ? "btn-outline-success" : "btn-outline-primary"} d-flex align-items-center gap-2 px-3 py-2`}
@@ -478,7 +536,6 @@ export default function HomePage() {
               </span>
             </button>
 
-            {/* Dark Mode Toggle */}
             <button
               type="button"
               className={`btn ${darkMode ? "btn-outline-light" : "btn-outline-secondary"} d-flex align-items-center justify-content-center p-2`}
@@ -522,7 +579,6 @@ export default function HomePage() {
             {/* Trackers Toolbar & List Section */}
             <div className={`p-3 p-md-4 rounded-4 shadow-sm border mt-4 ${darkMode ? "bg-dark border-secondary" : "bg-white"}`}>
               
-              {/* Info Banner */}
               <div className={`alert ${darkMode ? "bg-dark text-info border-info" : "bg-info bg-opacity-10 text-info border-info-subtle"} d-flex align-items-center gap-2 mb-3 py-2 px-3 rounded-3 small border`}>
                 <Info size={18} className="flex-shrink-0" />
                 <span>Use the <strong>Refresh</strong> button to update the dashboard metrics!</span>
@@ -610,7 +666,7 @@ export default function HomePage() {
         </div>
       </div>
 
-      {/* Premium Upgrade Modal */}
+      {/* Paystack Premium Upgrade Modal */}
       <div className="modal fade" id="premiumModal" tabIndex="-1" aria-hidden="true">
         <div className="modal-dialog modal-dialog-centered">
           <div className={`modal-content ${darkMode ? "bg-dark text-light border-secondary" : ""}`}>
@@ -629,11 +685,11 @@ export default function HomePage() {
               <h4 className="fw-bold mb-1">
                 {isPremium ? "You are on UNI-TRACK PRO" : "Upgrade to UNI-TRACK PRO"}
               </h4>
-              <p className="text-muted small mb-4">
-                {isPremium
-                  ? "Enjoy unlimited encryption, advanced analytics, and custom notifications."
-                  : "Unlock powerful analytics, unlimited encrypted trackers, and automatic data cloud backups."}
-              </p>
+
+              <div className="d-flex align-items-center justify-content-center gap-1 text-muted small mb-3">
+                <Globe size={14} />
+                <span>Currency detected for your region: <strong>{userLocation.currency}</strong></span>
+              </div>
 
               <div className="text-start bg-body-tertiary p-3 rounded-3 mb-4 border">
                 <div className="d-flex align-items-center gap-2 mb-2">
@@ -658,11 +714,13 @@ export default function HomePage() {
                 <button
                   type="button"
                   className="btn btn-warning w-100 py-2 fw-bold text-dark d-flex align-items-center justify-content-center gap-2"
-                  onClick={handleUpgradePremium}
+                  onClick={handlePaystackPayment}
                   disabled={upgrading}
                 >
                   <Sparkles size={18} />
-                  {upgrading ? "Processing Upgrade..." : "Upgrade Now ($4.99/mo)"}
+                  {upgrading
+                    ? "Opening Paystack..."
+                    : `Pay ${userLocation.symbol}${userLocation.displayAmount} / mo with Paystack`}
                 </button>
               ) : (
                 <div className="alert alert-success m-0 py-2 small fw-semibold d-flex align-items-center justify-content-center gap-2">
