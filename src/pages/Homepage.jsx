@@ -1,9 +1,12 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import TrackerDashboard from "../components/trackers/TrackerDashboard";
 import TrackerForm from "../components/trackers/TrackerForm";
 import TrackerList from "../components/trackers/TrackerList";
 import TrackerFilters from "../components/trackers/TrackerFilters";
-import { PlusCircle, LayoutDashboard, CheckCircle2, LogOut, Sun, Moon, RefreshCw, Info, Bell, Crown, Sparkles, Check, Globe, ShieldAlert } from "lucide-react";
+import { 
+  PlusCircle, LayoutDashboard, CheckCircle2, LogOut, 
+  Sun, Moon, RefreshCw, Info, Bell, Crown, Sparkles, Check, Globe, ShieldAlert 
+} from "lucide-react";
 import Cookies from "universal-cookie";
 import { initializeUserKeys, decryptData, encryptData } from "../utils/e2ee";
 
@@ -15,24 +18,16 @@ const RAW_BASE_URL =
 
 const BASE_URL = RAW_BASE_URL.replace(/\/$/, "");
 
-// Replace with your real Paystack Public Key
-const PAYSTACK_PUBLIC_KEY = "pk_test_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx";
+// Environment Variables (Fallback to test defaults only if env is missing)
+const PAYSTACK_PUBLIC_KEY = 
+  (typeof import.meta !== "undefined" && import.meta.env?.VITE_PAYSTACK_PUBLIC_KEY) ||
+  process.env.REACT_APP_PAYSTACK_PUBLIC_KEY || 
+  "pk_test_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx";
 
-// List of email addresses that have paid / active premium status
-// (Can also be fetched dynamically from your API endpoint)
-const INITIAL_PAID_EMAILS = [
-  "admin@unitrack.com",
-  "paiduser@example.com"
-];
-
-const getAuthHeaders = () => {
-  const cookies = new Cookies();
-  const token = cookies.get("token") || localStorage.getItem("token");
-  return {
-    "Content-Type": "application/json",
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
-  };
-};
+const VAPID_PUBLIC_KEY = 
+  (typeof import.meta !== "undefined" && import.meta.env?.VITE_VAPID_PUBLIC_KEY) ||
+  process.env.REACT_APP_VAPID_PUBLIC_KEY || 
+  "BEaflZfmm8QfrFsL7r06HB-QrsdDAefJpRk2vw-zcHIKD-t8evj3TIS7k9k0w0am9BboNqiqbZ99Y-1WxYNcZcw";
 
 const SAMPLE_TRACKER = {
   _id: "sample-001",
@@ -44,9 +39,18 @@ const SAMPLE_TRACKER = {
   isSample: true,
 };
 
+const getAuthHeaders = () => {
+  const cookies = new Cookies();
+  const token = cookies.get("token") || localStorage.getItem("token");
+  return {
+    "Content-Type": "application/json",
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  };
+};
+
 function urlBase64ToUint8Array(base64String) {
   const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
-  const base64 = (base64String + padding).replace(/\-/g, "+").replace(/_/g, "/");
+  const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
   const rawData = window.atob(base64);
   const outputArray = new Uint8Array(rawData.length);
   for (let i = 0; i < rawData.length; ++i) {
@@ -68,10 +72,9 @@ async function registerServiceWorkerAndSubscribe() {
     await navigator.serviceWorker.register("/sw.js");
     const registration = await navigator.serviceWorker.ready;
 
-    const publicVapidKey = "BEaflZfmm8QfrFsL7r06HB-QrsdDAefJpRk2vw-zcHIKD-t8evj3TIS7k9k0w0am9BboNqiqbZ99Y-1WxYNcZcw";
     const subscription = await registration.pushManager.subscribe({
       userVisibleOnly: true,
-      applicationServerKey: urlBase64ToUint8Array(publicVapidKey),
+      applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
     });
 
     await fetch(`${BASE_URL}/api/v1/subscribe`, {
@@ -91,11 +94,6 @@ export default function HomePage() {
   const cookies = new Cookies();
   const token = cookies.get("token") || localStorage.getItem("token");
 
-  if (!token) {
-    window.location.href = "/";
-    return null;
-  }
-
   // Get active logged in user email
   const currentUserEmail = (
     localStorage.getItem("userEmail") || 
@@ -111,15 +109,8 @@ export default function HomePage() {
   const [newlyAddedId, setNewlyAddedId] = useState(null);
   const [notification, setNotification] = useState(null);
 
-  // Push subscription state
   const [subscribing, setSubscribing] = useState(false);
   const [subscribed, setSubscribed] = useState(false);
-
-  // Email-based Paid/Premium Check
-  const [paidEmails, setPaidEmails] = useState(() => {
-    const saved = localStorage.getItem("paidEmails");
-    return saved ? JSON.parse(saved) : INITIAL_PAID_EMAILS;
-  });
 
   const [isPremium, setIsPremium] = useState(false);
   const [upgrading, setUpgrading] = useState(false);
@@ -137,30 +128,34 @@ export default function HomePage() {
     localStorage.setItem("theme", darkMode ? "dark" : "light");
   }, [darkMode]);
 
-  // Check if current user email has paid status
+  // Auth Guard Redirect
   useEffect(() => {
-    if (currentUserEmail && paidEmails.map((e) => e.toLowerCase()).includes(currentUserEmail)) {
-      setIsPremium(true);
-    } else {
-      setIsPremium(false);
+    if (!token) {
+      window.location.href = "/login";
     }
-  }, [currentUserEmail, paidEmails]);
+  }, [token]);
 
-  useEffect(() => {
-    registerServiceWorkerAndSubscribe()
-      .then(() => setSubscribed(true))
-      .catch(() => setSubscribed(false));
-
-    fetchRegionAndCurrency();
+  // Fetch User Subscription Status from Backend
+  const fetchUserSubscriptionStatus = useCallback(async () => {
+    try {
+      const res = await fetch(`${BASE_URL}/api/v1/user/status`, {
+        headers: getAuthHeaders(),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setIsPremium(Boolean(data.isPremium));
+      }
+    } catch (err) {
+      console.warn("Could not verify premium status from server:", err);
+    }
   }, []);
 
   const fetchRegionAndCurrency = async () => {
     try {
       const res = await fetch("https://ipapi.co/json/");
       const data = await res.json();
-      const countryCode = data.country_code;
 
-      switch (countryCode) {
+      switch (data.country_code) {
         case "NG":
           setUserLocation({ currency: "NGN", amount: 500000, symbol: "₦", displayAmount: "5,000" });
           break;
@@ -179,6 +174,71 @@ export default function HomePage() {
       }
     } catch (err) {
       console.warn("Could not determine region currency, defaulting to USD:", err);
+    }
+  };
+
+  const fetchTrackers = useCallback(async (isManualRefresh = false) => {
+    if (isManualRefresh) setRefreshing(true);
+    try {
+      const { privateKey } = await initializeUserKeys();
+
+      let response = await fetch(`${BASE_URL}/api/v1/trackers`, {
+        headers: getAuthHeaders(),
+      });
+
+      if (!response.ok) {
+        response = await fetch(`${BASE_URL}/api/trackers`, { headers: getAuthHeaders() });
+      }
+
+      const data = await response.json();
+      const fetchedArray = Array.isArray(data) ? data : Array.isArray(data.trackers) ? data.trackers : [];
+
+      const decryptedTrackers = await Promise.all(
+        fetchedArray.map(async (tracker) => {
+          try {
+            return {
+              ...tracker,
+              name: await decryptData(privateKey, tracker.name),
+              target: tracker.target !== undefined ? await decryptData(privateKey, tracker.target) : tracker.target,
+              entries: tracker.entries !== undefined ? await decryptData(privateKey, tracker.entries) : tracker.entries,
+            };
+          } catch (decryptErr) {
+            console.error("Failed to decrypt tracker:", decryptErr);
+            return tracker;
+          }
+        })
+      );
+
+      setTrackers(decryptedTrackers.reverse());
+      if (isManualRefresh) {
+        setNotification("Trackers updated!");
+        setTimeout(() => setNotification(null), 2500);
+      }
+    } catch (error) {
+      console.error("Error fetching trackers:", error);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (token) {
+      fetchTrackers();
+      fetchUserSubscriptionStatus();
+      fetchRegionAndCurrency();
+
+      registerServiceWorkerAndSubscribe()
+        .then(() => setSubscribed(true))
+        .catch(() => setSubscribed(false));
+    }
+  }, [token, fetchTrackers, fetchUserSubscriptionStatus]);
+
+  const closeModal = (modalId) => {
+    const modalElement = document.getElementById(modalId);
+    if (modalElement && window.bootstrap) {
+      const modalInstance = window.bootstrap.Modal.getInstance(modalElement);
+      modalInstance?.hide();
     }
   };
 
@@ -201,32 +261,27 @@ export default function HomePage() {
       email: currentUserEmail,
       amount: userLocation.amount,
       currency: userLocation.currency,
-      onSuccess: (transaction) => {
-        console.log("Paystack Payment Successful:", transaction);
-        
-        // Add current user's email to paid list
-        const updatedPaidList = [...new Set([...paidEmails, currentUserEmail.toLowerCase()])];
-        setPaidEmails(updatedPaidList);
-        localStorage.setItem("paidEmails", JSON.stringify(updatedPaidList));
-        
-        setIsPremium(true);
-        setUpgrading(false);
-        setNotification(`Payment successful! PRO access activated for ${currentUserEmail}`);
+      onSuccess: async (transaction) => {
+        try {
+          // Verify transaction on backend
+          await fetch(`${BASE_URL}/api/v1/payments/verify`, {
+            method: "POST",
+            headers: getAuthHeaders(),
+            body: JSON.stringify({ reference: transaction.reference }),
+          });
 
-        // Close Modal
-        const modalElement = document.getElementById("premiumModal");
-        if (modalElement && window.bootstrap) {
-          const modalInstance = window.bootstrap.Modal.getInstance(modalElement);
-          modalInstance?.hide();
-        } else {
-          document.querySelector("#premiumModal .btn-close")?.click();
+          setIsPremium(true);
+          setNotification(`Payment successful! PRO access activated for ${currentUserEmail}`);
+          closeModal("premiumModal");
+        } catch (err) {
+          console.error("Payment verification failed:", err);
+          alert("Payment completed but verification failed. Contact support.");
+        } finally {
+          setUpgrading(false);
+          setTimeout(() => setNotification(null), 4000);
         }
-
-        window.setTimeout(() => setNotification(null), 4000);
       },
-      onCancel: () => {
-        setUpgrading(false);
-      },
+      onCancel: () => setUpgrading(false),
       onError: (error) => {
         setUpgrading(false);
         alert(error?.message || "Payment transaction failed.");
@@ -244,98 +299,112 @@ export default function HomePage() {
       setNotification(err.message || "Failed to subscribe to notifications.");
     } finally {
       setSubscribing(false);
-      window.setTimeout(() => setNotification(null), 4000);
-    }
-  };
-
-  const closeModal = () => {
-    const modalElement = document.getElementById("trackerModal");
-    if (modalElement && window.bootstrap) {
-      const modalInstance =
-        window.bootstrap.Modal.getInstance(modalElement) ||
-        new window.bootstrap.Modal(modalElement);
-      modalInstance.hide();
-    } else {
-      document.querySelector("#trackerModal .btn-close")?.click();
+      setTimeout(() => setNotification(null), 4000);
     }
   };
 
   const handleLogout = () => {
-    cookies.remove("token", { path: "/login" });
+    cookies.remove("token", { path: "/" });
     localStorage.removeItem("token");
     window.location.href = "/login";
   };
 
-  const fetchTrackers = async (isManualRefresh = false) => {
-    if (isManualRefresh) setRefreshing(true);
+  const syncTrackerEntriesWithBackend = async (trackerId, updatedEntries) => {
     try {
-      const { privateKey } = await initializeUserKeys();
+      const { publicKey } = await initializeUserKeys();
+      const encryptedEntries = await encryptData(publicKey, updatedEntries);
 
-      const response = await fetch(`${BASE_URL}/api/v1/trackers`, {
+      let response = await fetch(`${BASE_URL}/api/v1/trackers/${trackerId}`, {
+        method: "PUT",
         headers: getAuthHeaders(),
+        body: JSON.stringify({ entries: encryptedEntries }),
       });
 
-      const resData = response.ok ? response : await fetch(`${BASE_URL}/api/trackers`, { headers: getAuthHeaders() });
-      const data = await resData.json();
-
-      const fetchedArray = Array.isArray(data) ? data : Array.isArray(data.trackers) ? data.trackers : [];
-
-      const decryptedTrackers = await Promise.all(
-        fetchedArray.map(async (tracker) => {
-          try {
-            return {
-              ...tracker,
-              name: await decryptData(privateKey, tracker.name),
-              target: tracker.target !== undefined ? await decryptData(privateKey, tracker.target) : tracker.target,
-              entries: tracker.entries !== undefined ? await decryptData(privateKey, tracker.entries) : tracker.entries,
-            };
-          } catch (decryptErr) {
-            console.error("Failed to decrypt tracker:", decryptErr);
-            return tracker;
-          }
-        })
-      );
-
-      setTrackers([...decryptedTrackers].reverse());
-      if (isManualRefresh) {
-        setNotification("Trackers updated!");
-        window.setTimeout(() => setNotification(null), 2500);
+      if (response.status === 404) {
+        response = await fetch(`${BASE_URL}/api/trackers/${trackerId}`, {
+          method: "PUT",
+          headers: getAuthHeaders(),
+          body: JSON.stringify({ entries: encryptedEntries }),
+        });
       }
+
+      if (!response.ok) throw new Error("Failed to sync entries with server.");
     } catch (error) {
-      console.error("Error fetching trackers:", error);
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
+      console.error("Error syncing entry modification:", error);
+      fetchTrackers(); 
     }
   };
 
-  useEffect(() => {
-    fetchTrackers();
-  }, []);
-
-  const handleCreate = (newTracker) => {
-    fetchTrackers();
-    const newId = newTracker._id || newTracker.id;
-    setNewlyAddedId(newId);
-
-    setNotification("Successfully created tracker!");
-
-    if (newId) {
-      window.setTimeout(() => {
-        setNewlyAddedId((current) => (current === newId ? null : current));
-      }, 2500);
+  const handleAddEntry = async (trackerId, entry) => {
+    if (trackerId.toString() === SAMPLE_TRACKER._id) {
+      const newEntryWithId = { timestamp: new Date().toISOString(), ...entry, _id: Date.now().toString() };
+      setSampleTrackerState((prev) => ({ ...prev, entries: [...(prev.entries || []), newEntryWithId] }));
+      return;
     }
 
-    window.setTimeout(() => {
-      setNotification(null);
-    }, 3000);
+    let updatedEntries = [];
+    setTrackers((prevTrackers) =>
+      prevTrackers.map((t) => {
+        const tId = t._id?.toString() || t.id?.toString();
+        if (tId === trackerId.toString()) {
+          const newEntryWithId = { timestamp: new Date().toISOString(), ...entry, _id: Date.now().toString() };
+          updatedEntries = [...(t.entries || []), newEntryWithId];
+          return { ...t, entries: updatedEntries };
+        }
+        return t;
+      })
+    );
+
+    if (updatedEntries.length > 0) {
+      await syncTrackerEntriesWithBackend(trackerId, updatedEntries);
+    }
+  };
+
+  const handleUpdate = async (trackerId, newEntries) => {
+    if (trackerId.toString() === SAMPLE_TRACKER._id) {
+      setSampleTrackerState((prev) => ({ ...prev, entries: newEntries }));
+      return;
+    }
+
+    setTrackers((prev) =>
+      prev.map((t) => {
+        const tId = t._id?.toString() || t.id?.toString();
+        return tId === trackerId.toString() ? { ...t, entries: newEntries } : t;
+      })
+    );
+
+    await syncTrackerEntriesWithBackend(trackerId, newEntries);
+  };
+
+  const handleDeleteEntry = async (trackerId, entryId) => {
+    if (trackerId.toString() === SAMPLE_TRACKER._id) {
+      setSampleTrackerState((prev) => ({
+        ...prev,
+        entries: (prev.entries || []).filter((e) => (e._id || e.id)?.toString() !== entryId.toString()),
+      }));
+      return;
+    }
+
+    let updatedEntries = [];
+    setTrackers((prevTrackers) =>
+      prevTrackers.map((t) => {
+        const tId = t._id?.toString() || t.id?.toString();
+        if (tId === trackerId.toString()) {
+          updatedEntries = (t.entries || []).filter((e) => (e._id || e.id)?.toString() !== entryId.toString());
+          return { ...t, entries: updatedEntries };
+        }
+        return t;
+      })
+    );
+
+    await syncTrackerEntriesWithBackend(trackerId, updatedEntries);
   };
 
   const handleDeleteTracker = async (trackerId) => {
     if (trackerId === SAMPLE_TRACKER._id) return;
 
     const previousTrackers = [...trackers];
-    setTrackers((prev) => prev.filter((t) => (t._id?.toString() || t.id?.toString()) !== trackerId.toString()));
+    setTrackers((prev) => prev.filter((t) => (t._id || t.id)?.toString() !== trackerId.toString()));
 
     try {
       let response = await fetch(`${BASE_URL}/api/v1/trackers/${trackerId}`, {
@@ -358,127 +427,19 @@ export default function HomePage() {
     }
   };
 
-  const syncTrackerEntriesWithBackend = async (trackerId, updatedEntries) => {
-    try {
-      const { publicKey } = await initializeUserKeys();
-      const encryptedEntries = await encryptData(publicKey, updatedEntries);
+  const handleCreate = (newTracker) => {
+    fetchTrackers();
+    const newId = newTracker._id || newTracker.id;
+    setNewlyAddedId(newId);
+    setNotification("Successfully created tracker!");
 
-      let response = await fetch(`${BASE_URL}/api/v1/trackers/${trackerId}`, {
-        method: "PUT",
-        headers: getAuthHeaders(),
-        body: JSON.stringify({ entries: encryptedEntries }),
-      });
-
-      if (response.status === 404) {
-        response = await fetch(`${BASE_URL}/api/trackers/${trackerId}`, {
-          method: "PUT",
-          headers: getAuthHeaders(),
-          body: JSON.stringify({ entries: encryptedEntries }),
-        });
-      }
-
-      if (!response.ok) {
-        throw new Error("Failed to sync entries with server.");
-      }
-    } catch (error) {
-      console.error("Error syncing entry modification:", error);
-      fetchTrackers(); 
+    if (newId) {
+      setTimeout(() => setNewlyAddedId((current) => (current === newId ? null : current)), 2500);
     }
+    setTimeout(() => setNotification(null), 3000);
   };
 
-  const handleAddEntry = async (trackerId, entry) => {
-    if (trackerId.toString() === SAMPLE_TRACKER._id) {
-      const newEntryWithId = { 
-        timestamp: new Date().toISOString(), 
-        ...entry, 
-        _id: Date.now().toString() 
-      };
-      setSampleTrackerState((prev) => ({
-        ...prev,
-        entries: [...(prev.entries || []), newEntryWithId],
-      }));
-      return;
-    }
-
-    let targetTracker = trackers.find((t) => {
-      const tId = t._id?.toString() || t.id?.toString() || t._id || t.id;
-      return tId === trackerId.toString();
-    });
-    if (!targetTracker) return;
-
-    const newEntryWithId = { 
-      timestamp: new Date().toISOString(), 
-      ...entry, 
-      _id: Date.now().toString() 
-    };
-    
-    const updatedEntries = [...(targetTracker.entries || []), newEntryWithId];
-
-    setTrackers((prev) =>
-      prev.map((t) => {
-        const tId = t._id?.toString() || t.id?.toString() || t._id || t.id;
-        if (tId === trackerId.toString()) {
-          return { ...t, entries: updatedEntries };
-        }
-        return t;
-      })
-    );
-
-    await syncTrackerEntriesWithBackend(trackerId, updatedEntries);
-  };
-
-  const handleUpdate = async (trackerId, newEntries) => {
-    if (trackerId.toString() === SAMPLE_TRACKER._id) {
-      setSampleTrackerState((prev) => ({ ...prev, entries: newEntries }));
-      return;
-    }
-
-    setTrackers((prev) =>
-      prev.map((t) => {
-        const tId = t._id?.toString() || t.id?.toString() || t._id || t.id;
-        if (tId === trackerId.toString()) {
-          return { ...t, entries: newEntries };
-        }
-        return t;
-      })
-    );
-
-    await syncTrackerEntriesWithBackend(trackerId, newEntries);
-  };
-
-  const handleDeleteEntry = async (trackerId, entryId) => {
-    if (trackerId.toString() === SAMPLE_TRACKER._id) {
-      setSampleTrackerState((prev) => ({
-        ...prev,
-        entries: (prev.entries || []).filter(
-          (e) => (e._id?.toString() || e.id?.toString() || e._id || e.id) !== entryId.toString()
-        ),
-      }));
-      return;
-    }
-
-    let targetTracker = trackers.find((t) => {
-      const tId = t._id?.toString() || t.id?.toString() || t._id || t.id;
-      return tId === trackerId.toString();
-    });
-    if (!targetTracker) return;
-
-    const updatedEntries = (targetTracker.entries || []).filter(
-      (e) => (e._id?.toString() || e.id?.toString() || e._id || e.id) !== entryId.toString()
-    );
-
-    setTrackers((prev) =>
-      prev.map((t) => {
-        const tId = t._id?.toString() || t.id?.toString() || t._id || t.id;
-        if (tId === trackerId.toString()) {
-          return { ...t, entries: updatedEntries };
-        }
-        return t;
-      })
-    );
-
-    await syncTrackerEntriesWithBackend(trackerId, updatedEntries);
-  };
+  if (!token) return null;
 
   if (loading) {
     return (
@@ -496,25 +457,16 @@ export default function HomePage() {
   }
 
   const hasTrackers = trackers.length > 0;
-  const filteredTrackers = typeFilter
-    ? trackers.filter((t) => t.type === typeFilter)
-    : trackers;
+  const filteredTrackers = typeFilter ? trackers.filter((t) => t.type === typeFilter) : trackers;
   const displayTrackers = hasTrackers ? filteredTrackers : [sampleTrackerState];
 
   const currentHour = new Date().getHours();
-  const timeGreeting =
-    currentHour < 12 ? "Good Morning ☀️" : currentHour < 18 ? "Good Afternoon 🌤️" : "Good Evening 🌙";
+  const timeGreeting = currentHour < 12 ? "Good Morning ☀️" : currentHour < 18 ? "Good Afternoon 🌤️" : "Good Evening 🌙";
 
   return (
-    <div
-      className={`min-vh-100 position-relative ${darkMode ? "bg-dark text-light" : "bg-light text-dark"}`}
-      data-bs-theme={darkMode ? "dark" : "light"}
-    >
+    <div className={`min-vh-100 position-relative ${darkMode ? "bg-dark text-light" : "bg-light text-dark"}`} data-bs-theme={darkMode ? "dark" : "light"}>
       {notification && (
-        <div
-          className="position-fixed top-0 start-50 translate-middle-x p-3"
-          style={{ zIndex: 1080, marginTop: "1rem" }}
-        >
+        <div className="position-fixed top-0 start-50 translate-middle-x p-3" style={{ zIndex: 1080, marginTop: "1rem" }}>
           <div className="alert alert-success shadow-sm d-flex align-items-center gap-2 mb-0 py-2 px-3 rounded-pill">
             <CheckCircle2 size={18} />
             <span className="small fw-semibold">{notification}</span>
@@ -590,8 +542,7 @@ export default function HomePage() {
       <div className="container py-4 py-md-5">
         <div className="row">
           <div className="col-12">
-            
-            {/* Friendly Greeting */}
+            {/* Greeting */}
             <div className={`p-4 p-md-5 rounded-4 shadow-sm border mb-4 mb-md-5 position-relative overflow-hidden ${darkMode ? "bg-dark border-secondary" : "bg-white"}`}>
               <div className="position-absolute top-0 end-0 p-4 opacity-10 d-none d-md-block text-primary">
                 <LayoutDashboard size={140} />
@@ -614,9 +565,8 @@ export default function HomePage() {
               <TrackerDashboard trackers={displayTrackers} darkMode={darkMode} />
             </div>
 
-            {/* Trackers Toolbar & List Section */}
+            {/* Trackers Toolbar & List */}
             <div className={`p-3 p-md-4 rounded-4 shadow-sm border mt-4 ${darkMode ? "bg-dark border-secondary" : "bg-white"}`}>
-              
               <div className={`alert ${darkMode ? "bg-dark text-info border-info" : "bg-info bg-opacity-10 text-info border-info-subtle"} d-flex align-items-center gap-2 mb-3 py-2 px-3 rounded-3 small border`}>
                 <Info size={18} className="flex-shrink-0" />
                 <span>Use the <strong>Refresh</strong> button to update the dashboard metrics!</span>
@@ -680,23 +630,18 @@ export default function HomePage() {
         </div>
       </div>
 
-      {/* Create Tracker Modal */}
+      {/* Modals */}
       <div className="modal fade" id="trackerModal" tabIndex="-1" aria-hidden="true">
         <div className="modal-dialog modal-dialog-centered modal-dialog-scrollable">
           <div className={`modal-content ${darkMode ? "bg-dark text-light border-secondary" : ""}`}>
             <div className="modal-header">
               <h5 className="modal-title">Configure Tracker</h5>
-              <button
-                type="button"
-                className={`btn-close ${darkMode ? "btn-close-white" : ""}`}
-                data-bs-dismiss="modal"
-                aria-label="Close"
-              ></button>
+              <button type="button" className={`btn-close ${darkMode ? "btn-close-white" : ""}`} data-bs-dismiss="modal" aria-label="Close" />
             </div>
             <div className="modal-body">
               <TrackerForm
                 onCreate={(createdTracker) => handleCreate(createdTracker)}
-                onClose={() => closeModal()}
+                onClose={() => closeModal("trackerModal")}
                 darkMode={darkMode}
               />
             </div>
@@ -704,17 +649,11 @@ export default function HomePage() {
         </div>
       </div>
 
-      {/* Paystack Premium Upgrade Modal */}
       <div className="modal fade" id="premiumModal" tabIndex="-1" aria-hidden="true">
         <div className="modal-dialog modal-dialog-centered">
           <div className={`modal-content ${darkMode ? "bg-dark text-light border-secondary" : ""}`}>
             <div className="modal-header border-0 pb-0">
-              <button
-                type="button"
-                className={`btn-close ${darkMode ? "btn-close-white" : ""}`}
-                data-bs-dismiss="modal"
-                aria-label="Close"
-              ></button>
+              <button type="button" className={`btn-close ${darkMode ? "btn-close-white" : ""}`} data-bs-dismiss="modal" aria-label="Close" />
             </div>
             <div className="modal-body text-center pt-0 px-4 pb-4">
               <div className="d-inline-flex p-3 bg-warning bg-opacity-10 text-warning rounded-circle mb-3">
