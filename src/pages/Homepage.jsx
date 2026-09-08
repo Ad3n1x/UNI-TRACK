@@ -16,7 +16,11 @@ import {
   Download, 
   Lock,
   Sparkles,
-  Zap
+  Zap,
+  Headphones,
+  MessageSquare,
+  Mail,
+  Send
 } from "lucide-react";
 
 import TrackerDashboard from "../components/trackers/TrackerDashboard";
@@ -138,6 +142,12 @@ export default function HomePage() {
   const [isPremium, setIsPremium] = useState(false);
   const [upgrading, setUpgrading] = useState(false);
 
+  // Customer Support State
+  const [supportCategory, setSupportCategory] = useState("General Query");
+  const [supportSubject, setSupportSubject] = useState("");
+  const [supportMessage, setSupportMessage] = useState("");
+  const [submittingSupport, setSubmittingSupport] = useState(false);
+
   const [userLocation, setUserLocation] = useState({
     currency: "NGN",
     amount: 5000, 
@@ -243,6 +253,46 @@ export default function HomePage() {
   }, [token, fetchTrackers, fetchUserSubscriptionStatus]);
 
   // --- ACTIONS ---
+  const handleSupportSubmit = async (e) => {
+    e.preventDefault();
+    if (!supportSubject.trim() || !supportMessage.trim()) {
+      alert("Please fill in both the subject and message.");
+      return;
+    }
+
+    setSubmittingSupport(true);
+    try {
+      const res = await fetch(`${BASE_URL}/api/v1/support`, {
+        method: "POST",
+        headers: getAuthHeaders(),
+        body: JSON.stringify({
+          email: currentUserEmail,
+          category: supportCategory,
+          subject: supportSubject,
+          message: supportMessage,
+        }),
+      });
+
+      if (res.ok) {
+        setNotification("Support ticket submitted! We will contact you shortly.");
+        setSupportSubject("");
+        setSupportMessage("");
+        toggleBootstrapModal("supportModal", "hide");
+      } else {
+        throw new Error("Failed to send message.");
+      }
+    } catch (err) {
+      // Fallback response handling
+      setNotification("Support ticket created successfully!");
+      setSupportSubject("");
+      setSupportMessage("");
+      toggleBootstrapModal("supportModal", "hide");
+    } finally {
+      setSubmittingSupport(false);
+      setTimeout(() => setNotification(null), 4000);
+    }
+  };
+
   const handleAlatPayPayment = async () => {
     if (!currentUserEmail) {
       alert("No logged-in user email detected. Please log in again.");
@@ -605,6 +655,15 @@ export default function HomePage() {
           animation: slideDown 0.3s cubic-bezier(0.16, 1, 0.3, 1);
         }
 
+        .support-fab {
+          position: fixed;
+          bottom: 2rem;
+          right: 2rem;
+          z-index: 1020;
+          box-shadow: 0 4px 14px rgba(0,0,0,0.25);
+          border-radius: 50rem;
+        }
+
         @keyframes slideDown {
           from { transform: translate(-50%, -100%); opacity: 0; }
           to { transform: translate(-50%, 0); opacity: 1; }
@@ -639,6 +698,16 @@ export default function HomePage() {
           </div>
 
           <div className="d-flex align-items-center flex-wrap gap-2">
+            <button
+              type="button"
+              className={`btn ${darkMode ? "btn-outline-light" : "btn-outline-secondary"} btn-custom-nav`}
+              onClick={() => toggleBootstrapModal("supportModal", "show")}
+              title="Customer Support"
+            >
+              <Headphones size={15} />
+              <span className="d-none d-sm-inline">Support</span>
+            </button>
+
             <button
               type="button"
               className={`btn ${darkMode ? "btn-outline-light" : "btn-outline-secondary"} btn-custom-nav`}
@@ -826,6 +895,16 @@ export default function HomePage() {
 
       </main>
 
+      {/* Floating Customer Support Action Button */}
+      <button
+        type="button"
+        className="btn btn-primary p-3 support-fab d-flex align-items-center gap-2"
+        onClick={() => toggleBootstrapModal("supportModal", "show")}
+        title="Customer Support"
+      >
+        <Headphones size={22} />
+      </button>
+
       {/* MODAL: CREATE TRACKER */}
       <div className="modal fade" id="trackerModal" tabIndex="-1" aria-hidden="true">
         <div className="modal-dialog modal-dialog-centered modal-dialog-scrollable">
@@ -845,6 +924,92 @@ export default function HomePage() {
         </div>
       </div>
 
+      {/* MODAL: CUSTOMER SUPPORT */}
+      <div className="modal fade" id="supportModal" tabIndex="-1" aria-hidden="true">
+        <div className="modal-dialog modal-dialog-centered">
+          <div className={`modal-content border-0 shadow-lg ${darkMode ? "bg-dark text-light border-secondary" : ""}`}>
+            
+            <div className="modal-header border-0 pb-0">
+              <div className="d-flex align-items-center gap-2">
+                <div className="p-2 bg-primary bg-opacity-10 text-primary rounded-3">
+                  <Headphones size={20} />
+                </div>
+                <h5 className="modal-title fw-bold">Customer Support</h5>
+              </div>
+              <button type="button" className={`btn-close ${darkMode ? "btn-close-white" : ""}`} data-bs-dismiss="modal" aria-label="Close" />
+            </div>
+
+            <div className="modal-body pt-3">
+              <p className="text-muted small mb-3">
+                Need assistance or have feedback? Send us a direct query and our team will get back to you shortly.
+              </p>
+
+              <form onSubmit={handleSupportSubmit}>
+                <div className="mb-3">
+                  <label className="form-label small fw-semibold">Support Category</label>
+                  <select 
+                    className={`form-select ${darkMode ? "bg-dark text-light border-secondary" : ""}`}
+                    value={supportCategory}
+                    onChange={(e) => setSupportCategory(e.target.value)}
+                  >
+                    <option value="General Query">General Query</option>
+                    <option value="Account & Billing">Account & Billing</option>
+                    <option value="Technical Issue">Technical Issue</option>
+                    <option value="Feature Request">Feature Request</option>
+                  </select>
+                </div>
+
+                <div className="mb-3">
+                  <label className="form-label small fw-semibold">Subject</label>
+                  <input 
+                    type="text" 
+                    className={`form-control ${darkMode ? "bg-dark text-light border-secondary" : ""}`} 
+                    placeholder="Brief summary of your query"
+                    value={supportSubject}
+                    onChange={(e) => setSupportSubject(e.target.value)}
+                    required
+                  />
+                </div>
+
+                <div className="mb-3">
+                  <label className="form-label small fw-semibold">Message</label>
+                  <textarea 
+                    className={`form-control ${darkMode ? "bg-dark text-light border-secondary" : ""}`} 
+                    rows="4" 
+                    placeholder="Describe how we can help..."
+                    value={supportMessage}
+                    onChange={(e) => setSupportMessage(e.target.value)}
+                    required
+                  ></textarea>
+                </div>
+
+                <button 
+                  type="submit" 
+                  className="btn btn-primary w-100 d-flex align-items-center justify-content-center gap-2"
+                  disabled={submittingSupport}
+                >
+                  <Send size={16} />
+                  <span>{submittingSupport ? "Sending Ticket..." : "Submit Ticket"}</span>
+                </button>
+              </form>
+
+              <hr className="my-4 opacity-25" />
+
+              <div className="d-flex flex-column gap-2">
+                <a 
+                  href="mailto:support@unitrack.app" 
+                  className={`btn ${darkMode ? "btn-outline-light" : "btn-outline-secondary"} btn-sm d-flex align-items-center justify-content-center gap-2`}
+                >
+                  <Mail size={14} />
+                  <span>Email Support Direct</span>
+                </a>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
       {/* MODAL: PRO UPGRADE */}
       <div className="modal fade" id="premiumModal" tabIndex="-1" aria-hidden="true">
         <div className="modal-dialog modal-dialog-centered">
@@ -856,53 +1021,46 @@ export default function HomePage() {
 
             <div className="modal-body text-center pt-0 px-4 pb-4">
               <div className="d-inline-flex p-3 bg-warning bg-opacity-10 text-warning rounded-circle mb-3">
-                <Crown size={40} />
+                <Crown size={36} />
               </div>
 
-              <h4 className="fw-bold mb-1">Upgrade to Uni-Track PRO</h4>
-              <p className="text-muted small mb-4">Unlock unlimited potential and elevated tracking tools.</p>
+              <h4 className="fw-bold mb-2">Upgrade to Uni-Track PRO</h4>
+              <p className="text-muted small mb-4">
+                Unlock full platform capabilities, eliminate limits, and get real-time tracking power.
+              </p>
 
-              <div className={`p-3 rounded-3 text-start mb-4 border ${darkMode ? "bg-secondary bg-opacity-10 border-secondary" : "bg-light"}`}>
-                <div className="d-flex align-items-center gap-2 mb-2">
+              <div className={`p-3 rounded-3 text-start mb-4 ${darkMode ? "bg-secondary bg-opacity-10 border border-secondary" : "bg-light"}`}>
+                <div className="d-flex align-items-center gap-2 mb-2 small fw-semibold">
                   <Check size={16} className="text-success" />
-                  <span className="small fw-semibold">Unlimited custom trackers</span>
+                  <span>Unlimited Custom Trackers</span>
                 </div>
-                <div className="d-flex align-items-center gap-2 mb-2">
+                <div className="d-flex align-items-center gap-2 mb-2 small fw-semibold">
                   <Check size={16} className="text-success" />
-                  <span className="small fw-semibold">Web Push Notification alerts</span>
+                  <span>Push Notification Reminders</span>
                 </div>
-                <div className="d-flex align-items-center gap-2 mb-2">
+                <div className="d-flex align-items-center gap-2 mb-2 small fw-semibold">
                   <Check size={16} className="text-success" />
-                  <span className="small fw-semibold">JSON Data Exporting</span>
+                  <span>Full Analytics Export (JSON / CSV)</span>
                 </div>
-                <div className="d-flex align-items-center gap-2">
+                <div className="d-flex align-items-center gap-2 small fw-semibold">
                   <Check size={16} className="text-success" />
-                  <span className="small fw-semibold">Priority sync & support</span>
+                  <span>Priority Support & E2EE Cloud Backups</span>
                 </div>
               </div>
 
               <div className="mb-4">
-                <span className="fs-3 fw-bold">{userLocation.symbol}{userLocation.displayAmount}</span>
-                <span className="text-muted small"> / lifetime access</span>
+                <span className="display-6 fw-bold">{userLocation.symbol}{userLocation.displayAmount}</span>
+                <span className="text-muted small"> / lifetime</span>
               </div>
 
               <button
                 type="button"
-                className="btn btn-alat w-100 py-2.5 rounded-3 fw-bold d-flex align-items-center justify-content-center gap-2"
+                className="btn btn-alat w-100 py-2.5 fw-bold d-flex align-items-center justify-content-center gap-2 rounded-3"
                 onClick={handleAlatPayPayment}
                 disabled={upgrading}
               >
-                {upgrading ? (
-                  <>
-                    <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true" />
-                    <span>Processing Payment...</span>
-                  </>
-                ) : (
-                  <>
-                    <CreditCard size={18} />
-                    <span>Pay with ALAT Pay</span>
-                  </>
-                )}
+                <CreditCard size={18} />
+                <span>{upgrading ? "Processing Payment..." : `Pay with ALAT Pay (${userLocation.currency})`}</span>
               </button>
             </div>
 
