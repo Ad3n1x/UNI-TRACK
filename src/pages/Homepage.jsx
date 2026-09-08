@@ -16,7 +16,9 @@ import {
   ShieldAlert, 
   CreditCard, 
   Download, 
-  Lock 
+  Lock,
+  Sparkles,
+  Zap
 } from "lucide-react";
 
 import TrackerDashboard from "../components/trackers/TrackerDashboard";
@@ -25,23 +27,15 @@ import TrackerList from "../components/trackers/TrackerList";
 import TrackerFilters from "../components/trackers/TrackerFilters";
 import { initializeUserKeys, decryptData, encryptData } from "../utils/e2ee";
 
-
 // ==========================================
-// CONFIGURATION & CONFIG CONSTANTS
+// CONFIGURATION & CONSTANTS
 // ==========================================
-
 const REGULAR_TRACKER_LIMIT = 3;
 
 const getEnvVar = (key) => {
-  if (typeof import.meta !== "undefined" && import.meta.env?.[`VITE_${key}`]) {
-    return import.meta.env[`VITE_${key}`];
-  }
-  if (typeof process !== "undefined" && process.env?.[`REACT_APP_${key}`]) {
-    return process.env[`REACT_APP_${key}`];
-  }
-  if (typeof process !== "undefined" && process.env[key]) {
-    return process.env[key];
-  }
+  if (typeof import.meta !== "undefined" && import.meta.env?.[`VITE_${key}`]) return import.meta.env[`VITE_${key}`];
+  if (typeof process !== "undefined" && process.env?.[`REACT_APP_${key}`]) return process.env[`REACT_APP_${key}`];
+  if (typeof process !== "undefined" && process.env[key]) return process.env[key];
   return null;
 };
 
@@ -62,15 +56,12 @@ const SAMPLE_TRACKER = {
   isSample: true,
 };
 
-
 // ==========================================
-// HELPER & UTILITY FUNCTIONS
+// HELPER FUNCTIONS
 // ==========================================
-
 const getAuthHeaders = () => {
   const cookies = new Cookies();
   const token = cookies.get("token") || localStorage.getItem("token");
-  
   return {
     "Content-Type": "application/json",
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
@@ -82,11 +73,9 @@ function urlBase64ToUint8Array(base64String) {
   const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
   const rawData = window.atob(base64);
   const outputArray = new Uint8Array(rawData.length);
-  
   for (let i = 0; i < rawData.length; ++i) {
     outputArray[i] = rawData.charCodeAt(i);
   }
-  
   return outputArray;
 }
 
@@ -94,7 +83,6 @@ async function registerServiceWorkerAndSubscribe() {
   if (!("serviceWorker" in navigator) || !("PushManager" in window)) {
     throw new Error("Push notifications are not supported by this browser.");
   }
-  
   if (Notification.permission === "denied") {
     throw new Error("Notification permission blocked in browser settings.");
   }
@@ -118,7 +106,6 @@ async function registerServiceWorkerAndSubscribe() {
 
 const toggleBootstrapModal = (modalId, action = "show") => {
   const modalElement = document.getElementById(modalId);
-  
   if (modalElement && window.bootstrap) {
     const instance = window.bootstrap.Modal.getInstance(modalElement) || new window.bootstrap.Modal(modalElement);
     if (action === "show") instance.show();
@@ -126,11 +113,9 @@ const toggleBootstrapModal = (modalId, action = "show") => {
   }
 };
 
-
 // ==========================================
-// MAIN HOMEPAGE COMPONENT
+// MAIN COMPONENT
 // ==========================================
-
 export default function HomePage() {
   const cookies = new Cookies();
   const token = cookies.get("token") || localStorage.getItem("token");
@@ -141,7 +126,7 @@ export default function HomePage() {
     ""
   ).toLowerCase().trim();
 
-  // --- STATE HOOKS ---
+  // --- STATE ---
   const [trackers, setTrackers] = useState([]);
   const [sampleTrackerState, setSampleTrackerState] = useState(SAMPLE_TRACKER);
   const [loading, setLoading] = useState(true);
@@ -164,7 +149,7 @@ export default function HomePage() {
 
   const [darkMode, setDarkMode] = useState(() => localStorage.getItem("theme") === "dark");
 
-  // --- LIFECYCLE EFFECTS ---
+  // --- EFFECTS ---
   useEffect(() => {
     localStorage.setItem("theme", darkMode ? "dark" : "light");
   }, [darkMode]);
@@ -173,7 +158,6 @@ export default function HomePage() {
     if (!token) window.location.href = "/login";
   }, [token]);
 
-  // --- DATA FETCHING METHODS ---
   const fetchUserSubscriptionStatus = useCallback(async () => {
     try {
       const res = await fetch(`${BASE_URL}/api/v1/user/status`, { headers: getAuthHeaders() });
@@ -182,7 +166,7 @@ export default function HomePage() {
         setIsPremium(Boolean(data.isPremium));
       }
     } catch (err) {
-      console.warn("Could not verify premium status from server:", err);
+      console.warn("Could not verify premium status:", err);
     }
   }, []);
 
@@ -200,7 +184,7 @@ export default function HomePage() {
 
       setUserLocation(locationMap[data.country_code] || { currency: "USD", amount: 4.99, symbol: "$", displayAmount: "4.99" });
     } catch (err) {
-      console.warn("Defaulting to NGN region currency:", err);
+      console.warn("Defaulting to NGN pricing:", err);
     }
   };
 
@@ -237,7 +221,7 @@ export default function HomePage() {
       setTrackers(decryptedTrackers.reverse());
       
       if (isManualRefresh) {
-        setNotification("Trackers updated!");
+        setNotification("Trackers updated successfully!");
         setTimeout(() => setNotification(null), 2500);
       }
     } catch (error) {
@@ -260,7 +244,7 @@ export default function HomePage() {
     }
   }, [token, fetchTrackers, fetchUserSubscriptionStatus]);
 
-  // --- ACTION HANDLERS ---
+  // --- ACTIONS ---
   const handleAlatPayPayment = async () => {
     if (!currentUserEmail) {
       alert("No logged-in user email detected. Please log in again.");
@@ -269,7 +253,7 @@ export default function HomePage() {
 
     const AlatPopup = window.Popup || window.AlatPay || window.Alatpay;
     if (!AlatPopup) {
-      alert("Unable to reach ALAT Pay script. Please ensure the payment gateway script is loaded.");
+      alert("Unable to reach ALAT Pay gateway. Please refresh and try again.");
       return;
     }
 
@@ -310,7 +294,7 @@ export default function HomePage() {
             });
 
             setIsPremium(true);
-            setNotification(`ALAT Pay successful! PRO activated.`);
+            setNotification(`Upgrade successful! Welcome to PRO.`);
             toggleBootstrapModal("premiumModal", "hide");
           } catch (err) {
             console.error("ALAT Pay verification error:", err);
@@ -329,7 +313,7 @@ export default function HomePage() {
         new AlatPopup(paymentOptions)?.show?.();
       }
     } catch (err) {
-      console.error("ALAT Pay Execution Error:", err);
+      console.error("ALAT Pay Error:", err);
       alert(err.message || "Failed to initialize ALAT Pay.");
       setUpgrading(false);
     }
@@ -338,19 +322,18 @@ export default function HomePage() {
   const handleSubscribeNotifications = async () => {
     if (!isPremium) {
       toggleBootstrapModal("premiumModal", "show");
-      setNotification("Push notification alerts are a PRO feature. Upgrade to enable!");
+      setNotification("Push alerts are a PRO feature. Upgrade to activate!");
       setTimeout(() => setNotification(null), 4000);
       return;
     }
 
     setSubscribing(true);
-    
     try {
       await registerServiceWorkerAndSubscribe();
       setSubscribed(true);
-      setNotification("Notification alerts enabled successfully!");
+      setNotification("Push notification alerts enabled!");
     } catch (err) {
-      setNotification(err.message || "Failed to enable notification alerts.");
+      setNotification(err.message || "Failed to enable notifications.");
     } finally {
       setSubscribing(false);
       setTimeout(() => setNotification(null), 4000);
@@ -360,16 +343,15 @@ export default function HomePage() {
   const handleExportData = () => {
     if (!isPremium) {
       toggleBootstrapModal("premiumModal", "show");
-      setNotification("Data export is a PRO feature.");
+      setNotification("Data export is available exclusively for PRO users.");
       setTimeout(() => setNotification(null), 4000);
       return;
     }
 
     const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(trackers, null, 2));
     const downloadAnchor = document.createElement("a");
-    
     downloadAnchor.setAttribute("href", dataStr);
-    downloadAnchor.setAttribute("download", `unitrack_backup_${Date.now()}.json`);
+    downloadAnchor.setAttribute("download", `unitrack_export_${Date.now()}.json`);
     document.body.appendChild(downloadAnchor);
     downloadAnchor.click();
     downloadAnchor.remove();
@@ -384,7 +366,7 @@ export default function HomePage() {
     window.location.href = "/login";
   };
 
-  // --- TRACKER DATA MODIFICATION HANDLERS ---
+  // --- DATA MODIFICATION HANDLERS ---
   const syncTrackerEntriesWithBackend = async (trackerId, updatedEntries) => {
     try {
       const { publicKey } = await initializeUserKeys();
@@ -404,7 +386,7 @@ export default function HomePage() {
         });
       }
 
-      if (!response.ok) throw new Error("Failed to sync entries with server.");
+      if (!response.ok) throw new Error("Failed to sync entries.");
     } catch (error) {
       console.error("Error syncing entry modification:", error);
       fetchTrackers(); 
@@ -419,7 +401,6 @@ export default function HomePage() {
     }
 
     let updatedEntries = [];
-    
     setTrackers((prevTrackers) =>
       prevTrackers.map((t) => {
         const tId = t._id?.toString() || t.id?.toString();
@@ -463,7 +444,6 @@ export default function HomePage() {
     }
 
     let updatedEntries = [];
-    
     setTrackers((prevTrackers) =>
       prevTrackers.map((t) => {
         const tId = t._id?.toString() || t.id?.toString();
@@ -497,7 +477,7 @@ export default function HomePage() {
         });
       }
 
-      if (!response.ok) throw new Error("Server failed to delete tracker.");
+      if (!response.ok) throw new Error("Failed to delete tracker.");
     } catch (error) {
       console.error("Error deleting tracker:", error);
       alert("Failed to delete tracker.");
@@ -509,16 +489,15 @@ export default function HomePage() {
     if (!isPremium && trackers.length >= REGULAR_TRACKER_LIMIT) {
       toggleBootstrapModal("trackerModal", "hide");
       toggleBootstrapModal("premiumModal", "show");
-      setNotification(`Regular tier limit reached (${REGULAR_TRACKER_LIMIT} trackers). Upgrade to PRO!`);
+      setNotification(`Limit reached (${REGULAR_TRACKER_LIMIT} trackers). Upgrade to PRO for unlimited access!`);
       setTimeout(() => setNotification(null), 4000);
       return;
     }
 
     fetchTrackers();
-    
     const newId = newTracker._id || newTracker.id;
     setNewlyAddedId(newId);
-    setNotification("Successfully created tracker!");
+    setNotification("Tracker created successfully!");
 
     if (newId) {
       setTimeout(() => setNewlyAddedId((current) => (current === newId ? null : current)), 2500);
@@ -536,38 +515,33 @@ export default function HomePage() {
         data-bs-theme={darkMode ? "dark" : "light"}
       >
         <div className="d-flex align-items-center gap-2 mb-3">
-          <LayoutDashboard className="text-primary" size={32} />
-          <h2 className="fw-bold m-0 fs-4">UNI-TRACK</h2>
+          <LayoutDashboard className="text-primary animate-pulse" size={36} />
+          <h2 className="fw-extrabold m-0 fs-3 tracking-wide">UNI-TRACK</h2>
         </div>
-
-        <div className="spinner-border text-primary mb-3" role="status" style={{ width: "3rem", height: "3rem" }}>
+        <div className="spinner-border text-primary mb-3" role="status" style={{ width: "2.5rem", height: "2.5rem" }}>
           <span className="visually-hidden">Loading...</span>
         </div>
-
-        <p className="text-muted small m-0">Loading your trackers...</p>
+        <p className="text-muted small m-0 fw-medium">Securing and decrypting your workspace...</p>
       </div>
     );
   }
 
-  // --- CALCULATED UI VARIABLES ---
+  // --- DERIVED UI VARS ---
   const hasTrackers = trackers.length > 0;
   const filteredTrackers = typeFilter ? trackers.filter((t) => t.type === typeFilter) : trackers;
   const displayTrackers = hasTrackers ? filteredTrackers : [sampleTrackerState];
 
   const currentHour = new Date().getHours();
   const timeGreeting = currentHour < 12 ? "Good Morning ☀️" : currentHour < 18 ? "Good Afternoon 🌤️" : "Good Evening 🌙";
-
-
-  // ==========================================
-  // RENDERED JSX UI
-  // ==========================================
+  const usedTrackersCount = trackers.length;
+  const trackerUsagePercent = Math.min(100, Math.round((usedTrackersCount / REGULAR_TRACKER_LIMIT) * 100));
 
   return (
     <div 
       className={`min-vh-100 position-relative ${darkMode ? "bg-dark text-light" : "bg-light text-dark"}`} 
       data-bs-theme={darkMode ? "dark" : "light"}
+      style={{ transition: "background-color 0.25s ease" }}
     >
-      {/* Dynamic Styling Overrides */}
       <style>{`
         .btn-custom-nav {
           font-weight: 600;
@@ -576,64 +550,79 @@ export default function HomePage() {
           display: inline-flex;
           align-items: center;
           gap: 0.4rem;
-          padding: 0.4rem 0.75rem;
+          padding: 0.45rem 0.85rem;
           font-size: 0.85rem;
+          border-radius: 0.5rem;
+          transition: all 0.2s ease-in-out;
         }
 
-        .btn-warning, .btn-outline-warning {
-          color: #0f172a !important;
+        .btn-custom-nav:hover {
+          transform: translateY(-1px);
         }
 
         .btn-alat {
           background-color: #820263;
           color: #ffffff !important;
+          transition: all 0.2s ease;
         }
 
         .btn-alat:hover {
           background-color: #67014f;
           color: #ffffff !important;
+          box-shadow: 0 4px 12px rgba(130, 2, 99, 0.3);
         }
 
-        @media (min-width: 576px) {
-          .btn-custom-nav {
-            padding: 0.5rem 0.9rem;
-            font-size: 0.9rem;
-          }
+        .glass-card {
+          border-radius: 1rem;
+          transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .animated-toast {
+          animation: slideDown 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        @keyframes slideDown {
+          from { transform: translate(-50%, -100%); opacity: 0; }
+          to { transform: translate(-50%, 0); opacity: 1; }
         }
       `}</style>
 
-      {/* Toast Notification Alert */}
+      {/* Floating Alert Badge */}
       {notification && (
-        <div className="position-fixed top-0 start-50 translate-middle-x p-3" style={{ zIndex: 1080, marginTop: "0.5rem" }}>
-          <div className="alert alert-success shadow-sm d-flex align-items-center gap-2 mb-0 py-2 px-3 rounded-pill">
+        <div className="position-fixed top-0 start-50 translate-middle-x p-3 animated-toast" style={{ zIndex: 1080 }}>
+          <div className="alert alert-primary border-0 shadow-lg d-flex align-items-center gap-2 mb-0 py-2.5 px-4 rounded-pill text-white bg-primary">
             <CheckCircle2 size={18} />
             <span className="small fw-semibold">{notification}</span>
           </div>
         </div>
       )}
 
-      {/* Main Responsive Header Navigation */}
-      <nav className={`navbar border-bottom shadow-sm py-3 ${darkMode ? "bg-dark border-secondary" : "bg-white"}`}>
-        <div className="container d-flex align-items-center justify-content-between flex-wrap gap-3">
+      {/* Navigation Bar */}
+      <nav className={`navbar border-bottom sticky-top backdrop-blur py-2.5 ${darkMode ? "bg-dark bg-opacity-75 border-secondary" : "bg-white bg-opacity-75"}`}>
+        <div className="container d-flex align-items-center justify-content-between flex-wrap gap-2">
           
-          <h1 className="navbar-brand fw-bold d-flex align-items-center gap-2 m-0 fs-5">
-            <LayoutDashboard className="text-primary" size={22} /> 
-            UNI-TRACK
-            <span className={`badge ${isPremium ? "bg-warning text-dark" : "bg-secondary text-light"} d-flex align-items-center gap-1 ms-1 fs-7`}>
-              {isPremium ? <Crown size={12} /> : null}
-              {isPremium ? "PRO" : "REGULAR"}
-            </span>
-          </h1>
+          <div className="d-flex align-items-center gap-2">
+            <div className="p-2 bg-primary bg-opacity-10 rounded-3 text-primary d-flex align-items-center justify-content-center">
+              <LayoutDashboard size={20} />
+            </div>
+            <h1 className="navbar-brand fw-bold m-0 fs-5 tracking-tight d-flex align-items-center gap-2">
+              UNI-TRACK
+              <span className={`badge ${isPremium ? "bg-warning text-dark" : "bg-secondary text-light"} d-inline-flex align-items-center gap-1 fs-7 fw-semibold`}>
+                {isPremium ? <Crown size={12} /> : null}
+                {isPremium ? "PRO" : "REGULAR"}
+              </span>
+            </h1>
+          </div>
 
           <div className="d-flex align-items-center flex-wrap gap-2">
             {!isPremium ? (
               <button
                 type="button"
-                className="btn btn-warning btn-custom-nav shadow-sm"
+                className="btn btn-warning btn-custom-nav shadow-sm fw-bold"
                 onClick={() => toggleBootstrapModal("premiumModal", "show")}
               >
                 <Crown size={15} />
-                <span>Upgrade to PRO</span>
+                <span>Upgrade PRO</span>
               </button>
             ) : (
               <button
@@ -642,169 +631,175 @@ export default function HomePage() {
                 onClick={() => toggleBootstrapModal("premiumModal", "show")}
               >
                 <Crown size={15} />
-                <span>PRO Plan</span>
+                <span>PRO Active</span>
               </button>
             )}
 
-            {/* Renamed Notification Alert Button */}
             <button
               type="button"
               className={`btn ${subscribed ? "btn-outline-success" : "btn-outline-primary"} btn-custom-nav`}
               onClick={handleSubscribeNotifications}
               disabled={subscribing}
-              title={
-                !isPremium
-                  ? "PRO Feature: Upgrade to enable push notification alerts"
-                  : subscribed
-                  ? "Push notification alerts are enabled"
-                  : "Enable Push Notification Alerts"
-              }
             >
               {!isPremium ? <Lock size={15} className="text-muted" /> : <Bell size={15} />}
-              <span>
-                {subscribing ? "Enabling..." : subscribed ? "Alerts On" : "Enable Alerts"}
-              </span>
+              <span>{subscribing ? "Enabling..." : subscribed ? "Alerts Active" : "Enable Alerts"}</span>
             </button>
 
             <button
               type="button"
               className={`btn ${darkMode ? "btn-outline-light" : "btn-outline-secondary"} btn-custom-nav`}
               onClick={() => setDarkMode(!darkMode)}
-              title="Toggle Theme"
+              title="Toggle theme"
             >
               {darkMode ? <Sun size={15} /> : <Moon size={15} />}
-              <span>{darkMode ? "Light" : "Dark"}</span>
+              <span className="d-none d-sm-inline">{darkMode ? "Light" : "Dark"}</span>
             </button>
           </div>
 
         </div>
       </nav>
 
-      {/* Main Application Container */}
-      <div className="container py-4 py-md-5">
-        <div className="row">
-          <div className="col-12">
+      {/* Main Workspace */}
+      <main className="container py-4">
+        
+        {/* Welcome Header Component */}
+        <div className={`p-4 p-md-5 glass-card shadow-sm border mb-4 position-relative overflow-hidden ${darkMode ? "bg-dark border-secondary" : "bg-white"}`}>
+          <div className="position-absolute top-0 end-0 p-4 opacity-10 d-none d-md-block text-primary">
+            <Sparkles size={160} />
+          </div>
 
-            {/* Welcome Greeting Banner */}
-            <div className={`p-4 p-md-5 rounded-4 shadow-sm border mb-4 position-relative overflow-hidden ${darkMode ? "bg-dark border-secondary" : "bg-white"}`}>
-              <div className="position-absolute top-0 end-0 p-4 opacity-10 d-none d-md-block text-primary">
-                <LayoutDashboard size={140} />
-              </div>
-
-              <div className="position-relative" style={{ zIndex: 1 }}>
-                <span className="badge bg-primary bg-opacity-10 text-primary mb-3 px-3 py-2 rounded-pill fw-semibold">
-                  {timeGreeting}
-                </span>
-
-                <h2 className="fw-bold mb-2 fs-3">Welcome back to Uni-Track!</h2>
-
-                <p className="text-muted mb-0 lead fs-6">
-                  Account Status: <strong>{isPremium ? "PRO Subscriber" : `Regular Plan (${trackers.length}/${REGULAR_TRACKER_LIMIT} Trackers)`}</strong> ({currentUserEmail || "Guest"})
-                </p>
-              </div>
+          <div className="row align-items-center position-relative" style={{ zIndex: 1 }}>
+            <div className="col-md-8">
+              <span className="badge bg-primary bg-opacity-10 text-primary mb-2 px-3 py-1.5 rounded-pill fw-semibold small">
+                {timeGreeting}
+              </span>
+              <h2 className="fw-bold mb-2 fs-3">Welcome back to Uni-Track!</h2>
+              <p className="text-muted mb-0">
+                Connected account: <strong>{currentUserEmail || "Active Guest"}</strong>
+              </p>
             </div>
 
-            {/* Dashboard Analytics & Summary */}
-            <div className={`p-3 p-md-4 rounded-4 shadow-sm border ${darkMode ? "bg-dark border-secondary" : "bg-white"}`}>
-              <TrackerDashboard trackers={displayTrackers} darkMode={darkMode} />
-            </div>
-
-            {/* Toolbar & Trackers Management Section */}
-            <div className={`p-3 p-md-4 rounded-4 shadow-sm border mt-4 ${darkMode ? "bg-dark border-secondary" : "bg-white"}`}>
-              
-              <div className={`alert ${darkMode ? "bg-dark text-info border-info" : "bg-info bg-opacity-10 text-info border-info-subtle"} d-flex align-items-center gap-2 mb-4 py-2 px-3 rounded-3 small border`}>
-                <Info size={18} className="flex-shrink-0" />
-                <span>Use the <strong>Refresh</strong> button to update the dashboard metrics!</span>
-              </div>
-
-              <div className="d-flex flex-column flex-lg-row align-items-stretch align-items-lg-center justify-content-between gap-3 mb-3">
-                <div className="flex-grow-1 overflow-auto">
-                  <TrackerFilters typeFilter={typeFilter} onTypeFilterChange={setTypeFilter} darkMode={darkMode} />
-                </div>
-                
-                <div className="d-flex align-items-center flex-wrap gap-2 flex-shrink-0">
-                  <button
-                    type="button"
-                    className="btn btn-primary btn-custom-nav"
-                    onClick={() => {
-                      if (!isPremium && trackers.length >= REGULAR_TRACKER_LIMIT) {
-                        toggleBootstrapModal("premiumModal", "show");
-                        setNotification(`Regular accounts are limited to ${REGULAR_TRACKER_LIMIT} trackers.`);
-                        setTimeout(() => setNotification(null), 4000);
-                      } else {
-                        toggleBootstrapModal("trackerModal", "show");
-                      }
-                    }}
-                  >
-                    <PlusCircle size={16} />
-                    <span>New Tracker</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    className={`btn ${isPremium ? "btn-outline-success" : "btn-outline-secondary"} btn-custom-nav`}
-                    onClick={handleExportData}
-                  >
-                    {isPremium ? <Download size={16} /> : <Lock size={16} className="text-muted" />}
-                    <span>Export</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    className={`btn ${darkMode ? "btn-outline-light" : "btn-outline-secondary"} btn-custom-nav`}
-                    onClick={() => fetchTrackers(true)}
-                    disabled={refreshing}
-                  >
-                    <RefreshCw size={16} />
-                    <span>Refresh</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    className="btn btn-outline-danger btn-custom-nav"
-                    onClick={handleLogout}
-                  >
-                    <LogOut size={16} />
-                    <span>Logout</span>
-                  </button>
+            {/* Interactive Usage Indicator for Regular Users */}
+            {!isPremium && (
+              <div className="col-md-4 mt-3 mt-md-0">
+                <div className={`p-3 rounded-3 border ${darkMode ? "bg-body-dark border-secondary" : "bg-light"}`}>
+                  <div className="d-flex justify-content-between align-items-center mb-1 small fw-semibold">
+                    <span>Tracker Limit</span>
+                    <span>{usedTrackersCount} / {REGULAR_TRACKER_LIMIT}</span>
+                  </div>
+                  <div className="progress" style={{ height: "8px" }}>
+                    <div 
+                      className={`progress-bar ${trackerUsagePercent >= 100 ? "bg-danger" : "bg-primary"}`} 
+                      role="progressbar" 
+                      style={{ width: `${trackerUsagePercent}%` }} 
+                    />
+                  </div>
+                  <span className="text-muted extra-small d-block mt-1">
+                    {trackerUsagePercent >= 100 ? "Free tier capacity reached." : `${REGULAR_TRACKER_LIMIT - usedTrackersCount} slots remaining.`}
+                  </span>
                 </div>
               </div>
-
-              <hr className="my-4" />
-
-              {/* List of Active Trackers */}
-              <TrackerList
-                trackers={displayTrackers}
-                onDeleteTracker={handleDeleteTracker}
-                onAddEntry={handleAddEntry}
-                onUpdate={handleUpdate}
-                onDeleteEntry={handleDeleteEntry}
-                newlyAddedId={newlyAddedId}
-                darkMode={darkMode}
-              />
-
-              {!hasTrackers && (
-                <div className="mt-4 p-3 bg-info bg-opacity-10 rounded text-info small text-center">
-                  💡 This is a sample tracker. Create your own tracker to get started!
-                </div>
-              )}
-
-            </div>
-
+            )}
           </div>
         </div>
-      </div>
 
-      {/* Modal: New Tracker Configuration */}
+        {/* Dynamic Analytics Visualizer */}
+        <div className={`p-3 p-md-4 glass-card shadow-sm border ${darkMode ? "bg-dark border-secondary" : "bg-white"}`}>
+          <TrackerDashboard trackers={displayTrackers} darkMode={darkMode} />
+        </div>
+
+        {/* Interactive Controls & Trackers Container */}
+        <div className={`p-3 p-md-4 glass-card shadow-sm border mt-4 ${darkMode ? "bg-dark border-secondary" : "bg-white"}`}>
+          
+          <div className={`alert ${darkMode ? "bg-dark text-info border-info" : "bg-info bg-opacity-10 text-info border-info-subtle"} d-flex align-items-center gap-2 mb-4 py-2 px-3 rounded-3 small border`}>
+            <Info size={18} className="flex-shrink-0" />
+            <span>Changes sync automatically end-to-end. Tap <strong>Refresh</strong> to sync analytics manually.</span>
+          </div>
+
+          <div className="d-flex flex-column flex-lg-row align-items-stretch align-items-lg-center justify-content-between gap-3 mb-3">
+            <div className="flex-grow-1 overflow-auto">
+              <TrackerFilters typeFilter={typeFilter} onTypeFilterChange={setTypeFilter} darkMode={darkMode} />
+            </div>
+            
+            <div className="d-flex align-items-center flex-wrap gap-2 flex-shrink-0">
+              <button
+                type="button"
+                className="btn btn-primary btn-custom-nav shadow-sm"
+                onClick={() => {
+                  if (!isPremium && trackers.length >= REGULAR_TRACKER_LIMIT) {
+                    toggleBootstrapModal("premiumModal", "show");
+                    setNotification(`Regular plan is capped at ${REGULAR_TRACKER_LIMIT} trackers.`);
+                    setTimeout(() => setNotification(null), 4000);
+                  } else {
+                    toggleBootstrapModal("trackerModal", "show");
+                  }
+                }}
+              >
+                <PlusCircle size={16} />
+                <span>New Tracker</span>
+              </button>
+
+              <button
+                type="button"
+                className={`btn ${isPremium ? "btn-outline-success" : "btn-outline-secondary"} btn-custom-nav`}
+                onClick={handleExportData}
+              >
+                {isPremium ? <Download size={16} /> : <Lock size={16} className="text-muted" />}
+                <span>Export</span>
+              </button>
+
+              <button
+                type="button"
+                className={`btn ${darkMode ? "btn-outline-light" : "btn-outline-secondary"} btn-custom-nav`}
+                onClick={() => fetchTrackers(true)}
+                disabled={refreshing}
+              >
+                <RefreshCw size={16} className={refreshing ? "spin" : ""} />
+                <span>Refresh</span>
+              </button>
+
+              <button
+                type="button"
+                className="btn btn-outline-danger btn-custom-nav ms-auto"
+                onClick={handleLogout}
+              >
+                <LogOut size={16} />
+                <span>Logout</span>
+              </button>
+            </div>
+          </div>
+
+          <hr className="my-4 opacity-25" />
+
+          {/* Active Tracker List Component */}
+          <TrackerList
+            trackers={displayTrackers}
+            onDeleteTracker={handleDeleteTracker}
+            onAddEntry={handleAddEntry}
+            onUpdate={handleUpdate}
+            onDeleteEntry={handleDeleteEntry}
+            newlyAddedId={newlyAddedId}
+            darkMode={darkMode}
+          />
+
+          {!hasTrackers && (
+            <div className="mt-4 p-3 bg-info bg-opacity-10 rounded-3 text-info small text-center border border-info border-opacity-25">
+              💡 Viewing sample tracker. Create your first custom tracker above to get started!
+            </div>
+          )}
+
+        </div>
+
+      </main>
+
+      {/* MODAL: CREATE TRACKER */}
       <div className="modal fade" id="trackerModal" tabIndex="-1" aria-hidden="true">
         <div className="modal-dialog modal-dialog-centered modal-dialog-scrollable">
-          <div className={`modal-content ${darkMode ? "bg-dark text-light border-secondary" : ""}`}>
-            
-            <div className="modal-header">
-              <h5 className="modal-title">Configure Tracker</h5>
+          <div className={`modal-content border-0 shadow-lg ${darkMode ? "bg-dark text-light border-secondary" : ""}`}>
+            <div className="modal-header border-0 pb-0">
+              <h5 className="modal-title fw-bold">Create New Tracker</h5>
               <button type="button" className={`btn-close ${darkMode ? "btn-close-white" : ""}`} data-bs-dismiss="modal" aria-label="Close" />
             </div>
-
             <div className="modal-body">
               <TrackerForm
                 onCreate={(createdTracker) => handleCreate(createdTracker)}
@@ -812,22 +807,20 @@ export default function HomePage() {
                 darkMode={darkMode}
               />
             </div>
-
           </div>
         </div>
       </div>
 
-      {/* Modal: Upgrade to Premium */}
+      {/* MODAL: PRO UPGRADE */}
       <div className="modal fade" id="premiumModal" tabIndex="-1" aria-hidden="true">
         <div className="modal-dialog modal-dialog-centered">
-          <div className={`modal-content ${darkMode ? "bg-dark text-light border-secondary" : ""}`}>
+          <div className={`modal-content border-0 shadow-lg ${darkMode ? "bg-dark text-light border-secondary" : ""}`}>
             
             <div className="modal-header border-0 pb-0">
               <button type="button" className={`btn-close ${darkMode ? "btn-close-white" : ""}`} data-bs-dismiss="modal" aria-label="Close" />
             </div>
 
             <div className="modal-body text-center pt-0 px-4 pb-4">
-              
               <div className="d-inline-flex p-3 bg-warning bg-opacity-10 text-warning rounded-circle mb-3">
                 <Crown size={40} />
               </div>
@@ -836,56 +829,62 @@ export default function HomePage() {
 
               <div className="d-flex align-items-center justify-content-center gap-1 text-muted small mb-3">
                 <Globe size={14} />
-                <span>Regional Currency: <strong>{userLocation.currency}</strong></span>
+                <span>Regional Pricing: <strong>{userLocation.symbol}{userLocation.displayAmount} {userLocation.currency}</strong></span>
               </div>
 
               {!isPremium && (
-                <div className="alert alert-warning py-2 px-3 small d-flex align-items-center gap-2 mb-3 text-start">
+                <div className="alert alert-warning py-2 px-3 small d-flex align-items-center gap-2 mb-3 text-start border-0">
                   <ShieldAlert size={18} className="flex-shrink-0" />
                   <span>
-                    Current email: <strong>{currentUserEmail || "Unregistered"}</strong> is on Regular plan.
+                    Account <strong>{currentUserEmail || "Guest"}</strong> is currently on the Regular plan.
                   </span>
                 </div>
               )}
 
-              <div className="text-start bg-body-tertiary p-3 rounded-3 mb-4 border">
+              <div className="text-start bg-body-tertiary p-3 rounded-3 mb-4 border opacity-90">
                 <div className="d-flex align-items-center gap-2 mb-2">
                   <Check size={18} className="text-success flex-shrink-0" />
                   <span className="small">Unlimited E2E Encrypted Trackers</span>
                 </div>
-                
                 <div className="d-flex align-items-center gap-2 mb-2">
                   <Check size={18} className="text-success flex-shrink-0" />
-                  <span className="small">Advanced Dashboard Analytics & Charts</span>
+                  <span className="small">Advanced Visual Analytics & Export Formats</span>
                 </div>
-                
                 <div className="d-flex align-items-center gap-2 mb-2">
                   <Check size={18} className="text-success flex-shrink-0" />
-                  <span className="small">Priority Instant Push Reminders</span>
+                  <span className="small">Instant Web Push Reminders</span>
                 </div>
-                
                 <div className="d-flex align-items-center gap-2">
                   <Check size={18} className="text-success flex-shrink-0" />
-                  <span className="small">Full Data Exports (JSON/CSV)</span>
+                  <span className="small">Priority Encryption Key Management</span>
                 </div>
               </div>
 
               {!isPremium ? (
                 <button
                   type="button"
-                  className="btn btn-alat border-0 w-100 py-2.5 fw-bold d-flex align-items-center justify-content-center gap-2"
+                  className="btn btn-alat border-0 w-100 py-2.5 fw-bold d-flex align-items-center justify-content-center gap-2 rounded-3 shadow-sm"
                   onClick={handleAlatPayPayment}
                   disabled={upgrading}
                 >
-                  <CreditCard size={18} />
-                  {upgrading ? "Processing..." : `Pay ${userLocation.symbol}${userLocation.displayAmount} with ALAT Pay`}
+                  {upgrading ? (
+                    <>
+                      <div className="spinner-border spinner-border-sm text-light" role="status" />
+                      <span>Processing Gateway...</span>
+                    </>
+                  ) : (
+                    <>
+                      <CreditCard size={18} />
+                      <span>Pay {userLocation.symbol}{userLocation.displayAmount} with ALAT Pay</span>
+                    </>
+                  )}
                 </button>
               ) : (
-                <div className="alert alert-success mb-0 py-2 small fw-semibold">
-                  You are currently enjoying PRO benefits!
+                <div className="p-2 bg-success bg-opacity-10 text-success rounded-3 small fw-semibold">
+                  <Zap size={16} className="d-inline me-1" />
+                  PRO features unlocked for this account
                 </div>
               )}
-
             </div>
 
           </div>
