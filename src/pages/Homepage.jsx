@@ -692,7 +692,7 @@ export default function HomePage() {
             <Sparkles size={160} />
           </div>
 
-          <div className="position-relative text-center" style={{ zIndex: 1 }}>
+          <div className="position-relative" style={{ zIndex: 1 }}>
             <span className="badge bg-primary bg-opacity-10 text-primary mb-2 px-3 py-1.5 rounded-pill fw-semibold small">
               {timeGreeting}
             </span>
@@ -716,41 +716,36 @@ export default function HomePage() {
             <span>Changes sync automatically end-to-end. Tap <strong>Refresh</strong> to sync analytics manually.</span>
           </div>
 
-          {/* Centered Tracker Limit Box */}
+          {/* MOVED: Compact Inline Limit Indicator Bar directly contextualized above controls */}
           {!isPremium && (
-            <div className="d-flex justify-content-center mb-4">
-              <div 
-                className={`p-3 rounded-3 border w-100 ${darkMode ? "bg-secondary bg-opacity-10 border-secondary" : "bg-light border-border"}`} 
-                style={{ maxWidth: "540px" }}
-              >
-                <div className="d-flex justify-content-between align-items-center mb-1.5 small fw-semibold">
-                  <span className={darkMode ? "text-light-50" : "text-dark"}>Tracker Capacity</span>
-                  <span className={`badge ${trackerUsagePercent >= 100 ? "bg-danger" : "bg-primary"}`}>
-                    {usedTrackersCount} / {REGULAR_TRACKER_LIMIT} Trackers
-                  </span>
-                </div>
-                
-                <div className={`progress ${darkMode ? "bg-dark" : "bg-secondary bg-opacity-25"}`} style={{ height: "8px" }}>
-                  <div 
-                    className={`progress-bar ${trackerUsagePercent >= 100 ? "bg-danger" : "bg-primary"}`} 
-                    role="progressbar" 
-                    style={{ width: `${trackerUsagePercent}%` }} 
-                  />
-                </div>
-                
-                <div className="d-flex justify-content-between align-items-center mt-2">
-                  <span className={`small ${darkMode ? "text-white-50" : "text-muted"}`} style={{ fontSize: "0.75rem" }}>
-                    {trackerUsagePercent >= 100 ? "Free limit reached." : `${REGULAR_TRACKER_LIMIT - usedTrackersCount} remaining on free plan.`}
-                  </span>
-                  <button 
-                    type="button" 
-                    className="btn btn-link p-0 text-decoration-none small text-warning fw-semibold"
-                    style={{ fontSize: "0.75rem" }}
-                    onClick={() => toggleBootstrapModal("premiumModal", "show")}
-                  >
-                    Unlock Unlimited →
-                  </button>
-                </div>
+            <div className={`p-3 rounded-3 border mb-4 ${darkMode ? "bg-secondary bg-opacity-10 border-secondary" : "bg-light border-border"}`}>
+              <div className="d-flex justify-content-between align-items-center mb-1.5 small fw-semibold">
+                <span className={darkMode ? "text-light-50" : "text-dark"}>Tracker Limit Capacity</span>
+                <span className={`badge ${trackerUsagePercent >= 100 ? "bg-danger" : "bg-primary"}`}>
+                  {usedTrackersCount} / {REGULAR_TRACKER_LIMIT} Trackers
+                </span>
+              </div>
+              
+              <div className={`progress ${darkMode ? "bg-dark" : "bg-secondary bg-opacity-25"}`} style={{ height: "8px" }}>
+                <div 
+                  className={`progress-bar ${trackerUsagePercent >= 100 ? "bg-danger" : "bg-primary"}`} 
+                  role="progressbar" 
+                  style={{ width: `${trackerUsagePercent}%` }} 
+                />
+              </div>
+              
+              <div className="d-flex justify-content-between align-items-center mt-2">
+                <span className={`small ${darkMode ? "text-white-50" : "text-muted"}`} style={{ fontSize: "0.75rem" }}>
+                  {trackerUsagePercent >= 100 ? "Free tier full limit reached." : `${REGULAR_TRACKER_LIMIT - usedTrackersCount} remaining on free plan.`}
+                </span>
+                <button 
+                  type="button" 
+                  className="btn btn-link p-0 text-decoration-none small text-warning fw-semibold"
+                  style={{ fontSize: "0.75rem" }}
+                  onClick={() => toggleBootstrapModal("premiumModal", "show")}
+                >
+                  Unlock Unlimited →
+                </button>
               </div>
             </div>
           )}
