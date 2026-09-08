@@ -64,7 +64,7 @@ function urlBase64ToUint8Array(base64String) {
   return outputArray;
 }
 
-// Robust script loader with fallbacks for ALATPay SDK versions
+// Script Loader for ALATPay SDK
 const loadScript = (src) => {
   return new Promise((resolve, reject) => {
     if (document.querySelector(`script[src="${src}"]`)) {
@@ -90,7 +90,7 @@ const loadAlatPaySdk = async () => {
   for (const url of scriptUrls) {
     try {
       const loaded = await loadScript(url);
-      if (loaded && (window.Popup || window.AlatPay)) {
+      if (loaded && (window.Popup || window.AlatPay || window.Alatpay)) {
         return true;
       }
     } catch {
@@ -280,7 +280,7 @@ export default function HomePage() {
     }
   };
 
-  // ALAT Pay Integration Handler
+  // Improved ALATPay Execution Flow
   const handleAlatPayPayment = async () => {
     if (!currentUserEmail) {
       alert("No logged-in user email detected. Please log in again.");
@@ -290,29 +290,56 @@ export default function HomePage() {
     setUpgrading(true);
 
     try {
+      // 1. Initialize Transaction on Backend
+      const numericAmount = userLocation.currency === "NGN" ? userLocation.amount / 100 : userLocation.amount;
+      const clientReference = `UT_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+
+      let initResponse;
+      try {
+        const res = await fetch(`${BASE_URL}/api/v1/alatpay/initialize`, {
+          method: "POST",
+          headers: getAuthHeaders(),
+          body: JSON.stringify({ amount: numericAmount, reference: clientReference }),
+        });
+        if (res.ok) {
+          initResponse = await res.json();
+        }
+      } catch (e) {
+        console.warn("Backend initialization warning, proceeding with client fallbacks:", e.message);
+      }
+
+      const activeRef = initResponse?.data?.reference || clientReference;
+
+      // 2. Ensure SDK is loaded
       const isLoaded = await loadAlatPaySdk();
-      const AlatPopup = window.Popup || window.AlatPay;
+      const AlatPopup = window.Alatpay || window.Popup || window.AlatPay;
 
       if (!isLoaded || !AlatPopup) {
         throw new Error("Unable to reach ALAT Pay server. Check your internet connection or ad-blocker settings.");
       }
 
-      const numericAmount = userLocation.currency === "NGN" ? userLocation.amount / 100 : userLocation.amount;
-      const transactionRef = `alat_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
-
-      const popup = new AlatPopup({
+      // 3. Define Standard Payment Handler Options
+      const paymentOptions = {
         apiKey: ALAT_API_KEY,
         businessId: ALAT_BUSINESS_ID,
         email: currentUserEmail,
         amount: numericAmount,
         currency: userLocation.currency,
-        reference: transactionRef,
+        reference: activeRef,
         onSuccess: async (response) => {
           try {
+            const confirmedRef = response?.reference || activeRef;
+
+            // Trigger backend status verification
             await fetch(`${BASE_URL}/api/v1/payments/verify`, {
               method: "POST",
               headers: getAuthHeaders(),
-              body: JSON.stringify({ reference: response.reference || transactionRef, provider: "alatpay" }),
+              body: JSON.stringify({ reference: confirmedRef, provider: "alatpay" }),
+            });
+
+            await fetch(`${BASE_URL}/api/v1/alatpay/verify/${confirmedRef}`, {
+              method: "GET",
+              headers: getAuthHeaders(),
             });
 
             setIsPremium(true);
@@ -329,11 +356,18 @@ export default function HomePage() {
         onClose: () => {
           setUpgrading(false);
         },
-      });
+      };
 
-      popup.show();
+      // 4. Initialize and show Modal
+      if (typeof AlatPopup.setup === "function") {
+        const popup = AlatPopup.setup(paymentOptions);
+        popup.show();
+      } else {
+        const popup = new AlatPopup(paymentOptions);
+        popup.show();
+      }
     } catch (err) {
-      console.error("ALAT Pay Initialization Error:", err);
+      console.error("ALAT Pay Execution Error:", err);
       alert(err.message || "Failed to initialize ALAT Pay.");
       setUpgrading(false);
     }
