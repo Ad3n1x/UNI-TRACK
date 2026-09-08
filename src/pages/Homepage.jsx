@@ -12,8 +12,6 @@ import {
   Bell, 
   Crown, 
   Check, 
-  Globe, 
-  ShieldAlert, 
   CreditCard, 
   Download, 
   Lock,
@@ -694,43 +692,14 @@ export default function HomePage() {
             <Sparkles size={160} />
           </div>
 
-          <div className="row align-items-center position-relative" style={{ zIndex: 1 }}>
-            <div className="col-md-8">
-              <span className="badge bg-primary bg-opacity-10 text-primary mb-2 px-3 py-1.5 rounded-pill fw-semibold small">
-                {timeGreeting}
-              </span>
-              <h2 className="fw-bold mb-2 fs-3">Welcome back to Uni-Track!</h2>
-              <p className="text-muted mb-0">
-                Connected account: <strong>{currentUserEmail || "Active Guest"}</strong>
-              </p>
-            </div>
-
-            {/* FIXED: Clean High-Contrast Tracker Usage Indicator Box */}
-            {!isPremium && (
-              <div className="col-md-4 mt-3 mt-md-0">
-                <div className={`p-3 rounded-3 border ${darkMode ? "bg-secondary bg-opacity-10 border-secondary" : "bg-light border-border"}`}>
-                  <div className="d-flex justify-content-between align-items-center mb-1.5 small fw-semibold">
-                    <span className={darkMode ? "text-light-50" : "text-dark"}>Tracker Limit</span>
-                    <span className={`badge ${trackerUsagePercent >= 100 ? "bg-danger" : "bg-primary"}`}>
-                      {usedTrackersCount} / {REGULAR_TRACKER_LIMIT}
-                    </span>
-                  </div>
-                  
-                  {/* Progress Bar with High-Contrast Background track */}
-                  <div className={`progress ${darkMode ? "bg-dark" : "bg-secondary bg-opacity-25"}`} style={{ height: "8px" }}>
-                    <div 
-                      className={`progress-bar ${trackerUsagePercent >= 100 ? "bg-danger" : "bg-primary"}`} 
-                      role="progressbar" 
-                      style={{ width: `${trackerUsagePercent}%` }} 
-                    />
-                  </div>
-                  
-                  <span className={`small d-block mt-2 ${darkMode ? "text-white-50" : "text-muted"}`} style={{ fontSize: "0.75rem" }}>
-                    {trackerUsagePercent >= 100 ? "Free tier capacity reached." : `${REGULAR_TRACKER_LIMIT - usedTrackersCount} slots remaining.`}
-                  </span>
-                </div>
-              </div>
-            )}
+          <div className="position-relative" style={{ zIndex: 1 }}>
+            <span className="badge bg-primary bg-opacity-10 text-primary mb-2 px-3 py-1.5 rounded-pill fw-semibold small">
+              {timeGreeting}
+            </span>
+            <h2 className="fw-bold mb-2 fs-3">Welcome back to Uni-Track!</h2>
+            <p className="text-muted mb-0">
+              Connected account: <strong>{currentUserEmail || "Active Guest"}</strong>
+            </p>
           </div>
         </div>
 
@@ -746,6 +715,40 @@ export default function HomePage() {
             <Info size={18} className="flex-shrink-0" />
             <span>Changes sync automatically end-to-end. Tap <strong>Refresh</strong> to sync analytics manually.</span>
           </div>
+
+          {/* MOVED: Compact Inline Limit Indicator Bar directly contextualized above controls */}
+          {!isPremium && (
+            <div className={`p-3 rounded-3 border mb-4 ${darkMode ? "bg-secondary bg-opacity-10 border-secondary" : "bg-light border-border"}`}>
+              <div className="d-flex justify-content-between align-items-center mb-1.5 small fw-semibold">
+                <span className={darkMode ? "text-light-50" : "text-dark"}>Tracker Limit Capacity</span>
+                <span className={`badge ${trackerUsagePercent >= 100 ? "bg-danger" : "bg-primary"}`}>
+                  {usedTrackersCount} / {REGULAR_TRACKER_LIMIT} Trackers
+                </span>
+              </div>
+              
+              <div className={`progress ${darkMode ? "bg-dark" : "bg-secondary bg-opacity-25"}`} style={{ height: "8px" }}>
+                <div 
+                  className={`progress-bar ${trackerUsagePercent >= 100 ? "bg-danger" : "bg-primary"}`} 
+                  role="progressbar" 
+                  style={{ width: `${trackerUsagePercent}%` }} 
+                />
+              </div>
+              
+              <div className="d-flex justify-content-between align-items-center mt-2">
+                <span className={`small ${darkMode ? "text-white-50" : "text-muted"}`} style={{ fontSize: "0.75rem" }}>
+                  {trackerUsagePercent >= 100 ? "Free tier full limit reached." : `${REGULAR_TRACKER_LIMIT - usedTrackersCount} remaining on free plan.`}
+                </span>
+                <button 
+                  type="button" 
+                  className="btn btn-link p-0 text-decoration-none small text-warning fw-semibold"
+                  style={{ fontSize: "0.75rem" }}
+                  onClick={() => toggleBootstrapModal("premiumModal", "show")}
+                >
+                  Unlock Unlimited →
+                </button>
+              </div>
+            </div>
+          )}
 
           <div className="d-flex flex-column flex-lg-row align-items-stretch align-items-lg-center justify-content-between gap-3 mb-3">
             <div className="flex-grow-1 overflow-auto">
