@@ -1,8 +1,22 @@
 import React, { useState, useEffect, useCallback } from "react";
 import Cookies from "universal-cookie";
 import { 
-  PlusCircle, LayoutDashboard, CheckCircle2, LogOut, 
-  Sun, Moon, RefreshCw, Info, Bell, Crown, Check, Globe, ShieldAlert, CreditCard, Download, Lock
+  PlusCircle, 
+  LayoutDashboard, 
+  CheckCircle2, 
+  LogOut, 
+  Sun, 
+  Moon, 
+  RefreshCw, 
+  Info, 
+  Bell, 
+  Crown, 
+  Check, 
+  Globe, 
+  ShieldAlert, 
+  CreditCard, 
+  Download, 
+  Lock 
 } from "lucide-react";
 
 import TrackerDashboard from "../components/trackers/TrackerDashboard";
@@ -11,7 +25,11 @@ import TrackerList from "../components/trackers/TrackerList";
 import TrackerFilters from "../components/trackers/TrackerFilters";
 import { initializeUserKeys, decryptData, encryptData } from "../utils/e2ee";
 
-// Configuration & Constants
+
+// ==========================================
+// CONFIGURATION & CONFIG CONSTANTS
+// ==========================================
+
 const REGULAR_TRACKER_LIMIT = 3;
 
 const getEnvVar = (key) => {
@@ -29,6 +47,7 @@ const getEnvVar = (key) => {
 
 const RAW_BASE_URL = getEnvVar("API_URL") || "https://lv3node.onrender.com";
 const BASE_URL = RAW_BASE_URL.replace(/\/$/, "");
+
 const ALAT_BUSINESS_ID = getEnvVar("ALAT_BUSINESS_ID") || "178c0abe-bbe3-4476-8551-08df0a792d7c";
 const ALAT_API_KEY = getEnvVar("ALAT_API_KEY") || "8865add026cb44d4adf352f3fbfe260c";
 const VAPID_PUBLIC_KEY = getEnvVar("VAPID_PUBLIC_KEY") || "BEaflZfmm8QfrFsL7r06HB-QrsdDAefJpRk2vw-zcHIKD-t8evj3TIS7k9k0w0am9BboNqiqbZ99Y-1WxYNcZcw";
@@ -43,10 +62,15 @@ const SAMPLE_TRACKER = {
   isSample: true,
 };
 
-// Auth & Crypto Helpers
+
+// ==========================================
+// HELPER & UTILITY FUNCTIONS
+// ==========================================
+
 const getAuthHeaders = () => {
   const cookies = new Cookies();
   const token = cookies.get("token") || localStorage.getItem("token");
+  
   return {
     "Content-Type": "application/json",
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
@@ -58,17 +82,19 @@ function urlBase64ToUint8Array(base64String) {
   const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
   const rawData = window.atob(base64);
   const outputArray = new Uint8Array(rawData.length);
+  
   for (let i = 0; i < rawData.length; ++i) {
     outputArray[i] = rawData.charCodeAt(i);
   }
+  
   return outputArray;
 }
 
-// Service Worker & Notifications
 async function registerServiceWorkerAndSubscribe() {
   if (!("serviceWorker" in navigator) || !("PushManager" in window)) {
     throw new Error("Push notifications are not supported by this browser.");
   }
+  
   if (Notification.permission === "denied") {
     throw new Error("Notification permission blocked in browser settings.");
   }
@@ -90,15 +116,20 @@ async function registerServiceWorkerAndSubscribe() {
   return true;
 }
 
-// Bootstrap Modal Helper
 const toggleBootstrapModal = (modalId, action = "show") => {
   const modalElement = document.getElementById(modalId);
+  
   if (modalElement && window.bootstrap) {
     const instance = window.bootstrap.Modal.getInstance(modalElement) || new window.bootstrap.Modal(modalElement);
     if (action === "show") instance.show();
     else instance.hide();
   }
 };
+
+
+// ==========================================
+// MAIN HOMEPAGE COMPONENT
+// ==========================================
 
 export default function HomePage() {
   const cookies = new Cookies();
@@ -110,7 +141,7 @@ export default function HomePage() {
     ""
   ).toLowerCase().trim();
 
-  // State Management
+  // --- STATE HOOKS ---
   const [trackers, setTrackers] = useState([]);
   const [sampleTrackerState, setSampleTrackerState] = useState(SAMPLE_TRACKER);
   const [loading, setLoading] = useState(true);
@@ -133,6 +164,7 @@ export default function HomePage() {
 
   const [darkMode, setDarkMode] = useState(() => localStorage.getItem("theme") === "dark");
 
+  // --- LIFECYCLE EFFECTS ---
   useEffect(() => {
     localStorage.setItem("theme", darkMode ? "dark" : "light");
   }, [darkMode]);
@@ -141,7 +173,7 @@ export default function HomePage() {
     if (!token) window.location.href = "/login";
   }, [token]);
 
-  // Data Fetching Logic
+  // --- DATA FETCHING METHODS ---
   const fetchUserSubscriptionStatus = useCallback(async () => {
     try {
       const res = await fetch(`${BASE_URL}/api/v1/user/status`, { headers: getAuthHeaders() });
@@ -174,6 +206,7 @@ export default function HomePage() {
 
   const fetchTrackers = useCallback(async (isManualRefresh = false) => {
     if (isManualRefresh) setRefreshing(true);
+    
     try {
       const { privateKey } = await initializeUserKeys();
 
@@ -202,6 +235,7 @@ export default function HomePage() {
       );
 
       setTrackers(decryptedTrackers.reverse());
+      
       if (isManualRefresh) {
         setNotification("Trackers updated!");
         setTimeout(() => setNotification(null), 2500);
@@ -226,7 +260,7 @@ export default function HomePage() {
     }
   }, [token, fetchTrackers, fetchUserSubscriptionStatus]);
 
-  // Actions
+  // --- ACTION HANDLERS ---
   const handleAlatPayPayment = async () => {
     if (!currentUserEmail) {
       alert("No logged-in user email detected. Please log in again.");
@@ -310,6 +344,7 @@ export default function HomePage() {
     }
 
     setSubscribing(true);
+    
     try {
       await registerServiceWorkerAndSubscribe();
       setSubscribed(true);
@@ -332,11 +367,13 @@ export default function HomePage() {
 
     const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(trackers, null, 2));
     const downloadAnchor = document.createElement("a");
+    
     downloadAnchor.setAttribute("href", dataStr);
     downloadAnchor.setAttribute("download", `unitrack_backup_${Date.now()}.json`);
     document.body.appendChild(downloadAnchor);
     downloadAnchor.click();
     downloadAnchor.remove();
+    
     setNotification("Trackers exported successfully!");
     setTimeout(() => setNotification(null), 2500);
   };
@@ -347,6 +384,7 @@ export default function HomePage() {
     window.location.href = "/login";
   };
 
+  // --- TRACKER DATA MODIFICATION HANDLERS ---
   const syncTrackerEntriesWithBackend = async (trackerId, updatedEntries) => {
     try {
       const { publicKey } = await initializeUserKeys();
@@ -381,6 +419,7 @@ export default function HomePage() {
     }
 
     let updatedEntries = [];
+    
     setTrackers((prevTrackers) =>
       prevTrackers.map((t) => {
         const tId = t._id?.toString() || t.id?.toString();
@@ -424,6 +463,7 @@ export default function HomePage() {
     }
 
     let updatedEntries = [];
+    
     setTrackers((prevTrackers) =>
       prevTrackers.map((t) => {
         const tId = t._id?.toString() || t.id?.toString();
@@ -475,6 +515,7 @@ export default function HomePage() {
     }
 
     fetchTrackers();
+    
     const newId = newTracker._id || newTracker.id;
     setNewlyAddedId(newId);
     setNotification("Successfully created tracker!");
@@ -487,21 +528,28 @@ export default function HomePage() {
 
   if (!token) return null;
 
+  // --- LOADING SCREEN ---
   if (loading) {
     return (
-      <div className={`min-vh-100 d-flex flex-column align-items-center justify-content-center ${darkMode ? "bg-dark text-light" : "bg-light text-dark"}`} data-bs-theme={darkMode ? "dark" : "light"}>
+      <div 
+        className={`min-vh-100 d-flex flex-column align-items-center justify-content-center ${darkMode ? "bg-dark text-light" : "bg-light text-dark"}`} 
+        data-bs-theme={darkMode ? "dark" : "light"}
+      >
         <div className="d-flex align-items-center gap-2 mb-3">
           <LayoutDashboard className="text-primary" size={32} />
           <h2 className="fw-bold m-0 fs-4">UNI-TRACK</h2>
         </div>
+
         <div className="spinner-border text-primary mb-3" role="status" style={{ width: "3rem", height: "3rem" }}>
           <span className="visually-hidden">Loading...</span>
         </div>
+
         <p className="text-muted small m-0">Loading your trackers...</p>
       </div>
     );
   }
 
+  // --- CALCULATED UI VARIABLES ---
   const hasTrackers = trackers.length > 0;
   const filteredTrackers = typeFilter ? trackers.filter((t) => t.type === typeFilter) : trackers;
   const displayTrackers = hasTrackers ? filteredTrackers : [sampleTrackerState];
@@ -509,9 +557,17 @@ export default function HomePage() {
   const currentHour = new Date().getHours();
   const timeGreeting = currentHour < 12 ? "Good Morning ☀️" : currentHour < 18 ? "Good Afternoon 🌤️" : "Good Evening 🌙";
 
+
+  // ==========================================
+  // RENDERED JSX UI
+  // ==========================================
+
   return (
-    <div className={`min-vh-100 position-relative ${darkMode ? "bg-dark text-light" : "bg-light text-dark"}`} data-bs-theme={darkMode ? "dark" : "light"}>
-      {/* Cleaned CSS Overrides */}
+    <div 
+      className={`min-vh-100 position-relative ${darkMode ? "bg-dark text-light" : "bg-light text-dark"}`} 
+      data-bs-theme={darkMode ? "dark" : "light"}
+    >
+      {/* Dynamic Styling Overrides */}
       <style>{`
         .btn-custom-nav {
           font-weight: 600;
@@ -519,8 +575,8 @@ export default function HomePage() {
           white-space: nowrap;
           display: inline-flex;
           align-items: center;
-          gap: 0.35rem;
-          padding: 0.375rem 0.65rem;
+          gap: 0.4rem;
+          padding: 0.4rem 0.75rem;
           font-size: 0.85rem;
         }
 
@@ -532,6 +588,7 @@ export default function HomePage() {
           background-color: #820263;
           color: #ffffff !important;
         }
+
         .btn-alat:hover {
           background-color: #67014f;
           color: #ffffff !important;
@@ -539,13 +596,13 @@ export default function HomePage() {
 
         @media (min-width: 576px) {
           .btn-custom-nav {
-            padding: 0.5rem 0.85rem;
+            padding: 0.5rem 0.9rem;
             font-size: 0.9rem;
           }
         }
       `}</style>
 
-      {/* Global Toast Notification */}
+      {/* Toast Notification Alert */}
       {notification && (
         <div className="position-fixed top-0 start-50 translate-middle-x p-3" style={{ zIndex: 1080, marginTop: "0.5rem" }}>
           <div className="alert alert-success shadow-sm d-flex align-items-center gap-2 mb-0 py-2 px-3 rounded-pill">
@@ -555,19 +612,20 @@ export default function HomePage() {
         </div>
       )}
 
-      {/* Responsive Navigation Header */}
-      <nav className={`navbar border-bottom shadow-sm py-2.5 ${darkMode ? "bg-dark border-secondary" : "bg-white"}`}>
-        <div className="container d-flex align-items-center justify-content-between flex-wrap gap-2">
+      {/* Main Responsive Header Navigation */}
+      <nav className={`navbar border-bottom shadow-sm py-3 ${darkMode ? "bg-dark border-secondary" : "bg-white"}`}>
+        <div className="container d-flex align-items-center justify-content-between flex-wrap gap-3">
+          
           <h1 className="navbar-brand fw-bold d-flex align-items-center gap-2 m-0 fs-5">
-            <LayoutDashboard className="text-primary" size={22} /> UNI-TRACK
+            <LayoutDashboard className="text-primary" size={22} /> 
+            UNI-TRACK
             <span className={`badge ${isPremium ? "bg-warning text-dark" : "bg-secondary text-light"} d-flex align-items-center gap-1 ms-1 fs-7`}>
               {isPremium ? <Crown size={12} /> : null}
               {isPremium ? "PRO" : "REGULAR"}
             </span>
           </h1>
 
-          {/* Navigation Bar Actions with Permanent Text */}
-          <div className="d-flex align-items-center flex-wrap gap-1.5 gap-sm-2">
+          <div className="d-flex align-items-center flex-wrap gap-2">
             {!isPremium ? (
               <button
                 type="button"
@@ -609,37 +667,43 @@ export default function HomePage() {
               <span>{darkMode ? "Light" : "Dark"}</span>
             </button>
           </div>
+
         </div>
       </nav>
 
-      {/* Main Container */}
+      {/* Main Application Container */}
       <div className="container py-4 py-md-5">
         <div className="row">
           <div className="col-12">
-            {/* User Greeting Card */}
+
+            {/* Welcome Greeting Banner */}
             <div className={`p-4 p-md-5 rounded-4 shadow-sm border mb-4 position-relative overflow-hidden ${darkMode ? "bg-dark border-secondary" : "bg-white"}`}>
               <div className="position-absolute top-0 end-0 p-4 opacity-10 d-none d-md-block text-primary">
                 <LayoutDashboard size={140} />
               </div>
+
               <div className="position-relative" style={{ zIndex: 1 }}>
                 <span className="badge bg-primary bg-opacity-10 text-primary mb-3 px-3 py-2 rounded-pill fw-semibold">
                   {timeGreeting}
                 </span>
+
                 <h2 className="fw-bold mb-2 fs-3">Welcome back to Uni-Track!</h2>
+
                 <p className="text-muted mb-0 lead fs-6">
                   Account Status: <strong>{isPremium ? "PRO Subscriber" : `Regular Plan (${trackers.length}/${REGULAR_TRACKER_LIMIT} Trackers)`}</strong> ({currentUserEmail || "Guest"})
                 </p>
               </div>
             </div>
 
-            {/* Dashboard Analytics */}
+            {/* Dashboard Analytics & Summary */}
             <div className={`p-3 p-md-4 rounded-4 shadow-sm border ${darkMode ? "bg-dark border-secondary" : "bg-white"}`}>
               <TrackerDashboard trackers={displayTrackers} darkMode={darkMode} />
             </div>
 
-            {/* Tracker Actions & Filters Toolbar */}
+            {/* Toolbar & Trackers Management Section */}
             <div className={`p-3 p-md-4 rounded-4 shadow-sm border mt-4 ${darkMode ? "bg-dark border-secondary" : "bg-white"}`}>
-              <div className={`alert ${darkMode ? "bg-dark text-info border-info" : "bg-info bg-opacity-10 text-info border-info-subtle"} d-flex align-items-center gap-2 mb-3 py-2 px-3 rounded-3 small border`}>
+              
+              <div className={`alert ${darkMode ? "bg-dark text-info border-info" : "bg-info bg-opacity-10 text-info border-info-subtle"} d-flex align-items-center gap-2 mb-4 py-2 px-3 rounded-3 small border`}>
                 <Info size={18} className="flex-shrink-0" />
                 <span>Use the <strong>Refresh</strong> button to update the dashboard metrics!</span>
               </div>
@@ -697,8 +761,9 @@ export default function HomePage() {
                 </div>
               </div>
 
-              <hr />
+              <hr className="my-4" />
 
+              {/* List of Active Trackers */}
               <TrackerList
                 trackers={displayTrackers}
                 onDeleteTracker={handleDeleteTracker}
@@ -710,23 +775,27 @@ export default function HomePage() {
               />
 
               {!hasTrackers && (
-                <div className="mt-3 p-3 bg-info bg-opacity-10 rounded text-info small text-center">
+                <div className="mt-4 p-3 bg-info bg-opacity-10 rounded text-info small text-center">
                   💡 This is a sample tracker. Create your own tracker to get started!
                 </div>
               )}
+
             </div>
+
           </div>
         </div>
       </div>
 
-      {/* Tracker Creation Modal */}
+      {/* Modal: New Tracker Configuration */}
       <div className="modal fade" id="trackerModal" tabIndex="-1" aria-hidden="true">
         <div className="modal-dialog modal-dialog-centered modal-dialog-scrollable">
           <div className={`modal-content ${darkMode ? "bg-dark text-light border-secondary" : ""}`}>
+            
             <div className="modal-header">
               <h5 className="modal-title">Configure Tracker</h5>
               <button type="button" className={`btn-close ${darkMode ? "btn-close-white" : ""}`} data-bs-dismiss="modal" aria-label="Close" />
             </div>
+
             <div className="modal-body">
               <TrackerForm
                 onCreate={(createdTracker) => handleCreate(createdTracker)}
@@ -734,21 +803,26 @@ export default function HomePage() {
                 darkMode={darkMode}
               />
             </div>
+
           </div>
         </div>
       </div>
 
-      {/* Premium Plan Modal */}
+      {/* Modal: Upgrade to Premium */}
       <div className="modal fade" id="premiumModal" tabIndex="-1" aria-hidden="true">
         <div className="modal-dialog modal-dialog-centered">
           <div className={`modal-content ${darkMode ? "bg-dark text-light border-secondary" : ""}`}>
+            
             <div className="modal-header border-0 pb-0">
               <button type="button" className={`btn-close ${darkMode ? "btn-close-white" : ""}`} data-bs-dismiss="modal" aria-label="Close" />
             </div>
+
             <div className="modal-body text-center pt-0 px-4 pb-4">
+              
               <div className="d-inline-flex p-3 bg-warning bg-opacity-10 text-warning rounded-circle mb-3">
                 <Crown size={40} />
               </div>
+
               <h4 className="fw-bold mb-1">{isPremium ? "UNI-TRACK PRO Active" : "Upgrade to UNI-TRACK PRO"}</h4>
 
               <div className="d-flex align-items-center justify-content-center gap-1 text-muted small mb-3">
@@ -770,14 +844,17 @@ export default function HomePage() {
                   <Check size={18} className="text-success flex-shrink-0" />
                   <span className="small">Unlimited E2E Encrypted Trackers</span>
                 </div>
+                
                 <div className="d-flex align-items-center gap-2 mb-2">
                   <Check size={18} className="text-success flex-shrink-0" />
                   <span className="small">Advanced Dashboard Analytics & Charts</span>
                 </div>
+                
                 <div className="d-flex align-items-center gap-2 mb-2">
                   <Check size={18} className="text-success flex-shrink-0" />
                   <span className="small">Priority Instant Push Reminders</span>
                 </div>
+                
                 <div className="d-flex align-items-center gap-2">
                   <Check size={18} className="text-success flex-shrink-0" />
                   <span className="small">Full Data Exports (JSON/CSV)</span>
@@ -787,7 +864,7 @@ export default function HomePage() {
               {!isPremium ? (
                 <button
                   type="button"
-                  className="btn btn-alat border-0 w-100 py-2 fw-bold d-flex align-items-center justify-content-center gap-2"
+                  className="btn btn-alat border-0 w-100 py-2.5 fw-bold d-flex align-items-center justify-content-center gap-2"
                   onClick={handleAlatPayPayment}
                   disabled={upgrading}
                 >
@@ -799,10 +876,13 @@ export default function HomePage() {
                   You are currently enjoying PRO benefits!
                 </div>
               )}
+
             </div>
+
           </div>
         </div>
       </div>
+
     </div>
   );
 }
