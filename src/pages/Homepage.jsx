@@ -5,10 +5,12 @@ import TrackerList from "../components/trackers/TrackerList";
 import TrackerFilters from "../components/trackers/TrackerFilters";
 import { 
   PlusCircle, LayoutDashboard, CheckCircle2, LogOut, 
-  Sun, Moon, RefreshCw, Info, Bell, Crown, Check, Globe, ShieldAlert, CreditCard
+  Sun, Moon, RefreshCw, Info, Bell, Crown, Check, Globe, ShieldAlert, CreditCard, Download, Lock
 } from "lucide-react";
 import Cookies from "universal-cookie";
 import { initializeUserKeys, decryptData, encryptData } from "../utils/e2ee";
+
+const REGULAR_TRACKER_LIMIT = 3;
 
 const getEnvVar = (key) => {
   if (typeof import.meta !== "undefined" && import.meta.env?.[`VITE_${key}`]) {
@@ -115,7 +117,6 @@ export default function HomePage() {
   const [isPremium, setIsPremium] = useState(false);
   const [upgrading, setUpgrading] = useState(false);
   
-  // Standardized to major units (e.g., 5000 NGN, 4.99 USD)
   const [userLocation, setUserLocation] = useState({
     currency: "NGN",
     amount: 5000, 
@@ -241,13 +242,20 @@ export default function HomePage() {
     }
   };
 
+  const openModal = (modalId) => {
+    const modalElement = document.getElementById(modalId);
+    if (modalElement && window.bootstrap) {
+      const modalInstance = window.bootstrap.Modal.getInstance(modalElement) || new window.bootstrap.Modal(modalElement);
+      modalInstance?.show();
+    }
+  };
+
   const handleAlatPayPayment = async () => {
     if (!currentUserEmail) {
       alert("No logged-in user email detected. Please log in again.");
       return;
     }
 
-    // Official SDK class lookup order
     const AlatPopup = window.Popup || window.AlatPay || window.Alatpay;
 
     if (!AlatPopup) {
@@ -324,6 +332,13 @@ export default function HomePage() {
   };
 
   const handleSubscribeNotifications = async () => {
+    if (!isPremium) {
+      openModal("premiumModal");
+      setNotification("Push notifications are a PRO feature. Upgrade to enable!");
+      setTimeout(() => setNotification(null), 4000);
+      return;
+    }
+
     setSubscribing(true);
     try {
       await registerServiceWorkerAndSubscribe();
@@ -335,6 +350,25 @@ export default function HomePage() {
       setSubscribing(false);
       setTimeout(() => setNotification(null), 4000);
     }
+  };
+
+  const handleExportData = () => {
+    if (!isPremium) {
+      openModal("premiumModal");
+      setNotification("Data export is a PRO feature. Upgrade to download your trackers!");
+      setTimeout(() => setNotification(null), 4000);
+      return;
+    }
+
+    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(trackers, null, 2));
+    const downloadAnchor = document.createElement("a");
+    downloadAnchor.setAttribute("href", dataStr);
+    downloadAnchor.setAttribute("download", `unitrack_backup_${Date.now()}.json`);
+    document.body.appendChild(downloadAnchor);
+    downloadAnchor.click();
+    downloadAnchor.remove();
+    setNotification("Trackers exported successfully!");
+    setTimeout(() => setNotification(null), 2500);
   };
 
   const handleLogout = () => {
@@ -462,6 +496,14 @@ export default function HomePage() {
   };
 
   const handleCreate = (newTracker) => {
+    if (!isPremium && trackers.length >= REGULAR_TRACKER_LIMIT) {
+      closeModal("trackerModal");
+      openModal("premiumModal");
+      setNotification(`Regular tier limit reached (${REGULAR_TRACKER_LIMIT} trackers). Upgrade to PRO for unlimited trackers!`);
+      setTimeout(() => setNotification(null), 4000);
+      return;
+    }
+
     fetchTrackers();
     const newId = newTracker._id || newTracker.id;
     setNewlyAddedId(newId);
@@ -552,9 +594,9 @@ export default function HomePage() {
               className={`btn ${subscribed ? "btn-outline-success" : "btn-outline-primary"} d-flex align-items-center gap-2 px-3 py-2`}
               onClick={handleSubscribeNotifications}
               disabled={subscribing}
-              title="Subscribe to Push Notifications"
+              title={isPremium ? "Subscribe to Push Notifications" : "PRO Feature: Upgrade to enable notifications"}
             >
-              <Bell size={18} />
+              {!isPremium ? <Lock size={16} className="text-muted" /> : <Bell size={18} />}
               <span className="d-none d-sm-inline">
                 {subscribing ? "Subscribing..." : subscribed ? "Subscribed" : "Notifications"}
               </span>
@@ -589,7 +631,7 @@ export default function HomePage() {
                   Welcome back to Uni-Track!
                 </h2>
                 <p className="text-muted mb-0 lead fs-6">
-                  Account Status: <strong>{isPremium ? "PRO Subscriber" : "Regular Plan"}</strong> ({currentUserEmail || "Guest"})
+                  Account Status: <strong>{isPremium ? "PRO Subscriber" : `Regular Plan (${trackers.length}/${REGULAR_TRACKER_LIMIT} Trackers)`}</strong> ({currentUserEmail || "Guest"})
                 </p>
               </div>
             </div>
@@ -615,10 +657,27 @@ export default function HomePage() {
                   <button
                     type="button"
                     className="btn btn-primary d-flex align-items-center justify-content-center gap-2 px-3 py-2"
-                    data-bs-toggle="modal"
-                    data-bs-target="#trackerModal"
+                    onClick={() => {
+                      if (!isPremium && trackers.length >= REGULAR_TRACKER_LIMIT) {
+                        openModal("premiumModal");
+                        setNotification(`Regular accounts are limited to ${REGULAR_TRACKER_LIMIT} trackers. Upgrade to PRO!`);
+                        setTimeout(() => setNotification(null), 4000);
+                      } else {
+                        openModal("trackerModal");
+                      }
+                    }}
                   >
                     <PlusCircle size={18} /> New Tracker
+                  </button>
+
+                  <button
+                    type="button"
+                    className={`btn ${isPremium ? "btn-outline-success" : "btn-outline-secondary"} d-flex align-items-center gap-2 px-3 py-2`}
+                    onClick={handleExportData}
+                    title={isPremium ? "Export Trackers to JSON" : "PRO Feature: Upgrade to Export"}
+                  >
+                    {isPremium ? <Download size={16} /> : <Lock size={16} className="text-muted" />}
+                    <span>Export</span>
                   </button>
 
                   <button
@@ -714,7 +773,7 @@ export default function HomePage() {
               <div className="text-start bg-body-tertiary p-3 rounded-3 mb-4 border">
                 <div className="d-flex align-items-center gap-2 mb-2">
                   <Check size={18} className="text-success flex-shrink-0" />
-                  <span className="small">Unlimited E2E Encrypted Trackers</span>
+                  <span className="small">Unlimited E2E Encrypted Trackers (Regular capped at 3)</span>
                 </div>
                 <div className="d-flex align-items-center gap-2 mb-2">
                   <Check size={18} className="text-success flex-shrink-0" />
@@ -726,7 +785,7 @@ export default function HomePage() {
                 </div>
                 <div className="d-flex align-items-center gap-2">
                   <Check size={18} className="text-success flex-shrink-0" />
-                  <span className="small">Custom Categorization & Data Exports</span>
+                  <span className="small">Full Data Exports (JSON/CSV)</span>
                 </div>
               </div>
 
@@ -746,8 +805,8 @@ export default function HomePage() {
                   </button>
                 </div>
               ) : (
-                <div className="alert alert-success m-0 py-2 small fw-semibold d-flex align-items-center justify-content-center gap-2">
-                  <CheckCircle2 size={18} /> Your PRO subscription is active for {currentUserEmail}
+                <div className="alert alert-success mb-0 py-2 small fw-semibold">
+                  You are currently enjoying PRO benefits!
                 </div>
               )}
             </div>
