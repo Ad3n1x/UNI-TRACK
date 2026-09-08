@@ -945,7 +945,7 @@ export default function HomePage() {
 
               <div className="mb-4">
                 <span className="display-6 fw-bold">{userLocation.symbol}{userLocation.displayAmount}</span>
-                <span className="text-muted small"> / lifetime</span>
+                <span className="text-muted small"> /month</span>
               </div>
 
               <button
