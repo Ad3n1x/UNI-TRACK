@@ -560,7 +560,6 @@ export default function HomePage() {
           transform: translateY(-1px);
         }
 
-        /* Highly Visible PRO Action Button in Dark & Light Modes */
         .btn-pro-upgrade {
           background: linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%);
           color: #000000 !important;
@@ -641,7 +640,6 @@ export default function HomePage() {
             </h1>
           </div>
 
-          {/* User-friendly organized buttons: Theme -> Alerts -> High Visibility PRO Upgrade */}
           <div className="d-flex align-items-center flex-wrap gap-2">
             <button
               type="button"
@@ -707,22 +705,27 @@ export default function HomePage() {
               </p>
             </div>
 
-            {/* Interactive Usage Indicator for Regular Users */}
+            {/* FIXED: Clean High-Contrast Tracker Usage Indicator Box */}
             {!isPremium && (
               <div className="col-md-4 mt-3 mt-md-0">
-                <div className={`p-3 rounded-3 border ${darkMode ? "bg-body-dark border-secondary" : "bg-light"}`}>
-                  <div className="d-flex justify-content-between align-items-center mb-1 small fw-semibold">
-                    <span>Tracker Limit</span>
-                    <span>{usedTrackersCount} / {REGULAR_TRACKER_LIMIT}</span>
+                <div className={`p-3 rounded-3 border ${darkMode ? "bg-secondary bg-opacity-10 border-secondary" : "bg-light border-border"}`}>
+                  <div className="d-flex justify-content-between align-items-center mb-1.5 small fw-semibold">
+                    <span className={darkMode ? "text-light-50" : "text-dark"}>Tracker Limit</span>
+                    <span className={`badge ${trackerUsagePercent >= 100 ? "bg-danger" : "bg-primary"}`}>
+                      {usedTrackersCount} / {REGULAR_TRACKER_LIMIT}
+                    </span>
                   </div>
-                  <div className="progress" style={{ height: "8px" }}>
+                  
+                  {/* Progress Bar with High-Contrast Background track */}
+                  <div className={`progress ${darkMode ? "bg-dark" : "bg-secondary bg-opacity-25"}`} style={{ height: "8px" }}>
                     <div 
                       className={`progress-bar ${trackerUsagePercent >= 100 ? "bg-danger" : "bg-primary"}`} 
                       role="progressbar" 
                       style={{ width: `${trackerUsagePercent}%` }} 
                     />
                   </div>
-                  <span className="text-muted extra-small d-block mt-1">
+                  
+                  <span className={`small d-block mt-2 ${darkMode ? "text-white-50" : "text-muted"}`} style={{ fontSize: "0.75rem" }}>
                     {trackerUsagePercent >= 100 ? "Free tier capacity reached." : `${REGULAR_TRACKER_LIMIT - usedTrackersCount} slots remaining.`}
                   </span>
                 </div>
@@ -749,7 +752,6 @@ export default function HomePage() {
               <TrackerFilters typeFilter={typeFilter} onTypeFilterChange={setTypeFilter} darkMode={darkMode} />
             </div>
             
-            {/* User-friendly ordered Toolbar Actions */}
             <div className="d-flex align-items-center flex-wrap gap-2 flex-shrink-0">
               <button
                 type="button"
@@ -854,53 +856,51 @@ export default function HomePage() {
                 <Crown size={40} />
               </div>
 
-              <h4 className="fw-bold mb-1">{isPremium ? "UNI-TRACK PRO Active" : "Upgrade to UNI-TRACK PRO"}</h4>
+              <h4 className="fw-bold mb-1">Upgrade to Uni-Track PRO</h4>
+              <p className="text-muted small mb-4">Unlock unlimited potential and elevated tracking tools.</p>
 
-              <div className="d-flex align-items-center justify-content-center gap-1 text-muted small mb-3">
-                <Globe size={14} />
-                <span>Regional Pricing: <strong>{userLocation.symbol}{userLocation.displayAmount} {userLocation.currency}</strong></span>
-              </div>
-
-              {!isPremium && (
-                <div className="alert alert-warning py-2 px-3 small d-flex align-items-center gap-2 mb-3 text-start border-0">
-                  <ShieldAlert size={18} className="flex-shrink-0" />
-                  <span>
-                    Account <strong>{currentUserEmail || "Guest"}</strong> is currently on the Regular plan.
-                  </span>
-                </div>
-              )}
-
-              <div className="text-start bg-body-tertiary p-3 rounded-3 mb-4 border opacity-90">
-                <div className="d-flex align-items-center gap-2 mb-2 small fw-semibold">
+              <div className={`p-3 rounded-3 text-start mb-4 border ${darkMode ? "bg-secondary bg-opacity-10 border-secondary" : "bg-light"}`}>
+                <div className="d-flex align-items-center gap-2 mb-2">
                   <Check size={16} className="text-success" />
-                  <span>Unlimited Custom Trackers</span>
+                  <span className="small fw-semibold">Unlimited custom trackers</span>
                 </div>
-                <div className="d-flex align-items-center gap-2 mb-2 small fw-semibold">
+                <div className="d-flex align-items-center gap-2 mb-2">
                   <Check size={16} className="text-success" />
-                  <span>Push & Web Notifications</span>
+                  <span className="small fw-semibold">Web Push Notification alerts</span>
                 </div>
-                <div className="d-flex align-items-center gap-2 small fw-semibold">
+                <div className="d-flex align-items-center gap-2 mb-2">
                   <Check size={16} className="text-success" />
-                  <span>Export Trackers & Data Logs</span>
+                  <span className="small fw-semibold">JSON Data Exporting</span>
+                </div>
+                <div className="d-flex align-items-center gap-2">
+                  <Check size={16} className="text-success" />
+                  <span className="small fw-semibold">Priority sync & support</span>
                 </div>
               </div>
 
-              {!isPremium ? (
-                <button
-                  type="button"
-                  className="btn btn-alat w-100 py-2.5 fw-bold rounded-3 d-flex align-items-center justify-content-center gap-2"
-                  onClick={handleAlatPayPayment}
-                  disabled={upgrading}
-                >
-                  <CreditCard size={18} />
-                  <span>{upgrading ? "Processing..." : `Pay ${userLocation.symbol}${userLocation.displayAmount} via ALAT Pay`}</span>
-                </button>
-              ) : (
-                <div className="text-success fw-bold small d-flex align-items-center justify-content-center gap-1">
-                  <Zap size={16} />
-                  <span>You are enjoying all PRO features!</span>
-                </div>
-              )}
+              <div className="mb-4">
+                <span className="fs-3 fw-bold">{userLocation.symbol}{userLocation.displayAmount}</span>
+                <span className="text-muted small"> / lifetime access</span>
+              </div>
+
+              <button
+                type="button"
+                className="btn btn-alat w-100 py-2.5 rounded-3 fw-bold d-flex align-items-center justify-content-center gap-2"
+                onClick={handleAlatPayPayment}
+                disabled={upgrading}
+              >
+                {upgrading ? (
+                  <>
+                    <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true" />
+                    <span>Processing Payment...</span>
+                  </>
+                ) : (
+                  <>
+                    <CreditCard size={18} />
+                    <span>Pay with ALAT Pay</span>
+                  </>
+                )}
+              </button>
             </div>
 
           </div>
