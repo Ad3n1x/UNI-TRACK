@@ -1,7 +1,9 @@
 <head>
   <meta charset="utf-8" />
-  <link rel="icon" href="%PUBLIC_URL%/favicon.ico" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <!-- Vite resolves root static files from public/ directly -->
+  <link rel="icon" href="/favicon.ico" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#3b82f6" />
 
   <!-- Primary SEO Tags -->
   <title>UNITRACK – Smart End-to-End Encrypted Tracking System</title>
@@ -21,6 +23,10 @@
     content="Manage your metrics securely with client-side encryption."
   />
   <meta property="og:type" content="website" />
+
   <!-- ALAT Pay Inline Popup SDK -->
-  <script src="https://sandbox-alatpay.alat.ng/alat-pay.js"></script>
+  <script 
+    src="https://sandbox-alatpay.alat.ng/alat-pay.js"
+    onerror="console.warn('Sandbox ALAT Pay SDK failed to load. Retrying live CDN endpoint...'); this.src='https://alatpay.alat.ng/alat-pay.js';"
+  ></script>
 </head>
