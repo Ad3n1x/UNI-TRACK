@@ -10,29 +10,26 @@ import {
 import Cookies from "universal-cookie";
 import { initializeUserKeys, decryptData, encryptData } from "../utils/e2ee";
 
-const RAW_BASE_URL =
-  (typeof process !== "undefined" && process.env?.API_URL) ||
-  (typeof import.meta !== "undefined" && import.meta.env?.VITE_API_URL) ||
-  (typeof process !== "undefined" && process.env?.REACT_APP_API_URL) ||
-  "https://lv3node.onrender.com";
+// Safely resolve environment variables without causing ReferenceError in Vite/Webpack
+const getEnvVar = (key) => {
+  if (typeof import.meta !== "undefined" && import.meta.env?.[`VITE_${key}`]) {
+    return import.meta.env[`VITE_${key}`];
+  }
+  if (typeof process !== "undefined" && process.env?.[`REACT_APP_${key}`]) {
+    return process.env[`REACT_APP_${key}`];
+  }
+  if (typeof process !== "undefined" && process.env?.[key]) {
+    return process.env[key];
+  }
+  return null;
+};
 
+const RAW_BASE_URL = getEnvVar("API_URL") || "https://lv3node.onrender.com";
 const BASE_URL = RAW_BASE_URL.replace(/\/$/, "");
 
-// ALATPay Environment Variables
-const ALAT_BUSINESS_ID = 
-  (typeof import.meta !== "undefined" && import.meta.env?.VITE_ALAT_BUSINESS_ID) ||
-  process.env.REACT_APP_ALAT_BUSINESS_ID || 
-  "your-alat-business-id";
-
-const ALAT_API_KEY = 
-  (typeof import.meta !== "undefined" && import.meta.env?.VITE_ALAT_API_KEY) ||
-  process.env.REACT_APP_ALAT_API_KEY || 
-  "your-alat-api-key";
-
-const VAPID_PUBLIC_KEY = 
-  (typeof import.meta !== "undefined" && import.meta.env?.VITE_VAPID_PUBLIC_KEY) ||
-  process.env.REACT_APP_VAPID_PUBLIC_KEY || 
-  "BEaflZfmm8QfrFsL7r06HB-QrsdDAefJpRk2vw-zcHIKD-t8evj3TIS7k9k0w0am9BboNqiqbZ99Y-1WxYNcZcw";
+const ALAT_BUSINESS_ID = getEnvVar("ALAT_BUSINESS_ID") || "your-alat-business-id";
+const ALAT_API_KEY = getEnvVar("ALAT_API_KEY") || "your-alat-api-key";
+const VAPID_PUBLIC_KEY = getEnvVar("VAPID_PUBLIC_KEY") || "BEaflZfmm8QfrFsL7r06HB-QrsdDAefJpRk2vw-zcHIKD-t8evj3TIS7k9k0w0am9BboNqiqbZ99Y-1WxYNcZcw";
 
 const SAMPLE_TRACKER = {
   _id: "sample-001",
@@ -63,42 +60,6 @@ function urlBase64ToUint8Array(base64String) {
   }
   return outputArray;
 }
-
-// Script Loader for ALATPay SDK
-const loadScript = (src) => {
-  return new Promise((resolve, reject) => {
-    if (document.querySelector(`script[src="${src}"]`)) {
-      resolve(true);
-      return;
-    }
-    const script = document.createElement("script");
-    script.src = src;
-    script.async = true;
-    script.onload = () => resolve(true);
-    script.onerror = () => reject(false);
-    document.body.appendChild(script);
-  });
-};
-
-const loadAlatPaySdk = async () => {
-  const scriptUrls = [
-    "https://alatpay.developer.azure-api.net/alat-pay.js",
-    "https://checkout.alatpay.ng/alat-pay.js",
-    "https://popup.alatpay.ng/alat-pay.js"
-  ];
-
-  for (const url of scriptUrls) {
-    try {
-      const loaded = await loadScript(url);
-      if (loaded && (window.Popup || window.AlatPay || window.Alatpay)) {
-        return true;
-      }
-    } catch {
-      continue;
-    }
-  }
-  return false;
-};
 
 async function registerServiceWorkerAndSubscribe() {
   if (!("serviceWorker" in navigator) || !("PushManager" in window)) {
@@ -280,21 +241,27 @@ export default function HomePage() {
     }
   };
 
-  // Improved ALATPay Execution Flow
   const handleAlatPayPayment = async () => {
     if (!currentUserEmail) {
       alert("No logged-in user email detected. Please log in again.");
       return;
     }
 
+    const AlatPopup = window.Alatpay || window.Popup || window.AlatPay;
+
+    if (!AlatPopup) {
+      alert("Unable to reach ALAT Pay script. Please ensure the payment gateway script is loaded in your index.html.");
+      return;
+    }
+
     setUpgrading(true);
 
     try {
-      // 1. Initialize Transaction on Backend
       const numericAmount = userLocation.currency === "NGN" ? userLocation.amount / 100 : userLocation.amount;
       const clientReference = `UT_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
 
-      let initResponse;
+      let activeRef = clientReference;
+
       try {
         const res = await fetch(`${BASE_URL}/api/v1/alatpay/initialize`, {
           method: "POST",
@@ -302,23 +269,13 @@ export default function HomePage() {
           body: JSON.stringify({ amount: numericAmount, reference: clientReference }),
         });
         if (res.ok) {
-          initResponse = await res.json();
+          const initResponse = await res.json();
+          activeRef = initResponse?.data?.reference || clientReference;
         }
       } catch (e) {
-        console.warn("Backend initialization warning, proceeding with client fallbacks:", e.message);
+        console.warn("Backend initialization warning, proceeding with client fallback:", e.message);
       }
 
-      const activeRef = initResponse?.data?.reference || clientReference;
-
-      // 2. Ensure SDK is loaded
-      const isLoaded = await loadAlatPaySdk();
-      const AlatPopup = window.Alatpay || window.Popup || window.AlatPay;
-
-      if (!isLoaded || !AlatPopup) {
-        throw new Error("Unable to reach ALAT Pay server. Check your internet connection or ad-blocker settings.");
-      }
-
-      // 3. Define Standard Payment Handler Options
       const paymentOptions = {
         apiKey: ALAT_API_KEY,
         businessId: ALAT_BUSINESS_ID,
@@ -330,13 +287,7 @@ export default function HomePage() {
           try {
             const confirmedRef = response?.reference || activeRef;
 
-            // Trigger backend status verification
-            await fetch(`${BASE_URL}/api/v1/payments/verify`, {
-              method: "POST",
-              headers: getAuthHeaders(),
-              body: JSON.stringify({ reference: confirmedRef, provider: "alatpay" }),
-            });
-
+            // Unified verification payload
             await fetch(`${BASE_URL}/api/v1/alatpay/verify/${confirmedRef}`, {
               method: "GET",
               headers: getAuthHeaders(),
@@ -347,7 +298,7 @@ export default function HomePage() {
             closeModal("premiumModal");
           } catch (err) {
             console.error("ALAT Pay verification error:", err);
-            alert("Payment completed via ALAT Pay, but server verification failed.");
+            alert("Payment completed, but server verification encountered an issue.");
           } finally {
             setUpgrading(false);
             setTimeout(() => setNotification(null), 4000);
@@ -358,7 +309,6 @@ export default function HomePage() {
         },
       };
 
-      // 4. Initialize and show Modal
       if (typeof AlatPopup.setup === "function") {
         const popup = AlatPopup.setup(paymentOptions);
         popup.show();
@@ -604,7 +554,7 @@ export default function HomePage() {
               disabled={subscribing}
               title="Subscribe to Push Notifications"
             >
-              <Bell size={18} className={subscribing ? "spin-icon" : ""} />
+              <Bell size={18} />
               <span className="d-none d-sm-inline">
                 {subscribing ? "Subscribing..." : subscribed ? "Subscribed" : "Notifications"}
               </span>
@@ -678,7 +628,7 @@ export default function HomePage() {
                     disabled={refreshing}
                     title="Refresh Trackers"
                   >
-                    <RefreshCw size={16} className={refreshing ? "spin-icon" : ""} />
+                    <RefreshCw size={16} />
                     <span>Refresh</span>
                   </button>
 
@@ -784,7 +734,7 @@ export default function HomePage() {
                 <div className="d-flex flex-column gap-2">
                   <button
                     type="button"
-                    className="btn btn-purple border-0 text-white w-100 py-2 fw-bold d-flex align-items-center justify-content-center gap-2"
+                    className="btn border-0 text-white w-100 py-2 fw-bold d-flex align-items-center justify-content-center gap-2"
                     style={{ backgroundColor: "#820263" }}
                     onClick={handleAlatPayPayment}
                     disabled={upgrading}
