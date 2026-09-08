@@ -560,6 +560,33 @@ export default function HomePage() {
           transform: translateY(-1px);
         }
 
+        /* Highly Visible PRO Action Button in Dark & Light Modes */
+        .btn-pro-upgrade {
+          background: linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%);
+          color: #000000 !important;
+          border: 1px solid #fde047;
+          box-shadow: 0 0 12px rgba(245, 158, 11, 0.4);
+          font-weight: 700;
+        }
+
+        .btn-pro-upgrade:hover {
+          background: linear-gradient(135deg, #d97706 0%, #f59e0b 100%);
+          color: #000000 !important;
+          box-shadow: 0 0 18px rgba(245, 158, 11, 0.7);
+          transform: translateY(-1px);
+        }
+
+        .btn-pro-active {
+          background: rgba(245, 158, 11, 0.15);
+          color: #fbbf24 !important;
+          border: 1px solid #f59e0b;
+        }
+
+        .btn-pro-active:hover {
+          background: rgba(245, 158, 11, 0.25);
+          color: #fef08a !important;
+        }
+
         .btn-alat {
           background-color: #820263;
           color: #ffffff !important;
@@ -614,26 +641,17 @@ export default function HomePage() {
             </h1>
           </div>
 
+          {/* User-friendly organized buttons: Theme -> Alerts -> High Visibility PRO Upgrade */}
           <div className="d-flex align-items-center flex-wrap gap-2">
-            {!isPremium ? (
-              <button
-                type="button"
-                className="btn btn-warning btn-custom-nav shadow-sm fw-bold"
-                onClick={() => toggleBootstrapModal("premiumModal", "show")}
-              >
-                <Crown size={15} />
-                <span>Upgrade PRO</span>
-              </button>
-            ) : (
-              <button
-                type="button"
-                className="btn btn-outline-warning btn-custom-nav"
-                onClick={() => toggleBootstrapModal("premiumModal", "show")}
-              >
-                <Crown size={15} />
-                <span>PRO Active</span>
-              </button>
-            )}
+            <button
+              type="button"
+              className={`btn ${darkMode ? "btn-outline-light" : "btn-outline-secondary"} btn-custom-nav`}
+              onClick={() => setDarkMode(!darkMode)}
+              title="Toggle theme"
+            >
+              {darkMode ? <Sun size={15} /> : <Moon size={15} />}
+              <span className="d-none d-sm-inline">{darkMode ? "Light" : "Dark"}</span>
+            </button>
 
             <button
               type="button"
@@ -645,15 +663,25 @@ export default function HomePage() {
               <span>{subscribing ? "Enabling..." : subscribed ? "Alerts Active" : "Enable Alerts"}</span>
             </button>
 
-            <button
-              type="button"
-              className={`btn ${darkMode ? "btn-outline-light" : "btn-outline-secondary"} btn-custom-nav`}
-              onClick={() => setDarkMode(!darkMode)}
-              title="Toggle theme"
-            >
-              {darkMode ? <Sun size={15} /> : <Moon size={15} />}
-              <span className="d-none d-sm-inline">{darkMode ? "Light" : "Dark"}</span>
-            </button>
+            {!isPremium ? (
+              <button
+                type="button"
+                className="btn btn-pro-upgrade btn-custom-nav"
+                onClick={() => toggleBootstrapModal("premiumModal", "show")}
+              >
+                <Crown size={15} />
+                <span>Upgrade PRO</span>
+              </button>
+            ) : (
+              <button
+                type="button"
+                className="btn btn-pro-active btn-custom-nav"
+                onClick={() => toggleBootstrapModal("premiumModal", "show")}
+              >
+                <Crown size={15} />
+                <span>PRO Active</span>
+              </button>
+            )}
           </div>
 
         </div>
@@ -721,6 +749,7 @@ export default function HomePage() {
               <TrackerFilters typeFilter={typeFilter} onTypeFilterChange={setTypeFilter} darkMode={darkMode} />
             </div>
             
+            {/* User-friendly ordered Toolbar Actions */}
             <div className="d-flex align-items-center flex-wrap gap-2 flex-shrink-0">
               <button
                 type="button"
@@ -842,47 +871,34 @@ export default function HomePage() {
               )}
 
               <div className="text-start bg-body-tertiary p-3 rounded-3 mb-4 border opacity-90">
-                <div className="d-flex align-items-center gap-2 mb-2">
-                  <Check size={18} className="text-success flex-shrink-0" />
-                  <span className="small">Unlimited E2E Encrypted Trackers</span>
+                <div className="d-flex align-items-center gap-2 mb-2 small fw-semibold">
+                  <Check size={16} className="text-success" />
+                  <span>Unlimited Custom Trackers</span>
                 </div>
-                <div className="d-flex align-items-center gap-2 mb-2">
-                  <Check size={18} className="text-success flex-shrink-0" />
-                  <span className="small">Advanced Visual Analytics & Export Formats</span>
+                <div className="d-flex align-items-center gap-2 mb-2 small fw-semibold">
+                  <Check size={16} className="text-success" />
+                  <span>Push & Web Notifications</span>
                 </div>
-                <div className="d-flex align-items-center gap-2 mb-2">
-                  <Check size={18} className="text-success flex-shrink-0" />
-                  <span className="small">Instant Web Push Reminders</span>
-                </div>
-                <div className="d-flex align-items-center gap-2">
-                  <Check size={18} className="text-success flex-shrink-0" />
-                  <span className="small">Priority Encryption Key Management</span>
+                <div className="d-flex align-items-center gap-2 small fw-semibold">
+                  <Check size={16} className="text-success" />
+                  <span>Export Trackers & Data Logs</span>
                 </div>
               </div>
 
               {!isPremium ? (
                 <button
                   type="button"
-                  className="btn btn-alat border-0 w-100 py-2.5 fw-bold d-flex align-items-center justify-content-center gap-2 rounded-3 shadow-sm"
+                  className="btn btn-alat w-100 py-2.5 fw-bold rounded-3 d-flex align-items-center justify-content-center gap-2"
                   onClick={handleAlatPayPayment}
                   disabled={upgrading}
                 >
-                  {upgrading ? (
-                    <>
-                      <div className="spinner-border spinner-border-sm text-light" role="status" />
-                      <span>Processing Gateway...</span>
-                    </>
-                  ) : (
-                    <>
-                      <CreditCard size={18} />
-                      <span>Pay {userLocation.symbol}{userLocation.displayAmount} with ALAT Pay</span>
-                    </>
-                  )}
+                  <CreditCard size={18} />
+                  <span>{upgrading ? "Processing..." : `Pay ${userLocation.symbol}${userLocation.displayAmount} via ALAT Pay`}</span>
                 </button>
               ) : (
-                <div className="p-2 bg-success bg-opacity-10 text-success rounded-3 small fw-semibold">
-                  <Zap size={16} className="d-inline me-1" />
-                  PRO features unlocked for this account
+                <div className="text-success fw-bold small d-flex align-items-center justify-content-center gap-1">
+                  <Zap size={16} />
+                  <span>You are enjoying all PRO features!</span>
                 </div>
               )}
             </div>
