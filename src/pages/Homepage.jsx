@@ -3,7 +3,7 @@ import TrackerDashboard from "../components/trackers/TrackerDashboard";
 import TrackerForm from "../components/trackers/TrackerForm";
 import TrackerList from "../components/trackers/TrackerList";
 import TrackerFilters from "../components/trackers/TrackerFilters";
-import { PlusCircle, LayoutDashboard, CheckCircle2, LogOut, Sun, Moon, RefreshCw, Info, Bell, Crown, Sparkles, Check, Globe } from "lucide-react";
+import { PlusCircle, LayoutDashboard, CheckCircle2, LogOut, Sun, Moon, RefreshCw, Info, Bell, Crown, Sparkles, Check, Globe, ShieldAlert } from "lucide-react";
 import Cookies from "universal-cookie";
 import { initializeUserKeys, decryptData, encryptData } from "../utils/e2ee";
 
@@ -15,8 +15,15 @@ const RAW_BASE_URL =
 
 const BASE_URL = RAW_BASE_URL.replace(/\/$/, "");
 
-// REPLACE THIS WITH YOUR PAYSTACK PUBLIC KEY FROM DASHBOARD
+// Replace with your real Paystack Public Key
 const PAYSTACK_PUBLIC_KEY = "pk_test_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx";
+
+// List of email addresses that have paid / active premium status
+// (Can also be fetched dynamically from your API endpoint)
+const INITIAL_PAID_EMAILS = [
+  "admin@unitrack.com",
+  "paiduser@example.com"
+];
 
 const getAuthHeaders = () => {
   const cookies = new Cookies();
@@ -89,6 +96,13 @@ export default function HomePage() {
     return null;
   }
 
+  // Get active logged in user email
+  const currentUserEmail = (
+    localStorage.getItem("userEmail") || 
+    cookies.get("userEmail") || 
+    ""
+  ).toLowerCase().trim();
+
   const [trackers, setTrackers] = useState([]);
   const [sampleTrackerState, setSampleTrackerState] = useState(SAMPLE_TRACKER);
   const [loading, setLoading] = useState(true);
@@ -101,12 +115,18 @@ export default function HomePage() {
   const [subscribing, setSubscribing] = useState(false);
   const [subscribed, setSubscribed] = useState(false);
 
-  // Region-based Pricing & Paystack State
-  const [isPremium, setIsPremium] = useState(() => localStorage.getItem("isPremium") === "true");
+  // Email-based Paid/Premium Check
+  const [paidEmails, setPaidEmails] = useState(() => {
+    const saved = localStorage.getItem("paidEmails");
+    return saved ? JSON.parse(saved) : INITIAL_PAID_EMAILS;
+  });
+
+  const [isPremium, setIsPremium] = useState(false);
   const [upgrading, setUpgrading] = useState(false);
+  
   const [userLocation, setUserLocation] = useState({
     currency: "USD",
-    amount: 499, // in lowest currency unit (i.e. 499 cents = $4.99)
+    amount: 499, 
     symbol: "$",
     displayAmount: "4.99"
   });
@@ -117,12 +137,20 @@ export default function HomePage() {
     localStorage.setItem("theme", darkMode ? "dark" : "light");
   }, [darkMode]);
 
+  // Check if current user email has paid status
+  useEffect(() => {
+    if (currentUserEmail && paidEmails.map((e) => e.toLowerCase()).includes(currentUserEmail)) {
+      setIsPremium(true);
+    } else {
+      setIsPremium(false);
+    }
+  }, [currentUserEmail, paidEmails]);
+
   useEffect(() => {
     registerServiceWorkerAndSubscribe()
       .then(() => setSubscribed(true))
       .catch(() => setSubscribed(false));
 
-    // Detect user region/currency on mount
     fetchRegionAndCurrency();
   }, []);
 
@@ -132,51 +160,58 @@ export default function HomePage() {
       const data = await res.json();
       const countryCode = data.country_code;
 
-      // Determine regional pricing and currency mapping
       switch (countryCode) {
         case "NG":
-          setUserLocation({ currency: "NGN", amount: 500000, symbol: "₦", displayAmount: "5,000" }); // ₦5000
+          setUserLocation({ currency: "NGN", amount: 500000, symbol: "₦", displayAmount: "5,000" });
           break;
         case "GH":
-          setUserLocation({ currency: "GHS", amount: 7500, symbol: "GH₵", displayAmount: "75" }); // GH₵75
+          setUserLocation({ currency: "GHS", amount: 7500, symbol: "GH₵", displayAmount: "75" });
           break;
         case "ZA":
-          setUserLocation({ currency: "ZAR", amount: 9500, symbol: "R", displayAmount: "95" }); // R95
+          setUserLocation({ currency: "ZAR", amount: 9500, symbol: "R", displayAmount: "95" });
           break;
         case "KE":
-          setUserLocation({ currency: "KES", amount: 65000, symbol: "KSh", displayAmount: "650" }); // KSh650
+          setUserLocation({ currency: "KES", amount: 65000, symbol: "KSh", displayAmount: "650" });
           break;
         default:
-          setUserLocation({ currency: "USD", amount: 499, symbol: "$", displayAmount: "4.99" }); // $4.99
+          setUserLocation({ currency: "USD", amount: 499, symbol: "$", displayAmount: "4.99" });
           break;
       }
     } catch (err) {
-      console.warn("Unable to detect region for currency, falling back to USD:", err);
+      console.warn("Could not determine region currency, defaulting to USD:", err);
     }
   };
 
   const handlePaystackPayment = () => {
+    if (!currentUserEmail) {
+      alert("No logged-in user email detected. Please log in again.");
+      return;
+    }
+
     if (!window.PaystackPop) {
-      alert("Paystack SDK failed to load. Please check your network connection.");
+      alert("Paystack SDK failed to load. Please check your internet connection.");
       return;
     }
 
     setUpgrading(true);
 
-    const userEmail = localStorage.getItem("userEmail") || "customer@example.com";
-
     const paystack = new window.PaystackPop();
     paystack.newTransaction({
       key: PAYSTACK_PUBLIC_KEY,
-      email: userEmail,
+      email: currentUserEmail,
       amount: userLocation.amount,
       currency: userLocation.currency,
       onSuccess: (transaction) => {
-        console.log("Paystack Success:", transaction);
+        console.log("Paystack Payment Successful:", transaction);
+        
+        // Add current user's email to paid list
+        const updatedPaidList = [...new Set([...paidEmails, currentUserEmail.toLowerCase()])];
+        setPaidEmails(updatedPaidList);
+        localStorage.setItem("paidEmails", JSON.stringify(updatedPaidList));
+        
         setIsPremium(true);
-        localStorage.setItem("isPremium", "true");
         setUpgrading(false);
-        setNotification("Payment Successful! Welcome to UNI-TRACK PRO");
+        setNotification(`Payment successful! PRO access activated for ${currentUserEmail}`);
 
         // Close Modal
         const modalElement = document.getElementById("premiumModal");
@@ -191,7 +226,6 @@ export default function HomePage() {
       },
       onCancel: () => {
         setUpgrading(false);
-        console.log("Paystack payment cancelled.");
       },
       onError: (error) => {
         setUpgrading(false);
@@ -256,7 +290,7 @@ export default function HomePage() {
               entries: tracker.entries !== undefined ? await decryptData(privateKey, tracker.entries) : tracker.entries,
             };
           } catch (decryptErr) {
-            console.error("Failed to decrypt individual tracker:", decryptErr);
+            console.error("Failed to decrypt tracker:", decryptErr);
             return tracker;
           }
         })
@@ -493,9 +527,13 @@ export default function HomePage() {
         <div className="container d-flex align-items-center justify-content-between">
           <h1 className="navbar-brand fw-bold d-flex align-items-center gap-2 m-0" style={{ fontSize: "1.25rem" }}>
             <LayoutDashboard className="text-primary" /> UNI-TRACK
-            {isPremium && (
+            {isPremium ? (
               <span className="badge bg-warning text-dark d-flex align-items-center gap-1 ms-1 fs-7">
                 <Crown size={12} /> PRO
+              </span>
+            ) : (
+              <span className="badge bg-secondary text-light d-flex align-items-center gap-1 ms-1 fs-7">
+                REGULAR
               </span>
             )}
           </h1>
@@ -509,7 +547,7 @@ export default function HomePage() {
                 data-bs-target="#premiumModal"
               >
                 <Crown size={16} />
-                <span className="d-none d-sm-inline">Upgrade to Premium</span>
+                <span className="d-none d-sm-inline">Upgrade to PRO</span>
               </button>
             ) : (
               <button
@@ -566,7 +604,7 @@ export default function HomePage() {
                   Welcome back to Uni-Track!
                 </h2>
                 <p className="text-muted mb-0 lead fs-6">
-                  Let's make today productive.
+                  Account Status: <strong>{isPremium ? "PRO Subscriber" : "Regular Plan"}</strong> ({currentUserEmail || "Guest"})
                 </p>
               </div>
             </div>
@@ -683,13 +721,22 @@ export default function HomePage() {
                 <Crown size={40} />
               </div>
               <h4 className="fw-bold mb-1">
-                {isPremium ? "You are on UNI-TRACK PRO" : "Upgrade to UNI-TRACK PRO"}
+                {isPremium ? "UNI-TRACK PRO Active" : "Upgrade to UNI-TRACK PRO"}
               </h4>
 
               <div className="d-flex align-items-center justify-content-center gap-1 text-muted small mb-3">
                 <Globe size={14} />
-                <span>Currency detected for your region: <strong>{userLocation.currency}</strong></span>
+                <span>Regional Currency: <strong>{userLocation.currency}</strong></span>
               </div>
+
+              {!isPremium && (
+                <div className="alert alert-warning py-2 px-3 small d-flex align-items-center gap-2 mb-3 text-start">
+                  <ShieldAlert size={18} className="flex-shrink-0" />
+                  <span>
+                    Current email: <strong>{currentUserEmail || "Unregistered"}</strong> is on Regular plan. Upgrade below to unlock PRO features.
+                  </span>
+                </div>
+              )}
 
               <div className="text-start bg-body-tertiary p-3 rounded-3 mb-4 border">
                 <div className="d-flex align-items-center gap-2 mb-2">
@@ -719,12 +766,12 @@ export default function HomePage() {
                 >
                   <Sparkles size={18} />
                   {upgrading
-                    ? "Opening Paystack..."
-                    : `Pay ${userLocation.symbol}${userLocation.displayAmount} / mo with Paystack`}
+                    ? "Connecting Paystack..."
+                    : `Pay ${userLocation.symbol}${userLocation.displayAmount} with Paystack`}
                 </button>
               ) : (
                 <div className="alert alert-success m-0 py-2 small fw-semibold d-flex align-items-center justify-content-center gap-2">
-                  <CheckCircle2 size={18} /> Your PRO subscription is active
+                  <CheckCircle2 size={18} /> Your PRO subscription is active for {currentUserEmail}
                 </div>
               )}
             </div>
