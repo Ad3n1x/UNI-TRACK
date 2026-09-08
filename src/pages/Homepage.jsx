@@ -10,7 +10,6 @@ import {
 import Cookies from "universal-cookie";
 import { initializeUserKeys, decryptData, encryptData } from "../utils/e2ee";
 
-// Safely resolve environment variables without causing ReferenceError in Vite/Webpack
 const getEnvVar = (key) => {
   if (typeof import.meta !== "undefined" && import.meta.env?.[`VITE_${key}`]) {
     return import.meta.env[`VITE_${key}`];
@@ -116,9 +115,10 @@ export default function HomePage() {
   const [isPremium, setIsPremium] = useState(false);
   const [upgrading, setUpgrading] = useState(false);
   
+  // Standardized to major units (e.g., 5000 NGN, 4.99 USD)
   const [userLocation, setUserLocation] = useState({
     currency: "NGN",
-    amount: 500000, 
+    amount: 5000, 
     symbol: "₦",
     displayAmount: "5,000"
   });
@@ -156,19 +156,19 @@ export default function HomePage() {
 
       switch (data.country_code) {
         case "NG":
-          setUserLocation({ currency: "NGN", amount: 500000, symbol: "₦", displayAmount: "5,000" });
+          setUserLocation({ currency: "NGN", amount: 5000, symbol: "₦", displayAmount: "5,000" });
           break;
         case "GH":
-          setUserLocation({ currency: "GHS", amount: 7500, symbol: "GH₵", displayAmount: "75" });
+          setUserLocation({ currency: "GHS", amount: 75, symbol: "GH₵", displayAmount: "75" });
           break;
         case "ZA":
-          setUserLocation({ currency: "ZAR", amount: 9500, symbol: "R", displayAmount: "95" });
+          setUserLocation({ currency: "ZAR", amount: 95, symbol: "R", displayAmount: "95" });
           break;
         case "KE":
-          setUserLocation({ currency: "KES", amount: 65000, symbol: "KSh", displayAmount: "650" });
+          setUserLocation({ currency: "KES", amount: 650, symbol: "KSh", displayAmount: "650" });
           break;
         default:
-          setUserLocation({ currency: "USD", amount: 499, symbol: "$", displayAmount: "4.99" });
+          setUserLocation({ currency: "USD", amount: 4.99, symbol: "$", displayAmount: "4.99" });
           break;
       }
     } catch (err) {
@@ -236,7 +236,7 @@ export default function HomePage() {
   const closeModal = (modalId) => {
     const modalElement = document.getElementById(modalId);
     if (modalElement && window.bootstrap) {
-      const modalInstance = window.bootstrap.Modal.getInstance(modalElement);
+      const modalInstance = window.bootstrap.Modal.getInstance(modalElement) || new window.bootstrap.Modal(modalElement);
       modalInstance?.hide();
     }
   };
@@ -247,7 +247,8 @@ export default function HomePage() {
       return;
     }
 
-    const AlatPopup = window.Alatpay || window.Popup || window.AlatPay;
+    // Official SDK class lookup order
+    const AlatPopup = window.Popup || window.AlatPay || window.Alatpay;
 
     if (!AlatPopup) {
       alert("Unable to reach ALAT Pay script. Please ensure the payment gateway script is loaded in your index.html.");
@@ -257,7 +258,7 @@ export default function HomePage() {
     setUpgrading(true);
 
     try {
-      const numericAmount = userLocation.currency === "NGN" ? userLocation.amount / 100 : userLocation.amount;
+      const numericAmount = Number(userLocation.amount);
       const clientReference = `UT_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
 
       let activeRef = clientReference;
@@ -287,7 +288,6 @@ export default function HomePage() {
           try {
             const confirmedRef = response?.reference || activeRef;
 
-            // Unified verification payload
             await fetch(`${BASE_URL}/api/v1/alatpay/verify/${confirmedRef}`, {
               method: "GET",
               headers: getAuthHeaders(),
@@ -311,10 +311,10 @@ export default function HomePage() {
 
       if (typeof AlatPopup.setup === "function") {
         const popup = AlatPopup.setup(paymentOptions);
-        popup.show();
+        popup?.show?.();
       } else {
         const popup = new AlatPopup(paymentOptions);
-        popup.show();
+        popup?.show?.();
       }
     } catch (err) {
       console.error("ALAT Pay Execution Error:", err);
