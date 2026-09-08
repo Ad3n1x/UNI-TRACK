@@ -26,8 +26,8 @@ const getEnvVar = (key) => {
 const RAW_BASE_URL = getEnvVar("API_URL") || "https://lv3node.onrender.com";
 const BASE_URL = RAW_BASE_URL.replace(/\/$/, "");
 
-const ALAT_BUSINESS_ID = getEnvVar("ALAT_BUSINESS_ID") || "your-alat-business-id";
-const ALAT_API_KEY = getEnvVar("ALAT_API_KEY") || "your-alat-api-key";
+const ALAT_BUSINESS_ID = getEnvVar("ALAT_BUSINESS_ID") || "178c0abe-bbe3-4476-8551-08df0a792d7c";
+const ALAT_API_KEY = getEnvVar("ALAT_API_KEY") || "8865add026cb44d4adf352f3fbfe260c";
 const VAPID_PUBLIC_KEY = getEnvVar("VAPID_PUBLIC_KEY") || "BEaflZfmm8QfrFsL7r06HB-QrsdDAefJpRk2vw-zcHIKD-t8evj3TIS7k9k0w0am9BboNqiqbZ99Y-1WxYNcZcw";
 
 const SAMPLE_TRACKER = {
