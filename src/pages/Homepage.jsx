@@ -892,11 +892,11 @@ export default function HomePage() {
                 </a>
 
                 <a 
-                  href="mailto:adenix271@gmail.com?subject=Uni-Track%20Support%20Inquiry" 
+                  href="mailto:unitrack271@gmail.com?subject=Uni-Track%20Support%20Inquiry" 
                   className={`btn ${darkMode ? "btn-outline-light" : "btn-outline-secondary"} fw-semibold d-flex align-items-center justify-content-center gap-2 py-2.5`}
                 >
                   <Mail size={18} />
-                  <span>Email adenix271@gmail.com</span>
+                  <span>Email unitrack271@gmail.com</span>
                 </a>
               </div>
             </div>
