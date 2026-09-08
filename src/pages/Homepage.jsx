@@ -541,6 +541,66 @@ export default function HomePage() {
 
   return (
     <div className={`min-vh-100 position-relative ${darkMode ? "bg-dark text-light" : "bg-light text-dark"}`} data-bs-theme={darkMode ? "dark" : "light"}>
+      {/* Internal CSS for Button Legibility and Responsive Text Alignment */}
+      <style>{`
+        .btn {
+          font-weight: 600;
+          letter-spacing: 0.015em;
+          white-space: nowrap;
+          transition: all 0.2s ease-in-out;
+        }
+
+        .btn:focus, .btn:active {
+          box-shadow: 0 0 0 0.25rem rgba(59, 130, 246, 0.3) !important;
+        }
+
+        /* Ensure yellow/amber buttons have high-contrast dark text */
+        .btn-warning, .btn-outline-warning {
+          color: #0f172a !important;
+        }
+        .btn-warning:hover {
+          color: #000000 !important;
+          background-color: #f59e0b !important;
+          border-color: #d97706 !important;
+        }
+
+        /* Dark mode contrast overrides */
+        [data-bs-theme="dark"] .btn-outline-secondary {
+          color: #f1f5f9;
+          border-color: #475569;
+        }
+        [data-bs-theme="dark"] .btn-outline-secondary:hover {
+          background-color: #334155;
+          color: #ffffff;
+        }
+        [data-bs-theme="dark"] .btn-outline-warning {
+          color: #fbbf24 !important;
+          border-color: #fbbf24;
+        }
+        [data-bs-theme="dark"] .btn-outline-warning:hover {
+          background-color: #fbbf24;
+          color: #0f172a !important;
+        }
+
+        /* High-contrast custom action button */
+        .btn-alat {
+          background-color: #820263;
+          color: #ffffff !important;
+        }
+        .btn-alat:hover {
+          background-color: #67014f;
+          color: #ffffff !important;
+        }
+
+        @media (max-width: 575.98px) {
+          .btn {
+            font-size: 0.85rem;
+            padding-left: 0.65rem !important;
+            padding-right: 0.65rem !important;
+          }
+        }
+      `}</style>
+
       {notification && (
         <div className="position-fixed top-0 start-50 translate-middle-x p-3" style={{ zIndex: 1080, marginTop: "1rem" }}>
           <div className="alert alert-success shadow-sm d-flex align-items-center gap-2 mb-0 py-2 px-3 rounded-pill">
@@ -793,8 +853,7 @@ export default function HomePage() {
                 <div className="d-flex flex-column gap-2">
                   <button
                     type="button"
-                    className="btn border-0 text-white w-100 py-2 fw-bold d-flex align-items-center justify-content-center gap-2"
-                    style={{ backgroundColor: "#820263" }}
+                    className="btn btn-alat border-0 w-100 py-2 fw-bold d-flex align-items-center justify-content-center gap-2"
                     onClick={handleAlatPayPayment}
                     disabled={upgrading}
                   >
