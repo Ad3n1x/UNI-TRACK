@@ -338,7 +338,7 @@ export default function HomePage() {
   const handleSubscribeNotifications = async () => {
     if (!isPremium) {
       toggleBootstrapModal("premiumModal", "show");
-      setNotification("Push notifications are a PRO feature. Upgrade to enable!");
+      setNotification("Push notification alerts are a PRO feature. Upgrade to enable!");
       setTimeout(() => setNotification(null), 4000);
       return;
     }
@@ -348,9 +348,9 @@ export default function HomePage() {
     try {
       await registerServiceWorkerAndSubscribe();
       setSubscribed(true);
-      setNotification("Successfully subscribed to notifications!");
+      setNotification("Notification alerts enabled successfully!");
     } catch (err) {
-      setNotification(err.message || "Failed to subscribe to notifications.");
+      setNotification(err.message || "Failed to enable notification alerts.");
     } finally {
       setSubscribing(false);
       setTimeout(() => setNotification(null), 4000);
@@ -646,15 +646,24 @@ export default function HomePage() {
               </button>
             )}
 
+            {/* Renamed Notification Alert Button */}
             <button
               type="button"
               className={`btn ${subscribed ? "btn-outline-success" : "btn-outline-primary"} btn-custom-nav`}
               onClick={handleSubscribeNotifications}
               disabled={subscribing}
-              title={isPremium ? "Subscribe to Push Notifications" : "PRO Feature: Upgrade to enable notifications"}
+              title={
+                !isPremium
+                  ? "PRO Feature: Upgrade to enable push notification alerts"
+                  : subscribed
+                  ? "Push notification alerts are enabled"
+                  : "Enable Push Notification Alerts"
+              }
             >
               {!isPremium ? <Lock size={15} className="text-muted" /> : <Bell size={15} />}
-              <span>{subscribing ? "Subscribing..." : subscribed ? "Subscribed" : "Notifications"}</span>
+              <span>
+                {subscribing ? "Enabling..." : subscribed ? "Alerts On" : "Enable Alerts"}
+              </span>
             </button>
 
             <button
