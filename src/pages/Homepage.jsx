@@ -20,7 +20,8 @@ import {
   Headphones,
   MessageSquare,
   Mail,
-  Send
+  Send,
+  MessageCircle
 } from "lucide-react";
 
 import TrackerDashboard from "../components/trackers/TrackerDashboard";
@@ -785,7 +786,7 @@ export default function HomePage() {
             <span>Changes sync automatically end-to-end. Tap <strong>Refresh</strong> to sync analytics manually.</span>
           </div>
 
-          {/* MOVED: Compact Inline Limit Indicator Bar directly contextualized above controls */}
+          {/* Compact Inline Limit Indicator Bar directly contextualized above controls */}
           {!isPremium && (
             <div className={`p-3 rounded-3 border mb-4 ${darkMode ? "bg-secondary bg-opacity-10 border-secondary" : "bg-light border-border"}`}>
               <div className="d-flex justify-content-between align-items-center mb-1.5 small fw-semibold">
@@ -941,8 +942,35 @@ export default function HomePage() {
 
             <div className="modal-body pt-3">
               <p className="text-muted small mb-3">
-                Need assistance or have feedback? Send us a direct query and our team will get back to you shortly.
+                Need assistance or have feedback? Reach out directly using WhatsApp or Email, or leave a support message below.
               </p>
+
+              {/* DIRECT CONTACT CHANNELS */}
+              <div className="d-grid gap-2 mb-4">
+                <a 
+                  href="https://wa.me/2347039237610?text=Hello%2C%20I%20need%20support%20with%20Uni-Track." 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="btn btn-success fw-semibold d-flex align-items-center justify-content-center gap-2 py-2"
+                >
+                  <MessageCircle size={18} />
+                  <span>Chat on WhatsApp (+234 703 923 7610)</span>
+                </a>
+
+                <a 
+                  href="mailto:adenix271@gmail.com?subject=Uni-Track%20Support%20Inquiry" 
+                  className={`btn ${darkMode ? "btn-outline-light" : "btn-outline-secondary"} fw-semibold d-flex align-items-center justify-content-center gap-2 py-2`}
+                >
+                  <Mail size={18} />
+                  <span>Email adenix271@gmail.com</span>
+                </a>
+              </div>
+
+              <div className="d-flex align-items-center gap-2 my-3">
+                <hr className="flex-grow-1 opacity-25 m-0" />
+                <span className="small text-muted fw-semibold">OR SEND TICKET</span>
+                <hr className="flex-grow-1 opacity-25 m-0" />
+              </div>
 
               <form onSubmit={handleSupportSubmit}>
                 <div className="mb-3">
@@ -975,7 +1003,7 @@ export default function HomePage() {
                   <label className="form-label small fw-semibold">Message</label>
                   <textarea 
                     className={`form-control ${darkMode ? "bg-dark text-light border-secondary" : ""}`} 
-                    rows="4" 
+                    rows="3" 
                     placeholder="Describe how we can help..."
                     value={supportMessage}
                     onChange={(e) => setSupportMessage(e.target.value)}
@@ -992,18 +1020,6 @@ export default function HomePage() {
                   <span>{submittingSupport ? "Sending Ticket..." : "Submit Ticket"}</span>
                 </button>
               </form>
-
-              <hr className="my-4 opacity-25" />
-
-              <div className="d-flex flex-column gap-2">
-                <a 
-                  href="mailto:support@unitrack.app" 
-                  className={`btn ${darkMode ? "btn-outline-light" : "btn-outline-secondary"} btn-sm d-flex align-items-center justify-content-center gap-2`}
-                >
-                  <Mail size={14} />
-                  <span>Email Support Direct</span>
-                </a>
-              </div>
             </div>
 
           </div>
