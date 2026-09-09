@@ -389,7 +389,7 @@ export default function HomePage() {
       if (!response.ok) throw new Error("Failed to sync entries.");
     } catch (error) {
       console.error("Error syncing entry modification:", error);
-      fetchTrackers(); 
+      await fetchTrackers(); 
     }
   };
 
@@ -461,9 +461,6 @@ export default function HomePage() {
   const handleDeleteTracker = async (trackerId) => {
     if (trackerId === SAMPLE_TRACKER._id) return;
 
-    const previousTrackers = [...trackers];
-    setTrackers((prev) => prev.filter((t) => (t._id || t.id)?.toString() !== trackerId.toString()));
-
     try {
       let response = await fetch(`${BASE_URL}/api/v1/trackers/${trackerId}`, {
         method: "DELETE",
@@ -478,14 +475,18 @@ export default function HomePage() {
       }
 
       if (!response.ok) throw new Error("Failed to delete tracker.");
+
+      // Re-fetch clean state directly from database after deletion
+      await fetchTrackers();
+      setNotification("Tracker deleted successfully!");
+      setTimeout(() => setNotification(null), 2500);
     } catch (error) {
       console.error("Error deleting tracker:", error);
       alert("Failed to delete tracker.");
-      setTrackers(previousTrackers);
     }
   };
 
-  const handleCreate = (newTracker) => {
+  const handleCreate = async (newTracker) => {
     if (!isPremium && trackers.length >= REGULAR_TRACKER_LIMIT) {
       toggleBootstrapModal("trackerModal", "hide");
       toggleBootstrapModal("premiumModal", "show");
@@ -494,9 +495,13 @@ export default function HomePage() {
       return;
     }
 
-    fetchTrackers();
-    const newId = newTracker._id || newTracker.id;
-    setNewlyAddedId(newId);
+    // Await fetchTrackers to securely decrypt new database entries before rendering
+    await fetchTrackers();
+
+    const newId = newTracker?._id || newTracker?.id;
+    if (newId) {
+      setNewlyAddedId(newId);
+    }
     setNotification("Tracker created successfully!");
 
     if (newId) {
