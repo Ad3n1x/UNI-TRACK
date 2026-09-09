@@ -84,13 +84,14 @@ function urlBase64ToUint8Array(base64String) {
 }
 
 const convertTrackersToCSV = (trackersList) => {
-  const headers = ["Tracker ID", "Tracker Name", "Type", "Entry ID", "Timestamp", "Value", "Note"];
+  const headers = ["Tracker ID", "Tracker Name", "Type", "Target", "Entry ID", "Timestamp", "Value", "Note"];
   const rows = [];
 
   trackersList.forEach((t) => {
     const trackerId = t._id || t.id || "";
-    const trackerName = (t.name || "").replace(/"/g, '""');
+    const trackerName = String(t.name || "").replace(/"/g, '""');
     const trackerType = t.type || "";
+    const trackerTarget = t.target !== undefined && t.target !== null ? String(t.target).replace(/"/g, '""') : "";
     const entries = Array.isArray(t.entries) ? t.entries : [];
 
     if (entries.length === 0) {
@@ -98,6 +99,7 @@ const convertTrackersToCSV = (trackersList) => {
         `"${trackerId}"`,
         `"${trackerName}"`,
         `"${trackerType}"`,
+        `"${trackerTarget}"`,
         '""', '""', '""', '""'
       ].join(","));
     } else {
@@ -105,12 +107,13 @@ const convertTrackersToCSV = (trackersList) => {
         const entryId = e._id || e.id || "";
         const timestamp = e.timestamp || "";
         const value = e.value !== undefined ? String(e.value).replace(/"/g, '""') : "";
-        const note = (e.note || "").replace(/"/g, '""');
+        const note = String(e.note || "").replace(/"/g, '""');
 
         rows.push([
           `"${trackerId}"`,
           `"${trackerName}"`,
           `"${trackerType}"`,
+          `"${trackerTarget}"`,
           `"${entryId}"`,
           `"${timestamp}"`,
           `"${value}"`,
@@ -434,7 +437,8 @@ export default function HomePage() {
     }
   };
 
-  const handleExportData = (format = "json") => {
+  // --- EXPORT WITH GUARANTEED DECRYPTION ---
+  const handleExportData = async (format = "json") => {
     if (!isPremium) {
       toggleBootstrapModal("premiumModal", "show");
       setNotification("Data export is available exclusively for PRO users.");
@@ -444,14 +448,89 @@ export default function HomePage() {
 
     const timestamp = Date.now();
 
-    if (format === "json") {
-      const jsonContent = JSON.stringify(trackers, null, 2);
-      downloadFile(jsonContent, `unitrack_export_${timestamp}.json`, "application/json");
-      setNotification("Trackers exported as JSON!");
-    } else if (format === "csv") {
-      const csvContent = convertTrackersToCSV(trackers);
-      downloadFile(csvContent, `unitrack_export_${timestamp}.csv`, "text/csv;charset=utf-8;");
-      setNotification("Trackers exported as CSV!");
+    try {
+      const { privateKey } = await initializeUserKeys();
+
+      // Deeply decrypt all tracker properties and nested entries for export
+      const decryptedExportTrackers = await Promise.all(
+        trackers.map(async (t) => {
+          let name = t.name;
+          let target = t.target;
+          let rawEntries = t.entries;
+
+          // Attempt decryption on individual tracker fields if string/encrypted
+          try {
+            if (typeof name === "string" && (name.startsWith("enc:") || name.includes(":"))) {
+              name = await decryptData(privateKey, name);
+            }
+          } catch (e) {
+            console.warn("Could not decrypt tracker name:", e);
+          }
+
+          try {
+            if (typeof target === "string" && (target.startsWith("enc:") || target.includes(":"))) {
+              target = await decryptData(privateKey, target);
+            }
+          } catch (e) {
+            console.warn("Could not decrypt tracker target:", e);
+          }
+
+          try {
+            if (typeof rawEntries === "string") {
+              rawEntries = await decryptData(privateKey, rawEntries);
+            }
+          } catch (e) {
+            console.warn("Could not decrypt entries array:", e);
+          }
+
+          // Ensure individual entry items are also decrypted
+          const entriesList = Array.isArray(rawEntries) ? rawEntries : [];
+          const decryptedEntries = await Promise.all(
+            entriesList.map(async (entry) => {
+              let value = entry.value;
+              let note = entry.note;
+
+              try {
+                if (typeof value === "string" && (value.startsWith("enc:") || value.includes(":"))) {
+                  value = await decryptData(privateKey, value);
+                }
+              } catch (e) {}
+
+              try {
+                if (typeof note === "string" && (note.startsWith("enc:") || note.includes(":"))) {
+                  note = await decryptData(privateKey, note);
+                }
+              } catch (e) {}
+
+              return {
+                ...entry,
+                value,
+                note
+              };
+            })
+          );
+
+          return {
+            ...t,
+            name,
+            target,
+            entries: decryptedEntries
+          };
+        })
+      );
+
+      if (format === "json") {
+        const jsonContent = JSON.stringify(decryptedExportTrackers, null, 2);
+        downloadFile(jsonContent, `unitrack_decrypted_export_${timestamp}.json`, "application/json");
+        setNotification("Decrypted data exported as JSON!");
+      } else if (format === "csv") {
+        const csvContent = convertTrackersToCSV(decryptedExportTrackers);
+        downloadFile(csvContent, `unitrack_decrypted_export_${timestamp}.csv`, "text/csv;charset=utf-8;");
+        setNotification("Decrypted data exported as CSV!");
+      }
+    } catch (err) {
+      console.error("Export decryption failed:", err);
+      setNotification("Failed to decrypt data for export.");
     }
 
     setTimeout(() => setNotification(null), 3000);
