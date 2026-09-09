@@ -89,7 +89,7 @@ const convertTrackersToCSV = (trackersList) => {
 
   trackersList.forEach((t) => {
     const trackerId = t._id || t.id || "";
-    const trackerName = String(t.name || "").replace(/"/g, '""');
+    const trackerName = String(t.name || t.trackerName || "").replace(/"/g, '""');
     const trackerType = t.type || "";
     const trackerTarget = t.target !== undefined && t.target !== null ? String(t.target).replace(/"/g, '""') : "";
     const entries = Array.isArray(t.entries) ? t.entries : [];
@@ -169,6 +169,26 @@ const toggleBootstrapModal = (modalId, action = "show") => {
     const instance = window.bootstrap.Modal.getInstance(modalElement) || new window.bootstrap.Modal(modalElement);
     if (action === "show") instance.show();
     else instance.hide();
+  }
+};
+
+// Helper to safely decrypt OpenSSL/CryptoJS ciphertext or return plain text
+const safeDecrypt = async (privateKey, value) => {
+  if (typeof value !== "string" || !value) return value;
+
+  const isEncrypted = 
+    value.startsWith("U2FsdGVkX1") || 
+    value.startsWith("enc:") || 
+    value.includes(":");
+
+  if (!isEncrypted) return value;
+
+  try {
+    const decrypted = await decryptData(privateKey, value);
+    return decrypted !== undefined && decrypted !== null ? decrypted : value;
+  } catch (err) {
+    console.warn("Decryption fallback triggered:", err);
+    return value;
   }
 };
 
@@ -451,70 +471,46 @@ export default function HomePage() {
     try {
       const { privateKey } = await initializeUserKeys();
 
-      // Deeply decrypt all tracker properties and nested entries for export
       const decryptedExportTrackers = await Promise.all(
         trackers.map(async (t) => {
-          let name = t.name;
-          let target = t.target;
+          const decryptedName = await safeDecrypt(privateKey, t.name || t.trackerName);
+          const decryptedTarget = await safeDecrypt(privateKey, t.target);
+
           let rawEntries = t.entries;
-
-          // Attempt decryption on individual tracker fields if string/encrypted
-          try {
-            if (typeof name === "string" && (name.startsWith("enc:") || name.includes(":"))) {
-              name = await decryptData(privateKey, name);
+          if (typeof rawEntries === "string") {
+            const decryptedEntriesStr = await safeDecrypt(privateKey, rawEntries);
+            try {
+              rawEntries = JSON.parse(decryptedEntriesStr);
+            } catch {
+              rawEntries = decryptedEntriesStr;
             }
-          } catch (e) {
-            console.warn("Could not decrypt tracker name:", e);
           }
 
-          try {
-            if (typeof target === "string" && (target.startsWith("enc:") || target.includes(":"))) {
-              target = await decryptData(privateKey, target);
-            }
-          } catch (e) {
-            console.warn("Could not decrypt tracker target:", e);
-          }
-
-          try {
-            if (typeof rawEntries === "string") {
-              rawEntries = await decryptData(privateKey, rawEntries);
-            }
-          } catch (e) {
-            console.warn("Could not decrypt entries array:", e);
-          }
-
-          // Ensure individual entry items are also decrypted
           const entriesList = Array.isArray(rawEntries) ? rawEntries : [];
           const decryptedEntries = await Promise.all(
             entriesList.map(async (entry) => {
-              let value = entry.value;
-              let note = entry.note;
+              if (typeof entry === "string") {
+                const decStr = await safeDecrypt(privateKey, entry);
+                try { return JSON.parse(decStr); } catch { return decStr; }
+              }
 
-              try {
-                if (typeof value === "string" && (value.startsWith("enc:") || value.includes(":"))) {
-                  value = await decryptData(privateKey, value);
-                }
-              } catch (e) {}
-
-              try {
-                if (typeof note === "string" && (note.startsWith("enc:") || note.includes(":"))) {
-                  note = await decryptData(privateKey, note);
-                }
-              } catch (e) {}
+              const value = await safeDecrypt(privateKey, entry?.value);
+              const note = await safeDecrypt(privateKey, entry?.note);
 
               return {
                 ...entry,
-                value,
-                note
+                ...(value !== undefined ? { value } : {}),
+                ...(note !== undefined ? { note } : {}),
               };
             })
           );
 
           return {
             ...t,
-            name,
-            target,
-            entries: decryptedEntries
+            name: decryptedName,
+            trackerName: decryptedName,
+            target: decryptedTarget,
+            entries: decryptedEntries,
           };
         })
       );
