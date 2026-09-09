@@ -4,9 +4,30 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/src/assets/logo.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    
-    <!-- Self-Referencing Canonical Tag for your primary domain -->
+    <meta name="theme-color" content="#3b82f6" />
+
+    <!-- Self-Referencing Canonical Tag -->
     <link rel="canonical" href="https://unitrack-app.vercel.app" />
+
+    <!-- Primary SEO Meta Tags -->
+    <title>UNITRACK – Smart End-to-End Encrypted Tracking System</title>
+    <meta
+      name="description"
+      content="UNITRACK (UniTrack) is a fast, private, end-to-end encrypted tracking system for managing daily tasks, habits, and productivity metrics."
+    />
+    <meta
+      name="keywords"
+      content="UNITRACK, UniTrack, unitrack, uni-track, tracking app, task tracker, secure tracker, E2EE productivity app"
+    />
+
+    <!-- Open Graph / Social Sharing -->
+    <meta property="og:title" content="UNITRACK – Smart Tracking System" />
+    <meta
+      property="og:description"
+      content="Manage your daily tasks and metrics securely with client-side end-to-end encryption."
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://unitrack-app.vercel.app" />
 
     <!-- Bootstrap CSS (v5.3.3) -->
     <link
@@ -24,14 +45,15 @@
       referrerpolicy="no-referrer"
     />
 
-      <title>UNITRACK – Smart End-to-End Encrypted Tracking System</title>
-    
     <!-- ALAT Pay Inline Popup SDK -->
     <script src="https://web.alatpay.ng/js/alatpay.js"></script>
   </head>
 
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <!-- Fallback H1 for SEO Crawlers before JavaScript hydration -->
+      <h1 class="visually-hidden">UNITRACK – Smart End-to-End Encrypted Tracking System</h1>
+    </div>
 
     <!-- React Application Root -->
     <script type="module" src="/src/main.jsx"></script>
