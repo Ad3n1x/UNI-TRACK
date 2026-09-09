@@ -2,9 +2,6 @@ import React from "react";
 import { Link } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 
-// Import your custom SVG logo
-import logo from "../assets/logo.svg";
-
 import { 
   ShieldCheck, 
   Zap, 
@@ -45,7 +42,7 @@ export default function UnitrackPage() {
         <meta name="keywords" content="UNI-TRACK, UNITRACK, AD3N1X, privacy tracking app, E2EE productivity app, encrypted habit tracker" />
         <link rel="canonical" href="https://unitrack-app.vercel.app" />
 
-        {/* OpenGraph / Social Media Tags (Uses logo.svg for link previews) */}
+        {/* OpenGraph / Social Media Tags */}
         <meta property="og:title" content="UNI-TRACK | Privacy-First Tracking Ecosystem" />
         <meta property="og:description" content="Take control of your workflow with client-side end-to-end encryption, zero latency, and PWA capabilities." />
         <meta property="og:type" content="website" />
@@ -72,9 +69,9 @@ export default function UnitrackPage() {
           <nav className="d-flex flex-column flex-sm-row justify-content-between align-items-center gap-3 mb-4 p-3 bg-white rounded-4 shadow-sm border">
             <div className="d-flex align-items-center gap-2">
               
-              {/* Custom SVG Logo in Navbar */}
+              {/* Reference static asset from public/ folder */}
               <img 
-                src={logo} 
+                src="/logo.svg" 
                 alt="UNITRACK Logo" 
                 style={{ width: "26px", height: "26px", objectFit: "contain" }} 
                 className="flex-shrink-0"
