@@ -434,7 +434,6 @@ export default function HomePage() {
     }
   };
 
-  // Export Data Handler supporting JSON and CSV formats
   const handleExportData = (format = "json") => {
     if (!isPremium) {
       toggleBootstrapModal("premiumModal", "show");
@@ -758,16 +757,6 @@ export default function HomePage() {
             <button
               type="button"
               className={`btn ${darkMode ? "btn-outline-light" : "btn-outline-secondary"} btn-custom-nav`}
-              onClick={() => toggleBootstrapModal("supportModal", "show")}
-              title="Customer Support"
-            >
-              <Headphones size={15} />
-              <span className="d-none d-sm-inline">Support</span>
-            </button>
-
-            <button
-              type="button"
-              className={`btn ${darkMode ? "btn-outline-light" : "btn-outline-secondary"} btn-custom-nav`}
               onClick={() => setDarkMode(!darkMode)}
               title="Toggle theme"
             >
@@ -792,6 +781,16 @@ export default function HomePage() {
             >
               <Crown size={15} />
               <span>{isPremium ? "PRO Active" : "Upgrade PRO"}</span>
+            </button>
+
+            <button
+              type="button"
+              className="btn btn-outline-danger btn-custom-nav"
+              onClick={handleLogout}
+              title="Logout"
+            >
+              <LogOut size={15} />
+              <span>Logout</span>
             </button>
           </div>
 
@@ -932,15 +931,6 @@ export default function HomePage() {
               >
                 <RefreshCw size={16} className={refreshing ? "spin" : ""} />
                 <span>Refresh</span>
-              </button>
-
-              <button
-                type="button"
-                className="btn btn-outline-danger btn-custom-nav ms-auto"
-                onClick={handleLogout}
-              >
-                <LogOut size={16} />
-                <span>Logout</span>
               </button>
             </div>
           </div>
