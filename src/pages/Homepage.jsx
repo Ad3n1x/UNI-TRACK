@@ -18,7 +18,9 @@ import {
   Sparkles,
   Headphones,
   Mail,
-  MessageCircle
+  MessageCircle,
+  Calendar,
+  ShieldCheck
 } from "lucide-react";
 
 import TrackerDashboard from "../components/trackers/TrackerDashboard";
@@ -79,6 +81,58 @@ function urlBase64ToUint8Array(base64String) {
   return outputArray;
 }
 
+const convertTrackersToCSV = (trackersList) => {
+  const headers = ["Tracker ID", "Tracker Name", "Type", "Entry ID", "Timestamp", "Value", "Note"];
+  const rows = [];
+
+  trackersList.forEach((t) => {
+    const trackerId = t._id || t.id || "";
+    const trackerName = (t.name || "").replace(/"/g, '""');
+    const trackerType = t.type || "";
+    const entries = Array.isArray(t.entries) ? t.entries : [];
+
+    if (entries.length === 0) {
+      rows.push([
+        `"${trackerId}"`,
+        `"${trackerName}"`,
+        `"${trackerType}"`,
+        '""', '""', '""', '""'
+      ].join(","));
+    } else {
+      entries.forEach((e) => {
+        const entryId = e._id || e.id || "";
+        const timestamp = e.timestamp || "";
+        const value = e.value !== undefined ? String(e.value).replace(/"/g, '""') : "";
+        const note = (e.note || "").replace(/"/g, '""');
+
+        rows.push([
+          `"${trackerId}"`,
+          `"${trackerName}"`,
+          `"${trackerType}"`,
+          `"${entryId}"`,
+          `"${timestamp}"`,
+          `"${value}"`,
+          `"${note}"`
+        ].join(","));
+      });
+    }
+  });
+
+  return [headers.join(","), ...rows].join("\n");
+};
+
+const downloadFile = (content, filename, contentType) => {
+  const blob = new Blob([content], { type: contentType });
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+  anchor.href = url;
+  anchor.download = filename;
+  document.body.appendChild(anchor);
+  anchor.click();
+  anchor.remove();
+  URL.revokeObjectURL(url);
+};
+
 async function registerServiceWorkerAndSubscribe() {
   if (!("serviceWorker" in navigator) || !("PushManager" in window)) {
     throw new Error("Push notifications are not supported by this browser.");
@@ -138,6 +192,7 @@ export default function HomePage() {
   const [subscribing, setSubscribing] = useState(false);
   const [subscribed, setSubscribed] = useState(false);
   const [isPremium, setIsPremium] = useState(false);
+  const [subscriptionExpiry, setSubscriptionExpiry] = useState(null);
   const [upgrading, setUpgrading] = useState(false);
 
   const [userLocation, setUserLocation] = useState({
@@ -164,6 +219,10 @@ export default function HomePage() {
       if (res.ok) {
         const data = await res.json();
         setIsPremium(Boolean(data.isPremium));
+        
+        if (data.expiresAt || data.subscriptionExpiresAt || data.expiryDate) {
+          setSubscriptionExpiry(data.expiresAt || data.subscriptionExpiresAt || data.expiryDate);
+        }
       }
     } catch (err) {
       console.warn("Could not verify premium status:", err);
@@ -288,10 +347,22 @@ export default function HomePage() {
         onSuccess: async (response) => {
           try {
             const confirmedRef = response?.reference || activeRef;
-            await fetch(`${BASE_URL}/api/v1/alatpay/verify/${confirmedRef}`, {
+            const verifyRes = await fetch(`${BASE_URL}/api/v1/alatpay/verify/${confirmedRef}`, {
               method: "GET",
               headers: getAuthHeaders(),
             });
+
+            if (verifyRes.ok) {
+              const verifyData = await verifyRes.json();
+              if (verifyData.expiresAt || verifyData.subscriptionExpiresAt) {
+                setSubscriptionExpiry(verifyData.expiresAt || verifyData.subscriptionExpiresAt);
+              }
+            } else {
+              // Fallback to 30 days expiry if missing from immediate verification response
+              const thirtyDays = new Date();
+              thirtyDays.setDate(thirtyDays.getDate() + 30);
+              setSubscriptionExpiry(thirtyDays.toISOString());
+            }
 
             setIsPremium(true);
             setNotification("Upgrade successful! Welcome to PRO.");
@@ -348,16 +419,20 @@ export default function HomePage() {
       return;
     }
 
-    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(trackers, null, 2));
-    const downloadAnchor = document.createElement("a");
-    downloadAnchor.setAttribute("href", dataStr);
-    downloadAnchor.setAttribute("download", `unitrack_export_${Date.now()}.json`);
-    document.body.appendChild(downloadAnchor);
-    downloadAnchor.click();
-    downloadAnchor.remove();
-    
-    setNotification("Trackers exported successfully!");
-    setTimeout(() => setNotification(null), 2500);
+    const timestamp = Date.now();
+
+    // 1. Export JSON
+    const jsonContent = JSON.stringify(trackers, null, 2);
+    downloadFile(jsonContent, `unitrack_export_${timestamp}.json`, "application/json");
+
+    // 2. Export CSV
+    const csvContent = convertTrackersToCSV(trackers);
+    setTimeout(() => {
+      downloadFile(csvContent, `unitrack_export_${timestamp}.csv`, "text/csv;charset=utf-8;");
+    }, 300);
+
+    setNotification("Trackers exported as JSON and CSV!");
+    setTimeout(() => setNotification(null), 3000);
   };
 
   const handleLogout = () => {
@@ -476,7 +551,6 @@ export default function HomePage() {
 
       if (!response.ok) throw new Error("Failed to delete tracker.");
 
-      // Re-fetch clean state directly from database after deletion
       await fetchTrackers();
       setNotification("Tracker deleted successfully!");
       setTimeout(() => setNotification(null), 2500);
@@ -495,7 +569,6 @@ export default function HomePage() {
       return;
     }
 
-    // Await fetchTrackers to securely decrypt new database entries before rendering
     await fetchTrackers();
 
     const newId = newTracker?._id || newTracker?.id;
@@ -540,6 +613,11 @@ export default function HomePage() {
   const timeGreeting = currentHour < 12 ? "Good Morning ☀️" : currentHour < 18 ? "Good Afternoon 🌤️" : "Good Evening 🌙";
   const usedTrackersCount = trackers.length;
   const trackerUsagePercent = Math.min(100, Math.round((usedTrackersCount / REGULAR_TRACKER_LIMIT) * 100));
+
+  // Formatted Expiration String
+  const formattedExpiryDate = subscriptionExpiry 
+    ? new Date(subscriptionExpiry).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })
+    : null;
 
   return (
     <div 
@@ -789,7 +867,7 @@ export default function HomePage() {
                 onClick={handleExportData}
               >
                 {isPremium ? <Download size={16} /> : <Lock size={16} className="text-muted" />}
-                <span>Export</span>
+                <span>Export (JSON & CSV)</span>
               </button>
 
               <button
@@ -910,7 +988,7 @@ export default function HomePage() {
         </div>
       </div>
 
-      {/* MODAL: PRO UPGRADE */}
+      {/* MODAL: PRO STATUS / UPGRADE */}
       <div className="modal fade" id="premiumModal" tabIndex="-1" aria-hidden="true">
         <div className="modal-dialog modal-dialog-centered">
           <div className={`modal-content border-0 shadow-lg ${darkMode ? "bg-dark text-light border-secondary" : ""}`}>
@@ -920,48 +998,108 @@ export default function HomePage() {
             </div>
 
             <div className="modal-body text-center pt-0 px-4 pb-4">
-              <div className="d-inline-flex p-3 bg-warning bg-opacity-10 text-warning rounded-circle mb-3">
-                <Crown size={36} />
-              </div>
+              {isPremium ? (
+                <>
+                  <div className="d-inline-flex p-3 bg-warning bg-opacity-10 text-warning rounded-circle mb-3">
+                    <Crown size={38} />
+                  </div>
 
-              <h4 className="fw-bold mb-2">Upgrade to Uni-Track PRO</h4>
-              <p className="text-muted small mb-4">
-                Unlock full platform capabilities, eliminate limits, and get real-time tracking power.
-              </p>
+                  <h4 className="fw-bold mb-1">PRO Membership Active</h4>
+                  <p className="text-muted small mb-4">
+                    You are on the <strong>Uni-Track PRO</strong> plan with full access to premium features.
+                  </p>
 
-              <div className={`p-3 rounded-3 text-start mb-4 ${darkMode ? "bg-secondary bg-opacity-10 border border-secondary" : "bg-light"}`}>
-                <div className="d-flex align-items-center gap-2 mb-2 small fw-semibold">
-                  <Check size={16} className="text-success" />
-                  <span>Unlimited Custom Trackers</span>
-                </div>
-                <div className="d-flex align-items-center gap-2 mb-2 small fw-semibold">
-                  <Check size={16} className="text-success" />
-                  <span>Push Notification Reminders</span>
-                </div>
-                <div className="d-flex align-items-center gap-2 mb-2 small fw-semibold">
-                  <Check size={16} className="text-success" />
-                  <span>Full Analytics Export (JSON / CSV)</span>
-                </div>
-                <div className="d-flex align-items-center gap-2 small fw-semibold">
-                  <Check size={16} className="text-success" />
-                  <span>Priority Support & E2EE Cloud Backups</span>
-                </div>
-              </div>
+                  <div className={`p-3 rounded-3 text-start mb-4 ${darkMode ? "bg-secondary bg-opacity-10 border border-secondary" : "bg-light border"}`}>
+                    <div className="d-flex align-items-center justify-content-between mb-2">
+                      <span className="small text-muted fw-semibold d-flex align-items-center gap-1.5">
+                        <ShieldCheck size={16} className="text-success" /> Account Status
+                      </span>
+                      <span className="badge bg-success text-white px-2.5 py-1 fs-7">Active PRO</span>
+                    </div>
 
-              <div className="mb-4">
-                <span className="display-6 fw-bold">{userLocation.symbol}{userLocation.displayAmount}</span>
-                <span className="text-muted small"> /month</span>
-              </div>
+                    <div className="d-flex align-items-center justify-content-between">
+                      <span className="small text-muted fw-semibold d-flex align-items-center gap-1.5">
+                        <Calendar size={16} className="text-primary" /> Subscription Expiration
+                      </span>
+                      <span className="small fw-bold text-primary">
+                        {formattedExpiryDate ? formattedExpiryDate : "Renews Monthly"}
+                      </span>
+                    </div>
+                  </div>
 
-              <button
-                type="button"
-                className="btn btn-alat w-100 py-2.5 fw-bold d-flex align-items-center justify-content-center gap-2 rounded-3"
-                onClick={handleAlatPayPayment}
-                disabled={upgrading}
-              >
-                <CreditCard size={18} />
-                <span>{upgrading ? "Processing Payment..." : `Pay with ALAT Pay (${userLocation.currency})`}</span>
-              </button>
+                  <div className={`p-3 rounded-3 text-start mb-4 ${darkMode ? "bg-dark border border-secondary" : "bg-white border"}`}>
+                    <div className="d-flex align-items-center gap-2 mb-2 small fw-semibold">
+                      <Check size={16} className="text-success" />
+                      <span>Unlimited Custom Trackers</span>
+                    </div>
+                    <div className="d-flex align-items-center gap-2 mb-2 small fw-semibold">
+                      <Check size={16} className="text-success" />
+                      <span>Push Notification Reminders</span>
+                    </div>
+                    <div className="d-flex align-items-center gap-2 mb-2 small fw-semibold">
+                      <Check size={16} className="text-success" />
+                      <span>Full Analytics Export (JSON / CSV)</span>
+                    </div>
+                    <div className="d-flex align-items-center gap-2 small fw-semibold">
+                      <Check size={16} className="text-success" />
+                      <span>Priority Support & E2EE Cloud Backups</span>
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    className={`btn ${darkMode ? "btn-outline-light" : "btn-secondary"} w-100 py-2.5 fw-bold rounded-3`}
+                    data-bs-dismiss="modal"
+                  >
+                    Got it!
+                  </button>
+                </>
+              ) : (
+                <>
+                  <div className="d-inline-flex p-3 bg-warning bg-opacity-10 text-warning rounded-circle mb-3">
+                    <Crown size={36} />
+                  </div>
+
+                  <h4 className="fw-bold mb-2">Upgrade to Uni-Track PRO</h4>
+                  <p className="text-muted small mb-4">
+                    Unlock full platform capabilities, eliminate limits, and get real-time tracking power.
+                  </p>
+
+                  <div className={`p-3 rounded-3 text-start mb-4 ${darkMode ? "bg-secondary bg-opacity-10 border border-secondary" : "bg-light"}`}>
+                    <div className="d-flex align-items-center gap-2 mb-2 small fw-semibold">
+                      <Check size={16} className="text-success" />
+                      <span>Unlimited Custom Trackers</span>
+                    </div>
+                    <div className="d-flex align-items-center gap-2 mb-2 small fw-semibold">
+                      <Check size={16} className="text-success" />
+                      <span>Push Notification Reminders</span>
+                    </div>
+                    <div className="d-flex align-items-center gap-2 mb-2 small fw-semibold">
+                      <Check size={16} className="text-success" />
+                      <span>Full Analytics Export (JSON / CSV)</span>
+                    </div>
+                    <div className="d-flex align-items-center gap-2 small fw-semibold">
+                      <Check size={16} className="text-success" />
+                      <span>Priority Support & E2EE Cloud Backups</span>
+                    </div>
+                  </div>
+
+                  <div className="mb-4">
+                    <span className="display-6 fw-bold">{userLocation.symbol}{userLocation.displayAmount}</span>
+                    <span className="text-muted small"> /month</span>
+                  </div>
+
+                  <button
+                    type="button"
+                    className="btn btn-alat w-100 py-2.5 fw-bold d-flex align-items-center justify-content-center gap-2 rounded-3"
+                    onClick={handleAlatPayPayment}
+                    disabled={upgrading}
+                  >
+                    <CreditCard size={18} />
+                    <span>{upgrading ? "Processing Payment..." : `Pay with ALAT Pay (${userLocation.currency})`}</span>
+                  </button>
+                </>
+              )}
             </div>
 
           </div>
