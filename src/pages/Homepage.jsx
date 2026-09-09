@@ -138,6 +138,19 @@ const downloadFile = (content, filename, contentType) => {
   URL.revokeObjectURL(url);
 };
 
+// Check for active browser push subscription
+async function checkExistingSubscription() {
+  if (!("serviceWorker" in navigator) || !("PushManager" in window)) return false;
+  try {
+    const registration = await navigator.serviceWorker.ready;
+    const subscription = await registration.pushManager.getSubscription();
+    return !!subscription;
+  } catch {
+    return false;
+  }
+}
+
+// Enable Push Notifications
 async function registerServiceWorkerAndSubscribe() {
   if (!("serviceWorker" in navigator) || !("PushManager" in window)) {
     throw new Error("Push notifications are not supported by this browser.");
@@ -163,6 +176,29 @@ async function registerServiceWorkerAndSubscribe() {
   return true;
 }
 
+// Disable Push Notifications
+async function unsubscribeFromPush() {
+  if (!("serviceWorker" in navigator) || !("PushManager" in window)) return;
+
+  const registration = await navigator.serviceWorker.ready;
+  const subscription = await registration.pushManager.getSubscription();
+
+  if (subscription) {
+    const endpoint = subscription.endpoint;
+    await subscription.unsubscribe();
+
+    try {
+      await fetch(`${BASE_URL}/api/v1/unsubscribe`, {
+        method: "POST",
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ endpoint }),
+      });
+    } catch (e) {
+      console.warn("Backend unsubscribe sync failed:", e);
+    }
+  }
+}
+
 const toggleBootstrapModal = (modalId, action = "show") => {
   const modalElement = document.getElementById(modalId);
   if (modalElement && window.bootstrap) {
@@ -172,7 +208,6 @@ const toggleBootstrapModal = (modalId, action = "show") => {
   }
 };
 
-// Helper to safely decrypt OpenSSL/CryptoJS ciphertext or return plain text
 const safeDecrypt = async (privateKey, value) => {
   if (typeof value !== "string" || !value) return value;
 
@@ -238,7 +273,6 @@ export default function HomePage() {
     if (!token) window.location.href = "/login";
   }, [token]);
 
-  // Fetch subscription status & enforce 30-day auto-downgrade logic
   const fetchUserSubscriptionStatus = useCallback(async () => {
     try {
       const res = await fetch(`${BASE_URL}/api/v1/user/status`, { headers: getAuthHeaders() });
@@ -344,9 +378,8 @@ export default function HomePage() {
       fetchUserSubscriptionStatus();
       fetchRegionAndCurrency();
 
-      registerServiceWorkerAndSubscribe()
-        .then(() => setSubscribed(true))
-        .catch(() => setSubscribed(false));
+      // Check current subscription status without auto-subscribing
+      checkExistingSubscription().then((hasSub) => setSubscribed(hasSub));
     }
   }, [token, fetchTrackers, fetchUserSubscriptionStatus]);
 
@@ -436,7 +469,8 @@ export default function HomePage() {
     }
   };
 
-  const handleSubscribeNotifications = async () => {
+  // --- NOTIFICATION TOGGLE HANDLER ---
+  const handleToggleNotifications = async () => {
     if (!isPremium) {
       toggleBootstrapModal("premiumModal", "show");
       setNotification("Push alerts are a PRO feature. Upgrade to activate!");
@@ -446,18 +480,25 @@ export default function HomePage() {
 
     setSubscribing(true);
     try {
-      await registerServiceWorkerAndSubscribe();
-      setSubscribed(true);
-      setNotification("Push notification alerts enabled!");
+      if (subscribed) {
+        // Toggle OFF
+        await unsubscribeFromPush();
+        setSubscribed(false);
+        setNotification("Push notification alerts disabled.");
+      } else {
+        // Toggle ON
+        await registerServiceWorkerAndSubscribe();
+        setSubscribed(true);
+        setNotification("Push notification alerts enabled!");
+      }
     } catch (err) {
-      setNotification(err.message || "Failed to enable notifications.");
+      setNotification(err.message || "Failed to update notification settings.");
     } finally {
       setSubscribing(false);
       setTimeout(() => setNotification(null), 4000);
     }
   };
 
-  // --- EXPORT WITH GUARANTEED DECRYPTION ---
   const handleExportData = async (format = "json") => {
     if (!isPremium) {
       toggleBootstrapModal("premiumModal", "show");
@@ -683,7 +724,6 @@ export default function HomePage() {
 
   if (!token) return null;
 
-  // --- LOADING SCREEN ---
   if (loading) {
     return (
       <div 
@@ -702,7 +742,6 @@ export default function HomePage() {
     );
   }
 
-  // --- DERIVED UI VARS ---
   const hasTrackers = trackers.length > 0;
   const filteredTrackers = typeFilter ? trackers.filter((t) => t.type === typeFilter) : trackers;
   const displayTrackers = hasTrackers ? filteredTrackers : [sampleTrackerState];
@@ -839,14 +878,24 @@ export default function HomePage() {
               <span className="d-none d-sm-inline">{darkMode ? "Light" : "Dark"}</span>
             </button>
 
+            {/* TOGGLE NOTIFICATION BUTTON */}
             <button
               type="button"
               className={`btn ${subscribed ? "btn-outline-success" : "btn-outline-primary"} btn-custom-nav`}
-              onClick={handleSubscribeNotifications}
+              onClick={handleToggleNotifications}
               disabled={subscribing}
+              title={subscribed ? "Click to disable alerts" : "Click to enable alerts"}
             >
-              {!isPremium ? <Lock size={15} className="text-muted" /> : <Bell size={15} />}
-              <span>{subscribing ? "Enabling..." : subscribed ? "Alerts Active" : "Enable Alerts"}</span>
+              {!isPremium ? (
+                <Lock size={15} className="text-muted" />
+              ) : (
+                <Bell size={15} className={subscribed ? "text-success" : ""} />
+              )}
+              <span>
+                {subscribing 
+                  ? (subscribed ? "Disabling..." : "Enabling...") 
+                  : (subscribed ? "Alerts Active" : "Enable Alerts")}
+              </span>
             </button>
 
             <button
@@ -962,7 +1011,6 @@ export default function HomePage() {
                 <span>New Tracker</span>
               </button>
 
-              {/* Download Format Selection Dropdown */}
               <div className="dropdown">
                 <button
                   type="button"
