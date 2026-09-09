@@ -1,8 +1,11 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
+
+// Import your custom SVG logo
+import logo from "../assets/logo.svg";
+
 import { 
-  LayoutDashboard, 
   ShieldCheck, 
   Zap, 
   Bell, 
@@ -42,19 +45,19 @@ export default function UnitrackPage() {
         <meta name="keywords" content="UNI-TRACK, UNITRACK, AD3N1X, privacy tracking app, E2EE productivity app, encrypted habit tracker" />
         <link rel="canonical" href="https://unitrack-app.vercel.app" />
 
-        {/* OpenGraph / Social Media Tags */}
+        {/* OpenGraph / Social Media Tags (Uses logo.svg for link previews) */}
         <meta property="og:title" content="UNI-TRACK | Privacy-First Tracking Ecosystem" />
         <meta property="og:description" content="Take control of your workflow with client-side end-to-end encryption, zero latency, and PWA capabilities." />
         <meta property="og:type" content="website" />
         <meta property="og:url" content="https://unitrack-app.vercel.app" />
-        <meta property="og:image" content="https://unitrack-app.vercel.app/og-image.png" />
+        <meta property="og:image" content="https://unitrack-app.vercel.app/logo.svg" />
         <meta property="og:site_name" content="UNI-TRACK" />
 
         {/* Twitter Card Tags */}
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content="UNI-TRACK | Privacy-First Tracking Ecosystem" />
         <meta name="twitter:description" content="Take control of your workflow with client-side end-to-end encryption, zero latency, and PWA capabilities." />
-        <meta name="twitter:image" content="https://unitrack-app.vercel.app/og-image.png" />
+        <meta name="twitter:image" content="https://unitrack-app.vercel.app/logo.svg" />
 
         {/* JSON-LD Structured Data Schema */}
         <script type="application/ld+json">
@@ -68,7 +71,14 @@ export default function UnitrackPage() {
           {/* Top Navigation / Auth Quick Links */}
           <nav className="d-flex flex-column flex-sm-row justify-content-between align-items-center gap-3 mb-4 p-3 bg-white rounded-4 shadow-sm border">
             <div className="d-flex align-items-center gap-2">
-              <LayoutDashboard size={24} className="text-primary flex-shrink-0" />
+              
+              {/* Custom SVG Logo in Navbar */}
+              <img 
+                src={logo} 
+                alt="UNITRACK Logo" 
+                style={{ width: "26px", height: "26px", objectFit: "contain" }} 
+                className="flex-shrink-0"
+              />
               
               {/* Minimalist One-Line Brand Container */}
               <div className="d-flex align-items-baseline gap-2">
