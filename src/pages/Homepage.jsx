@@ -20,7 +20,8 @@ import {
   Mail,
   MessageCircle,
   Calendar,
-  ShieldCheck
+  ShieldCheck,
+  Clock
 } from "lucide-react";
 
 import TrackerDashboard from "../components/trackers/TrackerDashboard";
@@ -33,6 +34,7 @@ import { initializeUserKeys, decryptData, encryptData } from "../utils/e2ee";
 // CONFIGURATION & CONSTANTS
 // ==========================================
 const REGULAR_TRACKER_LIMIT = 3;
+const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
 
 const getEnvVar = (key) => {
   if (typeof import.meta !== "undefined" && import.meta.env?.[`VITE_${key}`]) return import.meta.env[`VITE_${key}`];
@@ -213,16 +215,40 @@ export default function HomePage() {
     if (!token) window.location.href = "/login";
   }, [token]);
 
+  // Fetch subscription status & enforce 30-day auto-downgrade logic
   const fetchUserSubscriptionStatus = useCallback(async () => {
     try {
       const res = await fetch(`${BASE_URL}/api/v1/user/status`, { headers: getAuthHeaders() });
       if (res.ok) {
         const data = await res.json();
-        setIsPremium(Boolean(data.isPremium));
-        
-        if (data.expiresAt || data.subscriptionExpiresAt || data.expiryDate) {
-          setSubscriptionExpiry(data.expiresAt || data.subscriptionExpiresAt || data.expiryDate);
+        let active = Boolean(data.isPremium);
+        let expiryTime = null;
+
+        const explicitExpiry = data.expiresAt || data.subscriptionExpiresAt || data.expiryDate;
+
+        if (explicitExpiry) {
+          expiryTime = new Date(explicitExpiry).getTime();
+        } else if (active) {
+          // Fallback: Calculate 30 days from subscription start timestamp or current local storage record
+          const localPaymentTime = localStorage.getItem("pro_payment_date");
+          const startDate = localPaymentTime 
+            ? new Date(localPaymentTime) 
+            : (data.subscribedAt || data.updatedAt ? new Date(data.subscribedAt || data.updatedAt) : new Date());
+          expiryTime = startDate.getTime() + THIRTY_DAYS_MS;
         }
+
+        // Automatic Downgrade Evaluation
+        if (expiryTime && Date.now() >= expiryTime) {
+          active = false;
+          setSubscriptionExpiry(null);
+          localStorage.removeItem("pro_payment_date");
+          setNotification("Your 30-day PRO subscription has expired. Reverted to Regular plan.");
+          setTimeout(() => setNotification(null), 5000);
+        } else if (expiryTime) {
+          setSubscriptionExpiry(new Date(expiryTime).toISOString());
+        }
+
+        setIsPremium(active);
       }
     } catch (err) {
       console.warn("Could not verify premium status:", err);
@@ -352,20 +378,19 @@ export default function HomePage() {
               headers: getAuthHeaders(),
             });
 
+            const now = new Date();
+            const calculated30DayExpiry = new Date(now.getTime() + THIRTY_DAYS_MS).toISOString();
+
             if (verifyRes.ok) {
               const verifyData = await verifyRes.json();
-              if (verifyData.expiresAt || verifyData.subscriptionExpiresAt) {
-                setSubscriptionExpiry(verifyData.expiresAt || verifyData.subscriptionExpiresAt);
-              }
+              setSubscriptionExpiry(verifyData.expiresAt || verifyData.subscriptionExpiresAt || calculated30DayExpiry);
             } else {
-              // Fallback to 30 days expiry if missing from immediate verification response
-              const thirtyDays = new Date();
-              thirtyDays.setDate(thirtyDays.getDate() + 30);
-              setSubscriptionExpiry(thirtyDays.toISOString());
+              setSubscriptionExpiry(calculated30DayExpiry);
             }
 
+            localStorage.setItem("pro_payment_date", now.toISOString());
             setIsPremium(true);
-            setNotification("Upgrade successful! Welcome to PRO.");
+            setNotification("Upgrade successful! Welcome to PRO (30-Day Access).");
             toggleBootstrapModal("premiumModal", "hide");
           } catch (err) {
             console.error("ALAT Pay verification error:", err);
@@ -438,6 +463,7 @@ export default function HomePage() {
   const handleLogout = () => {
     cookies.remove("token", { path: "/" });
     localStorage.removeItem("token");
+    localStorage.removeItem("pro_payment_date");
     window.location.href = "/login";
   };
 
@@ -614,9 +640,13 @@ export default function HomePage() {
   const usedTrackersCount = trackers.length;
   const trackerUsagePercent = Math.min(100, Math.round((usedTrackersCount / REGULAR_TRACKER_LIMIT) * 100));
 
-  // Formatted Expiration String
+  // Formatted Expiration String & Days Remaining Calculation
   const formattedExpiryDate = subscriptionExpiry 
     ? new Date(subscriptionExpiry).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })
+    : null;
+
+  const daysRemaining = subscriptionExpiry
+    ? Math.max(0, Math.ceil((new Date(subscriptionExpiry).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))
     : null;
 
   return (
@@ -1006,25 +1036,36 @@ export default function HomePage() {
 
                   <h4 className="fw-bold mb-1">PRO Membership Active</h4>
                   <p className="text-muted small mb-4">
-                    You are on the <strong>Uni-Track PRO</strong> plan with full access to premium features.
+                    You have active 30-day access to all <strong>Uni-Track PRO</strong> capabilities.
                   </p>
 
                   <div className={`p-3 rounded-3 text-start mb-4 ${darkMode ? "bg-secondary bg-opacity-10 border border-secondary" : "bg-light border"}`}>
                     <div className="d-flex align-items-center justify-content-between mb-2">
                       <span className="small text-muted fw-semibold d-flex align-items-center gap-1.5">
-                        <ShieldCheck size={16} className="text-success" /> Account Status
+                        <ShieldCheck size={16} className="text-success" /> Account Plan
                       </span>
                       <span className="badge bg-success text-white px-2.5 py-1 fs-7">Active PRO</span>
                     </div>
 
-                    <div className="d-flex align-items-center justify-content-between">
+                    <div className="d-flex align-items-center justify-content-between mb-2">
                       <span className="small text-muted fw-semibold d-flex align-items-center gap-1.5">
-                        <Calendar size={16} className="text-primary" /> Subscription Expiration
+                        <Calendar size={16} className="text-primary" /> Expires On
                       </span>
                       <span className="small fw-bold text-primary">
-                        {formattedExpiryDate ? formattedExpiryDate : "Renews Monthly"}
+                        {formattedExpiryDate || "30 Days from Activation"}
                       </span>
                     </div>
+
+                    {daysRemaining !== null && (
+                      <div className="d-flex align-items-center justify-content-between">
+                        <span className="small text-muted fw-semibold d-flex align-items-center gap-1.5">
+                          <Clock size={16} className="text-warning" /> Time Remaining
+                        </span>
+                        <span className="badge bg-warning text-dark fw-bold px-2 py-0.5 fs-7">
+                          {daysRemaining} {daysRemaining === 1 ? "day" : "days"} left
+                        </span>
+                      </div>
+                    )}
                   </div>
 
                   <div className={`p-3 rounded-3 text-start mb-4 ${darkMode ? "bg-dark border border-secondary" : "bg-white border"}`}>
@@ -1062,7 +1103,7 @@ export default function HomePage() {
 
                   <h4 className="fw-bold mb-2">Upgrade to Uni-Track PRO</h4>
                   <p className="text-muted small mb-4">
-                    Unlock full platform capabilities, eliminate limits, and get real-time tracking power.
+                    Unlock full platform capabilities, eliminate limits, and get real-time tracking power for 30 days.
                   </p>
 
                   <div className={`p-3 rounded-3 text-start mb-4 ${darkMode ? "bg-secondary bg-opacity-10 border border-secondary" : "bg-light"}`}>
@@ -1086,7 +1127,7 @@ export default function HomePage() {
 
                   <div className="mb-4">
                     <span className="display-6 fw-bold">{userLocation.symbol}{userLocation.displayAmount}</span>
-                    <span className="text-muted small"> /month</span>
+                    <span className="text-muted small"> /30 days</span>
                   </div>
 
                   <button
