@@ -229,7 +229,6 @@ export default function HomePage() {
         if (explicitExpiry) {
           expiryTime = new Date(explicitExpiry).getTime();
         } else if (active) {
-          // Fallback: Calculate 30 days from subscription start timestamp or current local storage record
           const localPaymentTime = localStorage.getItem("pro_payment_date");
           const startDate = localPaymentTime 
             ? new Date(localPaymentTime) 
@@ -237,7 +236,6 @@ export default function HomePage() {
           expiryTime = startDate.getTime() + THIRTY_DAYS_MS;
         }
 
-        // Automatic Downgrade Evaluation
         if (expiryTime && Date.now() >= expiryTime) {
           active = false;
           setSubscriptionExpiry(null);
@@ -436,7 +434,8 @@ export default function HomePage() {
     }
   };
 
-  const handleExportData = () => {
+  // Export Data Handler supporting JSON and CSV formats
+  const handleExportData = (format = "json") => {
     if (!isPremium) {
       toggleBootstrapModal("premiumModal", "show");
       setNotification("Data export is available exclusively for PRO users.");
@@ -446,17 +445,16 @@ export default function HomePage() {
 
     const timestamp = Date.now();
 
-    // 1. Export JSON
-    const jsonContent = JSON.stringify(trackers, null, 2);
-    downloadFile(jsonContent, `unitrack_export_${timestamp}.json`, "application/json");
-
-    // 2. Export CSV
-    const csvContent = convertTrackersToCSV(trackers);
-    setTimeout(() => {
+    if (format === "json") {
+      const jsonContent = JSON.stringify(trackers, null, 2);
+      downloadFile(jsonContent, `unitrack_export_${timestamp}.json`, "application/json");
+      setNotification("Trackers exported as JSON!");
+    } else if (format === "csv") {
+      const csvContent = convertTrackersToCSV(trackers);
       downloadFile(csvContent, `unitrack_export_${timestamp}.csv`, "text/csv;charset=utf-8;");
-    }, 300);
+      setNotification("Trackers exported as CSV!");
+    }
 
-    setNotification("Trackers exported as JSON and CSV!");
     setTimeout(() => setNotification(null), 3000);
   };
 
@@ -640,7 +638,6 @@ export default function HomePage() {
   const usedTrackersCount = trackers.length;
   const trackerUsagePercent = Math.min(100, Math.round((usedTrackersCount / REGULAR_TRACKER_LIMIT) * 100));
 
-  // Formatted Expiration String & Days Remaining Calculation
   const formattedExpiryDate = subscriptionExpiry 
     ? new Date(subscriptionExpiry).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })
     : null;
@@ -891,14 +888,41 @@ export default function HomePage() {
                 <span>New Tracker</span>
               </button>
 
-              <button
-                type="button"
-                className={`btn ${isPremium ? "btn-outline-success" : "btn-outline-secondary"} btn-custom-nav`}
-                onClick={handleExportData}
-              >
-                {isPremium ? <Download size={16} /> : <Lock size={16} className="text-muted" />}
-                <span>Export (JSON & CSV)</span>
-              </button>
+              {/* Download Format Selection Dropdown */}
+              <div className="dropdown">
+                <button
+                  type="button"
+                  className={`btn ${isPremium ? "btn-outline-success" : "btn-outline-secondary"} btn-custom-nav dropdown-toggle`}
+                  data-bs-toggle="dropdown"
+                  aria-expanded="false"
+                >
+                  {isPremium ? <Download size={16} /> : <Lock size={16} className="text-muted" />}
+                  <span>Export Data</span>
+                </button>
+                
+                <ul className={`dropdown-menu shadow-sm ${darkMode ? "dropdown-menu-dark" : ""}`}>
+                  <li>
+                    <button 
+                      type="button" 
+                      className="dropdown-item d-flex align-items-center gap-2 small fw-semibold"
+                      onClick={() => handleExportData("json")}
+                    >
+                      <Download size={14} className="text-primary" />
+                      <span>Download JSON</span>
+                    </button>
+                  </li>
+                  <li>
+                    <button 
+                      type="button" 
+                      className="dropdown-item d-flex align-items-center gap-2 small fw-semibold"
+                      onClick={() => handleExportData("csv")}
+                    >
+                      <Download size={14} className="text-success" />
+                      <span>Download CSV</span>
+                    </button>
+                  </li>
+                </ul>
+              </div>
 
               <button
                 type="button"
