@@ -20,7 +20,7 @@ export default function UnitrackPage() {
     "@type": "WebApplication",
     "name": "UNI-TRACK",
     "alternateName": ["UNITRACK", "UniTrack App"],
-    "url": "https://uni-track.vercel.app", // Replace with your exact domain
+    "url": "https://unitrack-app.vercel.app",
     "applicationCategory": "ProductivityApplication",
     "operatingSystem": "All",
     "abstract": "A high-performance, privacy-focused tracking ecosystem engineered for habit, task, and metric logging with client-side E2EE.",
@@ -33,20 +33,28 @@ export default function UnitrackPage() {
   return (
     <>
       <Helmet>
-        {/* Exact Keyword Search Optimization */}
+        {/* Primary SEO Meta Tags */}
         <title>UNI-TRACK | Official Privacy-First Tracking & Productivity Ecosystem</title>
         <meta 
           name="description" 
           content="Official UNI-TRACK platform by AD3N1X. A high-performance, end-to-end encrypted tracking ecosystem engineered for zero-lag habit, task, and goal management." 
         />
         <meta name="keywords" content="UNI-TRACK, UNITRACK, AD3N1X, privacy tracking app, E2EE productivity app, encrypted habit tracker" />
-        <link rel="canonical" href="https://uni-track.vercel.app" />
+        <link rel="canonical" href="https://unitrack-app.vercel.app" />
 
-        {/* OpenGraph Tags for Social & Search Sharing */}
+        {/* OpenGraph / Social Media Tags */}
         <meta property="og:title" content="UNI-TRACK | Privacy-First Tracking Ecosystem" />
         <meta property="og:description" content="Take control of your workflow with client-side end-to-end encryption, zero latency, and PWA capabilities." />
         <meta property="og:type" content="website" />
+        <meta property="og:url" content="https://unitrack-app.vercel.app" />
+        <meta property="og:image" content="https://unitrack-app.vercel.app/og-image.png" />
         <meta property="og:site_name" content="UNI-TRACK" />
+
+        {/* Twitter Card Tags */}
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content="UNI-TRACK | Privacy-First Tracking Ecosystem" />
+        <meta name="twitter:description" content="Take control of your workflow with client-side end-to-end encryption, zero latency, and PWA capabilities." />
+        <meta name="twitter:image" content="https://unitrack-app.vercel.app/og-image.png" />
 
         {/* JSON-LD Structured Data Schema */}
         <script type="application/ld+json">
@@ -162,13 +170,13 @@ export default function UnitrackPage() {
                 <Target size={19} /> Why UNI-TRACK Was Created
               </h3>
               <p className="text-secondary small mb-3" style={{ lineHeight: "1.7", fontSize: "0.9rem" }}>
-                Most productivity apps fall into a bad habit: they are bloated with social distractions or they sustain themselves by harvesting and monetizing your personal behavioral data. 
+                Most productivity apps fall into a bad habit: they are bloated with social distractions or they sustain themselves by harvesting and monetizing your personal behavioral data.
               </p>
               <p className="text-secondary small mb-3" style={{ lineHeight: "1.7", fontSize: "0.9rem" }}>
-                <strong>UNI-TRACK</strong> was built to prove that you can build a sustainable platform without selling out your users. While we plan to sustainably monetize through advanced productivity tools and premium features, your personal habits, metrics, and data will never be treated as commodities. 
+                <strong>UNI-TRACK</strong> was built to prove that you can build a sustainable platform without selling out your users. While we plan to sustainably monetize through advanced productivity tools and premium features, your personal habits, metrics, and data will never be treated as commodities.
               </p>
               <div className="d-flex align-items-start align-items-sm-center gap-2 text-dark small fw-semibold mt-2" style={{ fontSize: "0.875rem" }}>
-                <Lock size={15} className="text-primary flex-shrink-0 mt-1 mt-sm-0" /> 
+                <Lock size={15} className="text-primary flex-shrink-0 mt-1 mt-sm-0" />
                 <span>Sustainable software, zero data exploitation. Take back control of your workflow today.</span>
               </div>
             </article>
