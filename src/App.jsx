@@ -1,6 +1,6 @@
 import React, { useEffect, useCallback } from "react";
 import { Routes, Route, useNavigate } from "react-router-dom";
-import { Helmet } from "react-helmet-async";
+// ❌ Removed unused Helmet import
 import Cookies from "universal-cookie";
 import { toast } from "react-toastify";
 
@@ -63,26 +63,21 @@ function AutoLogoutWrapper({ children }) {
 
 export default function App() {
   return (
-    <>
-      {/* Global Fallback Title (used ONLY when a page lacks its own <title>) */}
-      <Helmet defaultTitle="UNI-TRACK – Smart End-to-End Encrypted Tracking System" />
-      
-      <AutoLogoutWrapper>
-        <Routes>
-          {/* Landing Page */}
-          <Route index element={<UnitrackPage />} />
-          <Route path="/unitrack" element={<UnitrackPage />} />
+    <AutoLogoutWrapper>
+      <Routes>
+        {/* Landing Page */}
+        <Route index element={<UnitrackPage />} />
+        <Route path="/unitrack" element={<UnitrackPage />} />
 
-          {/* Auth & App Routes */}
-          <Route path="/login" element={<LoginForm />} />
-          <Route path="/register" element={<RegisterForm />} />
-          <Route path="/homepage" element={<Homepage />} />
-          <Route path="/forgot-password" element={<ForgotPassword />} />
+        {/* Auth & App Routes */}
+        <Route path="/login" element={<LoginForm />} />
+        <Route path="/register" element={<RegisterForm />} />
+        <Route path="/homepage" element={<Homepage />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
 
-          {/* Catch-All 404 Route */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </AutoLogoutWrapper>
-    </>
+        {/* Catch-All 404 Route */}
+        <Route path="*" element={<NotFound />} />
+      </Routes>
+    </AutoLogoutWrapper>
   );
 }

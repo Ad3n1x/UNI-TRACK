@@ -9,12 +9,14 @@ import { HelmetProvider } from 'react-helmet-async'
 import { ToastContainer } from 'react-toastify'
 import 'react-toastify/dist/ReactToastify.css'
 
+// Pass an empty context object to initialize a single state instance
+const helmetContext = {};
+
 createRoot(document.getElementById('root')).render(
-  <BrowserRouter>
-    <HelmetProvider>
-      <StrictMode>
+  <StrictMode>
+    <HelmetProvider context={helmetContext}>
+      <BrowserRouter>
         <App />
-        {/* 2. Add the ToastContainer here so it's global */}
         <ToastContainer 
           position="top-right"
           autoClose={3000}
@@ -26,7 +28,7 @@ createRoot(document.getElementById('root')).render(
           draggable
           pauseOnHover
         />
-      </StrictMode>
+      </BrowserRouter>
     </HelmetProvider>
-  </BrowserRouter>,
+  </StrictMode>,
 )
