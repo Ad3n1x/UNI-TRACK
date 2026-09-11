@@ -1,6 +1,6 @@
 import React, { useEffect, useCallback } from "react";
 import { Routes, Route, useNavigate } from "react-router-dom";
-import { HelmetProvider, Helmet } from "react-helmet-async";
+import { Helmet } from "react-helmet-async";
 import Cookies from "universal-cookie";
 import { toast } from "react-toastify";
 
@@ -9,12 +9,11 @@ import LoginForm from "./components/auth/LoginForm";
 import RegisterForm from "./components/auth/RegisterForm";
 import NotFound from "./pages/Notfound";
 import ForgotPassword from "./components/auth/ForgotPassword";
-import UnitrackPage from "./pages/Unitrack"; // 🚀 UNITRACK SEO Landing Page
+import UnitrackPage from "./pages/Unitrack";
 
 const INACTIVITY_LIMIT_MS = 60 * 60 * 1000; // 1 Hour
-const cookies = new Cookies(); // Instantiate outside component to keep reference stable
+const cookies = new Cookies();
 
-// AutoLogout wrapper component
 function AutoLogoutWrapper({ children }) {
   const navigate = useNavigate();
 
@@ -29,20 +28,17 @@ function AutoLogoutWrapper({ children }) {
 
     const resetTimer = () => {
       if (timeoutId) clearTimeout(timeoutId);
-      // Only set the inactivity countdown if a session token exists
       if (cookies.get("token")) {
         timeoutId = setTimeout(handleLogout, INACTIVITY_LIMIT_MS);
       }
     };
 
-    // User interaction events to track activity
     const activityEvents = ["mousedown", "mousemove", "keydown", "scroll", "touchstart"];
 
-    // Basic throttle mechanism for high-frequency events (mousemove/scroll)
     let lastExecution = 0;
     const throttledResetTimer = () => {
       const now = Date.now();
-      if (now - lastExecution > 1000) { // Throttle execution to once per second
+      if (now - lastExecution > 1000) {
         lastExecution = now;
         resetTimer();
       }
@@ -52,7 +48,6 @@ function AutoLogoutWrapper({ children }) {
       window.addEventListener(event, throttledResetTimer);
     });
 
-    // Initialize timer on mount
     resetTimer();
 
     return () => {
@@ -68,15 +63,13 @@ function AutoLogoutWrapper({ children }) {
 
 export default function App() {
   return (
-    <HelmetProvider>
-      {/* Fallback global SEO configuration */}
-      <Helmet
-        titleTemplate="%s | UNITRACK"
-        defaultTitle="UNITRACK – Smart End-to-End Encrypted Tracking System"
-      />
+    <>
+      {/* Global Fallback Title (used ONLY when a page lacks its own <title>) */}
+      <Helmet defaultTitle="UNI-TRACK – Smart End-to-End Encrypted Tracking System" />
+      
       <AutoLogoutWrapper>
         <Routes>
-          {/* 🚀 UNITRACK is default root landing page */}
+          {/* Landing Page */}
           <Route index element={<UnitrackPage />} />
           <Route path="/unitrack" element={<UnitrackPage />} />
 
@@ -90,6 +83,6 @@ export default function App() {
           <Route path="*" element={<NotFound />} />
         </Routes>
       </AutoLogoutWrapper>
-    </HelmetProvider>
+    </>
   );
 }
