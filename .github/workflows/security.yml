@@ -13,7 +13,7 @@ permissions:
   contents: read
 
 jobs:
-  audit-lint-build:
+  dependency-audit:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -22,7 +22,17 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - name: Dependency audit
+      - name: Dependency audit (known vulnerabilities must be reviewed)
         run: npm audit --audit-level=high
+
+  quality-checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
       - run: npm run lint
       - run: npm run build
