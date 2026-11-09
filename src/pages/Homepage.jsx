@@ -46,8 +46,6 @@ const getEnvVar = (key) => {
 const RAW_BASE_URL = getEnvVar("API_URL") || "https://lv3node.onrender.com";
 const BASE_URL = RAW_BASE_URL.replace(/\/$/, "");
 
-const ALAT_BUSINESS_ID = getEnvVar("ALAT_BUSINESS_ID") || "178c0abe-bbe3-4476-8551-08df0a792d7c";
-const ALAT_API_KEY = getEnvVar("ALAT_API_KEY") || "8865add026cb44d4adf352f3fbfe260c";
 const VAPID_PUBLIC_KEY = getEnvVar("VAPID_PUBLIC_KEY") || "BEaflZfmm8QfrFsL7r06HB-QrsdDAefJpRk2vw-zcHIKD-t8evj3TIS7k9k0w0am9BboNqiqbZ99Y-1WxYNcZcw";
 
 const SAMPLE_TRACKER = {
@@ -385,88 +383,10 @@ export default function HomePage() {
 
   // --- ACTIONS ---
   const handleAlatPayPayment = async () => {
-    if (!currentUserEmail) {
-      alert("No logged-in user email detected. Please log in again.");
-      return;
-    }
-
-    const AlatPopup = window.Popup || window.AlatPay || window.Alatpay;
-    if (!AlatPopup) {
-      alert("Unable to reach ALAT Pay gateway. Please refresh and try again.");
-      return;
-    }
-
-    setUpgrading(true);
-
-    try {
-      const numericAmount = Number(userLocation.amount);
-      const clientReference = `UT_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
-      let activeRef = clientReference;
-
-      try {
-        const res = await fetch(`${BASE_URL}/api/v1/alatpay/initialize`, {
-          method: "POST",
-          headers: getAuthHeaders(),
-          body: JSON.stringify({ amount: numericAmount, reference: clientReference }),
-        });
-        if (res.ok) {
-          const initResponse = await res.json();
-          activeRef = initResponse?.data?.reference || clientReference;
-        }
-      } catch (e) {
-        console.warn("Backend initialization fallback:", e.message);
-      }
-
-      const paymentOptions = {
-        apiKey: ALAT_API_KEY,
-        businessId: ALAT_BUSINESS_ID,
-        email: currentUserEmail,
-        amount: numericAmount,
-        currency: userLocation.currency,
-        reference: activeRef,
-        onSuccess: async (response) => {
-          try {
-            const confirmedRef = response?.reference || activeRef;
-            const verifyRes = await fetch(`${BASE_URL}/api/v1/alatpay/verify/${confirmedRef}`, {
-              method: "GET",
-              headers: getAuthHeaders(),
-            });
-
-            const now = new Date();
-            const calculated30DayExpiry = new Date(now.getTime() + THIRTY_DAYS_MS).toISOString();
-
-            if (verifyRes.ok) {
-              const verifyData = await verifyRes.json();
-              setSubscriptionExpiry(verifyData.expiresAt || verifyData.subscriptionExpiresAt || calculated30DayExpiry);
-            } else {
-              setSubscriptionExpiry(calculated30DayExpiry);
-            }
-
-            localStorage.setItem("pro_payment_date", now.toISOString());
-            setIsPremium(true);
-            setNotification("Upgrade successful! Welcome to PRO (30-Day Access).");
-            toggleBootstrapModal("premiumModal", "hide");
-          } catch (err) {
-            console.error("ALAT Pay verification error:", err);
-            alert("Payment completed, but server verification failed.");
-          } finally {
-            setUpgrading(false);
-            setTimeout(() => setNotification(null), 4000);
-          }
-        },
-        onClose: () => setUpgrading(false),
-      };
-
-      if (typeof AlatPopup.setup === "function") {
-        AlatPopup.setup(paymentOptions)?.show?.();
-      } else {
-        new AlatPopup(paymentOptions)?.show?.();
-      }
-    } catch (err) {
-      console.error("ALAT Pay Error:", err);
-      alert(err.message || "Failed to initialize ALAT Pay.");
-      setUpgrading(false);
-    }
+    // The former inline checkout exposed the ALATPay server credential in the browser.
+    // Keep upgrades disabled until ALATPay confirms a browser-safe public checkout flow.
+    setNotification("PRO checkout is temporarily unavailable while secure payment setup is completed. Your account will only be upgraded after server-side payment verification.");
+    setTimeout(() => setNotification(null), 6000);
   };
 
   // --- NOTIFICATION TOGGLE HANDLER ---
