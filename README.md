@@ -6,7 +6,7 @@
 
 - **Website:** https://unitrack-app.vercel.app/
 - **Project source:** https://github.com/Ad3n1x/UNI-TRACK
-- **Developer portfolio:** https://engnradeniran.com/
+- **Developer portfolio:** https://portfolio-sandy-seven-w0bgdmliak.vercel.app/
 
 ## What it includes
 
@@ -64,4 +64,4 @@ UNI-TRACK is an independently developed project. The repository is actively main
 Built by **AD3N1X**.
 
 - GitHub: https://github.com/Ad3n1x
-- Portfolio: https://engnradeniran.com/
+- Portfolio: https://portfolio-sandy-seven-w0bgdmliak.vercel.app/
