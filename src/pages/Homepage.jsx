@@ -251,7 +251,6 @@ export default function HomePage() {
   const [subscribed, setSubscribed] = useState(false);
   const [isPremium, setIsPremium] = useState(false);
   const [subscriptionExpiry, setSubscriptionExpiry] = useState(null);
-  const [upgrading, setUpgrading] = useState(false);
 
   const [userLocation, setUserLocation] = useState({
     currency: "NGN",
@@ -371,14 +370,19 @@ export default function HomePage() {
   }, []);
 
   useEffect(() => {
-    if (token) {
+    if (!token) return undefined;
+
+    // Defer network-driven state updates until after the effect commits.
+    const task = setTimeout(() => {
       fetchTrackers();
       fetchUserSubscriptionStatus();
       fetchRegionAndCurrency();
 
-      // Check current subscription status without auto-subscribing
+      // Check current subscription status without auto-subscribing.
       checkExistingSubscription().then((hasSub) => setSubscribed(hasSub));
-    }
+    }, 0);
+
+    return () => clearTimeout(task);
   }, [token, fetchTrackers, fetchUserSubscriptionStatus]);
 
   // --- ACTIONS ---
@@ -675,6 +679,8 @@ export default function HomePage() {
     ? new Date(subscriptionExpiry).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })
     : null;
 
+  // A render-time clock is intentional for the subscription countdown.
+  // eslint-disable-next-line react-hooks/purity
   const daysRemaining = subscriptionExpiry
     ? Math.max(0, Math.ceil((new Date(subscriptionExpiry).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))
     : null;
