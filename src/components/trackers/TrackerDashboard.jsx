@@ -441,14 +441,14 @@ export default function DashboardPage({ trackers = [], darkMode = false, onBack 
           gap: "16px",
         }}
       >
-        {filteredTrackers.map((tracker) => {
+        {filteredTrackers.map((tracker, index) => {
           const isDoneToday = tracker.entries.some(
             (e) => getFormattedDate(typeof e === "string" ? e : e?.date || e?.createdAt) === todayStr
           );
 
           return (
             <div
-              key={tracker._id || tracker.id || Math.random()}
+              key={tracker._id || tracker.id || `tracker-${index}`}
               style={{
                 backgroundColor: darkMode ? "rgba(255, 255, 255, 0.03)" : "#ffffff",
                 border: darkMode ? "1px solid rgba(255, 255, 255, 0.08)" : "1px solid #e2e8f0",
