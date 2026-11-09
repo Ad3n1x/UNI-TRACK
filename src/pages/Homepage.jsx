@@ -251,6 +251,7 @@ export default function HomePage() {
   const [subscribed, setSubscribed] = useState(false);
   const [isPremium, setIsPremium] = useState(false);
   const [subscriptionExpiry, setSubscriptionExpiry] = useState(null);
+  const [currentTime, setCurrentTime] = useState(null);
 
   const [userLocation, setUserLocation] = useState({
     currency: "NGN",
@@ -265,6 +266,11 @@ export default function HomePage() {
   useEffect(() => {
     localStorage.setItem("theme", darkMode ? "dark" : "light");
   }, [darkMode]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setCurrentTime(Date.now()), 0);
+    return () => clearTimeout(timer);
+  }, []);
 
   useEffect(() => {
     if (!token) window.location.href = "/login";
@@ -679,10 +685,8 @@ export default function HomePage() {
     ? new Date(subscriptionExpiry).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })
     : null;
 
-  // A render-time clock is intentional for the subscription countdown.
-  // eslint-disable-next-line react-hooks/purity
-  const daysRemaining = subscriptionExpiry
-    ? Math.max(0, Math.ceil((new Date(subscriptionExpiry).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))
+  const daysRemaining = subscriptionExpiry && currentTime !== null
+    ? Math.max(0, Math.ceil((new Date(subscriptionExpiry).getTime() - currentTime) / (1000 * 60 * 60 * 24)))
     : null;
 
   return (
