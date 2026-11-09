@@ -1184,17 +1184,18 @@ export default function HomePage() {
 
                   <div className="mb-4">
                     <span className="display-6 fw-bold">{userLocation.symbol}{userLocation.displayAmount}</span>
-                    <span className="text-muted small"> /30 days</span>
+                    <span className="text-muted small"> /30 days · temporarily unavailable</span>
                   </div>
 
                   <button
                     type="button"
                     className="btn btn-alat w-100 py-2.5 fw-bold d-flex align-items-center justify-content-center gap-2 rounded-3"
                     onClick={handleAlatPayPayment}
-                    disabled={upgrading}
+                    disabled={true}
+                    aria-label="Secure payment checkout temporarily unavailable"
                   >
                     <CreditCard size={18} />
-                    <span>{upgrading ? "Processing Payment..." : `Pay with ALAT Pay (${userLocation.currency})`}</span>
+                    <span>Payments temporarily unavailable</span>
                   </button>
                 </>
               )}
