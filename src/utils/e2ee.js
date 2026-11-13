@@ -198,7 +198,7 @@ export async function unlockUserKeysWithRecoveryCode(recoveryCode, newPassword) 
   const privateKey = await rememberPrivateKey(privateJwk);
   const publicKey = getPublicKey() || publicJwkFromPrivate(privateJwk);
   localStorage.setItem(PUBLIC_KEY_KEY, JSON.stringify(publicKey));
-  await syncPublicKey(publicKey);
+  await syncPublicKey(publicKey).catch((error) => console.warn("Public-key sync will retry:", error.message));
   return { publicKey, privateKey, recoveryCode: newRecoveryCode };
 }
 
