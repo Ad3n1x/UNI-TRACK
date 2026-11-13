@@ -881,7 +881,7 @@ export default function HomePage() {
           
           <div className={`alert ${darkMode ? "bg-dark text-info border-info" : "bg-info bg-opacity-10 text-info border-info-subtle"} d-flex align-items-center gap-2 mb-4 py-2 px-3 rounded-3 small border`}>
             <Info size={18} className="flex-shrink-0" />
-            <span>Changes sync automatically end-to-end. Tap <strong>Refresh</strong> to sync analytics manually.</span>
+            <span>Changes sync with your account. Tap <strong>Refresh</strong> to reload your tracker data.</span>
           </div>
 
           {/* Tracker Limit Indicator */}
@@ -1150,7 +1150,7 @@ export default function HomePage() {
                     </div>
                     <div className="d-flex align-items-center gap-2 small fw-semibold">
                       <Check size={16} className="text-success" />
-                      <span>Priority Support & E2EE Cloud Backups</span>
+                      <span>Priority Support & enhanced account tools</span>
                     </div>
                   </div>
 
