@@ -41,7 +41,8 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  if (["script", "style", "image", "font"].includes(request.destination)) {
+  const isPublicAppAsset = url.pathname.startsWith("/assets/") || ["/logo.svg", "/favicon.svg", "/icons.svg"].includes(url.pathname);
+  if (isPublicAppAsset && ["script", "style", "image", "font"].includes(request.destination)) {
     event.respondWith((async () => {
       const cached = await caches.match(request);
       if (cached) return cached;
