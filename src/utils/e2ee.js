@@ -202,6 +202,18 @@ export async function unlockUserKeysWithRecoveryCode(recoveryCode, newPassword) 
   return { publicKey, privateKey, recoveryCode: newRecoveryCode };
 }
 
+
+export async function rotateRecoveryCode(password) {
+  const vaultRaw = localStorage.getItem(PRIVATE_VAULT_KEY);
+  if (!vaultRaw) throw new Error("No password-protected private-key vault exists on this device.");
+  const privateJwk = await unwrapPrivateJwk(JSON.parse(vaultRaw), String(password).trim());
+  const recoveryCode = toBase64Url(randomBytes(24));
+  const recoveryEnvelope = await wrapPrivateJwk(privateJwk, recoveryCode);
+  localStorage.setItem(RECOVERY_VAULT_KEY, JSON.stringify(recoveryEnvelope));
+  await rememberPrivateKey(privateJwk);
+  return recoveryCode;
+}
+
 export async function encryptData(publicKeyJwk, plaintextData) {
   const publicKey = await window.crypto.subtle.importKey(
     "jwk", publicKeyJwk, { name: "RSA-OAEP", hash: "SHA-256" }, false, ["encrypt"]
