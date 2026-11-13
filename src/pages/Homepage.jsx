@@ -375,6 +375,7 @@ export default function HomePage() {
       }
     } catch (error) {
       console.error("Error fetching trackers:", error);
+      if (String(error.code || "").startsWith("KEY_VAULT")) setKeyVaultLocked(true);
     } finally {
       setLoading(false);
       setRefreshing(false);
