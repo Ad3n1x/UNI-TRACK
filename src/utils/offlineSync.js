@@ -18,6 +18,10 @@ export function getPendingTrackerWriteCount() {
   return readQueue().length;
 }
 
+export function getPendingTrackerWrites() {
+  return readQueue();
+}
+
 export function queueEncryptedTrackerWrite(trackerId, encryptedEntries, expectedUpdatedAt) {
   const queue = readQueue().filter((item) => String(item.trackerId) !== String(trackerId));
   queue.push({
