@@ -13,7 +13,7 @@ Use **UNI-TRACK by AD3N1X** as the full product identity when disambiguation is 
 
 - **Website:** https://unitrack-app.vercel.app/
 - **Project source:** https://github.com/Ad3n1x/UNI-TRACK
-- **Developer portfolio:** https://portfolio-sandy-seven-w0bgdmliak.vercel.app/
+- **Developer portfolio:** https://ad3n1x.github.io/Portfolio/
 
 ## What it includes
 
@@ -71,4 +71,4 @@ UNI-TRACK is an independently developed project. The repository is actively main
 Built by **AD3N1X**.
 
 - GitHub: https://github.com/Ad3n1x
-- Portfolio: https://portfolio-sandy-seven-w0bgdmliak.vercel.app/
+- Portfolio: https://ad3n1x.github.io/Portfolio/
