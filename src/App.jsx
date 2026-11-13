@@ -10,16 +10,30 @@ import RegisterForm from "./components/auth/RegisterForm";
 import NotFound from "./pages/Notfound";
 import ForgotPassword from "./components/auth/ForgotPassword";
 import UnitrackPage from "./pages/Unitrack";
+import { lockUserKeys } from "./utils/e2ee";
 import SettingsPage from "./pages/SettingsPage";
 
 const INACTIVITY_LIMIT_MS = 60 * 60 * 1000; // 1 Hour
 const cookies = new Cookies();
+const API_BASE = (import.meta.env.VITE_API_URL || "https://lv3node.onrender.com").replace(/\/$/, "");
 
 function AutoLogoutWrapper({ children }) {
   const navigate = useNavigate();
 
-  const handleLogout = useCallback(() => {
+  const handleLogout = useCallback(async () => {
+    const token = cookies.get("token") || localStorage.getItem("token");
+    if (token) {
+      try {
+        await fetch(`${API_BASE}/api/v1/auth/logout`, {
+          method: "POST",
+          headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+        });
+      } catch { /* Always complete local sign-out. */ }
+    }
+    lockUserKeys();
     cookies.remove("token", { path: "/" });
+    localStorage.removeItem("token");
+    localStorage.removeItem("userEmail");
     toast.warning("Session expired due to 1 hour of inactivity. Please log in again.");
     navigate("/login", { replace: true });
   }, [navigate]);
@@ -29,7 +43,7 @@ function AutoLogoutWrapper({ children }) {
 
     const resetTimer = () => {
       if (timeoutId) clearTimeout(timeoutId);
-      if (cookies.get("token")) {
+      if (cookies.get("token") || localStorage.getItem("token")) {
         timeoutId = setTimeout(handleLogout, INACTIVITY_LIMIT_MS);
       }
     };
