@@ -300,8 +300,9 @@ export default function DashboardPage({ trackers = [], darkMode = false, onBack 
               key={card.id}
               onClick={() => handleCardClick(card.id)}
               role="button"
+              aria-pressed={isSelected}
               tabIndex={0}
-              onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && handleCardClick(card.id)}
+              onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); handleCardClick(card.id); } }}
               style={{
                 backgroundColor: darkMode ? "rgba(255, 255, 255, 0.03)" : "#ffffff",
                 border: isSelected
@@ -390,6 +391,7 @@ export default function DashboardPage({ trackers = [], darkMode = false, onBack 
           {["all", "completed", "goals", "streak"].map((tab) => (
             <button
               key={tab}
+              aria-pressed={activeFilter === tab}
               onClick={() => setActiveFilter(tab)}
               style={{
                 flex: "1 1 auto",
@@ -416,6 +418,7 @@ export default function DashboardPage({ trackers = [], darkMode = false, onBack 
           <input
             type="text"
             placeholder="Search trackers..."
+            aria-label="Search trackers"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             style={{
@@ -512,7 +515,7 @@ export default function DashboardPage({ trackers = [], darkMode = false, onBack 
 
       {filteredTrackers.length === 0 && (
         <div style={{ textAlign: "center", padding: "60px 0", color: "#94a3b8" }}>
-          <p style={{ fontSize: "1rem" }}>No trackers match your current view/filter.</p>
+          <p style={{ fontSize: "1rem" }} role="status">No trackers match your current view/filter.</p>
         </div>
       )}
     </div>
