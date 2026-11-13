@@ -23,7 +23,7 @@ export default function UnitrackPage() {
     "url": "https://unitrack-app.vercel.app",
     "applicationCategory": "ProductivityApplication",
     "operatingSystem": "All",
-    "abstract": "A high-performance, privacy-focused tracking ecosystem engineered for habit, task, and metric logging with client-side E2EE.",
+    "abstract": "A personal productivity and tracking application for habits, tasks, goals and metrics, with client-side encryption utilities for supported tracking data.",
     "author": {
       "@type": "Person",
       "name": "AD3N1X"
@@ -34,17 +34,17 @@ export default function UnitrackPage() {
     <>
       <Helmet>
         {/* Primary SEO Meta Tags */}
-        <title>UNI-TRACK | Official Privacy-First Tracking & Productivity Ecosystem</title>
+        <title>UNI-TRACK by AD3N1X — Personal Tracking & Productivity</title>
         <meta 
           name="description" 
-          content="Official UNI-TRACK platform by AD3N1X. A high-performance, end-to-end encrypted tracking ecosystem engineered for zero-lag habit, task, and goal management." 
+          content="Official UNI-TRACK platform by AD3N1X. A personal tracking and productivity application for habits, tasks, goals and metrics, with configurable trackers, CSV export and browser push notifications." 
         />
         <meta name="keywords" content="UNI-TRACK, UNITRACK, AD3N1X, privacy tracking app, E2EE productivity app, encrypted habit tracker" />
         <link rel="canonical" href="https://unitrack-app.vercel.app" />
 
         {/* OpenGraph / Social Media Tags */}
-        <meta property="og:title" content="UNI-TRACK | Privacy-First Tracking Ecosystem" />
-        <meta property="og:description" content="Take control of your workflow with client-side end-to-end encryption, zero latency, and PWA capabilities." />
+        <meta property="og:title" content="UNI-TRACK by AD3N1X — Personal Tracking & Productivity" />
+        <meta property="og:description" content="Organise habits, tasks, goals and metrics with configurable trackers, CSV export and browser push notifications." />
         <meta property="og:type" content="website" />
         <meta property="og:url" content="https://unitrack-app.vercel.app" />
         <meta property="og:image" content="https://unitrack-app.vercel.app/logo.svg" />
@@ -104,11 +104,11 @@ export default function UnitrackPage() {
             </div>
 
             <h1 className="fw-bold mb-3 fs-3 fs-md-2 text-dark" style={{ letterSpacing: "-0.7px", lineHeight: "1.2" }}>
-              UNI-TRACK – Smart End-to-End Encrypted Tracking System
+              UNI-TRACK — Personal Habit, Task, Goal and Metric Tracking
             </h1>
 
             <p className="text-secondary mb-4 fs-6 fs-md-5" style={{ lineHeight: "1.65", fontWeight: "400" }}>
-              <strong>UNI-TRACK</strong> is a high-performance, React-powered tracking ecosystem engineered specifically for absolute user privacy, zero lag, and total control over your daily habits, goals, tasks, and metrics.
+              <strong>UNI-TRACK</strong> is a web-based personal productivity application for organising habits, goals, tasks and metrics through configurable trackers, lists, filters and progress records.
             </p>
 
             <div className="d-flex flex-column flex-sm-row gap-3 mb-4">
@@ -129,10 +129,10 @@ export default function UnitrackPage() {
               <div className="col-12 col-md-6">
                 <div className="p-3 border rounded-3 bg-light h-100">
                   <div className="d-flex align-items-center gap-2 text-primary mb-2 fw-bold" style={{ fontSize: "0.95rem" }}>
-                    <ShieldCheck size={19} /> Client-Side E2EE
+                    <ShieldCheck size={19} /> Client-Side Encryption Utilities
                   </div>
                   <p className="text-secondary small m-0" style={{ lineHeight: "1.5" }}>
-                    Your metrics are encrypted locally right inside your browser. No one—not even server administrators—can read your private tracking data.
+                    The application includes browser-based encryption and decryption utilities for supported tracking data. This does not establish that every account field, request or stored record is end-to-end encrypted.
                   </p>
                 </div>
               </div>
@@ -143,7 +143,7 @@ export default function UnitrackPage() {
                     <Zap size={19} /> Lightning-Fast React Core
                   </div>
                   <p className="text-secondary small m-0" style={{ lineHeight: "1.5" }}>
-                    Optimized component rendering and clean asynchronous synchronization guarantee zero loading friction or interface lag.
+                    The React interface organises tracker data into manageable views. Actual responsiveness depends on device, network and service availability.
                   </p>
                 </div>
               </div>
@@ -154,7 +154,7 @@ export default function UnitrackPage() {
                     <Bell size={19} /> Push Notifications & PWA
                   </div>
                   <p className="text-secondary small m-0" style={{ lineHeight: "1.5" }}>
-                    Never miss a habit check-in. Integrated service workers keep your progressive web app synced and alert-ready on all devices.
+                    Browser push notifications are supported where the browser, device permissions and notification service allow them.
                   </p>
                 </div>
               </div>
@@ -184,7 +184,7 @@ export default function UnitrackPage() {
               </p>
               <div className="d-flex align-items-start align-items-sm-center gap-2 text-dark small fw-semibold mt-2" style={{ fontSize: "0.875rem" }}>
                 <Lock size={15} className="text-primary flex-shrink-0 mt-1 mt-sm-0" />
-                <span>Sustainable software, zero data exploitation. Take back control of your workflow today.</span>
+                <span>A focused tracking workspace built by AD3N1X.</span>
               </div>
             </article>
 
