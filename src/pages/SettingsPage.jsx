@@ -4,6 +4,7 @@ import Cookies from "universal-cookie";
 import { ArrowLeft, ShieldCheck, MonitorSmartphone, LogOut, Trash2, RefreshCw, AlertTriangle, KeyRound } from "lucide-react";
 import { rotateRecoveryCode, setKeyVaultUser, lockUserKeys, clearUserKeyVault } from "../utils/e2ee";
 import { clearEncryptedTrackerSnapshot } from "../utils/offlineCache";
+import { clearPendingTrackerWrites } from "../utils/offlineSync";
 
 const API = (import.meta.env.VITE_API_URL || "https://lv3node.onrender.com").replace(/\/$/, "");
 const authHeaders = () => {
@@ -123,6 +124,7 @@ export default function SettingsPage() {
       clearUserKeyVault();
       lockUserKeys();
       await clearEncryptedTrackerSnapshot(accountEmail).catch(() => {});
+      clearPendingTrackerWrites(accountEmail);
       sessionStorage.removeItem("unitrack.recoveryCodePending");
       setMessage("Account deleted.");
       navigate("/unitrack", { replace: true });
