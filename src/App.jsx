@@ -10,6 +10,7 @@ import RegisterForm from "./components/auth/RegisterForm";
 import NotFound from "./pages/Notfound";
 import ForgotPassword from "./components/auth/ForgotPassword";
 import UnitrackPage from "./pages/Unitrack";
+import SettingsPage from "./pages/SettingsPage";
 
 const INACTIVITY_LIMIT_MS = 60 * 60 * 1000; // 1 Hour
 const cookies = new Cookies();
@@ -73,6 +74,7 @@ export default function App() {
         <Route path="/login" element={<LoginForm />} />
         <Route path="/register" element={<RegisterForm />} />
         <Route path="/homepage" element={<Homepage />} />
+        <Route path="/settings" element={<SettingsPage />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
 
         {/* Catch-All 404 Route */}
