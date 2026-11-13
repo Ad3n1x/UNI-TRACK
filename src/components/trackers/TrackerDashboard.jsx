@@ -8,10 +8,9 @@ import {
   ArrowLeft,
   ListTodo
 } from "lucide-react";
-import CryptoJS from "crypto-js";
 
 // Must match the secret used across your application
-const CLIENT_SECRET = "your_client_side_encryption_secret";
+const decryptField = (value) => value;
 
 /**
  * Utility function to decrypt AES encrypted strings or standard objects/primitives.
