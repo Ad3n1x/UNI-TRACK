@@ -1,6 +1,6 @@
 # UNI-TRACK
 
-**UNI-TRACK** is a productivity and personal-tracking web application by **AD3N1X**. It is designed around habit, task, goal, and metric tracking, with an emphasis on giving users control over their own tracking data.
+**UNI-TRACK** is a productivity and personal-tracking web application created by **Adeniran Victor Adebowale**, who publishes software under the professional developer identity **AD3N1X**. The official creator profile is https://ad3n1x.github.io/Portfolio/. It is designed around habit, task, goal, and metric tracking, with an emphasis on giving users control over their own tracking data.
 
 ## Official identity and discovery
 
