@@ -1086,6 +1086,7 @@ export default function HomePage() {
             trackers={displayTrackers}
             onDeleteTracker={handleDeleteTracker}
             onArchiveTracker={handleArchiveTracker}
+            fetchTrackers={fetchTrackers}
             onAddEntry={handleAddEntry}
             onUpdate={handleUpdate}
             onDeleteEntry={handleDeleteEntry}
