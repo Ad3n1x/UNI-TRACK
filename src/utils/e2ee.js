@@ -85,10 +85,10 @@ function publicJwkFromPrivate(privateJwk) {
 async function persistVault(privateJwk, password, recoveryCode) {
   const passwordEnvelope = await wrapPrivateJwk(privateJwk, password);
   const recoveryEnvelope = await wrapPrivateJwk(privateJwk, recoveryCode);
-  localStorage.setItem(PRIVATE_VAULT_KEY, JSON.stringify(passwordEnvelope));
-  localStorage.setItem(RECOVERY_VAULT_KEY, JSON.stringify(recoveryEnvelope));
+  setScopedItem(PRIVATE_VAULT_KEY, JSON.stringify(passwordEnvelope));
+  setScopedItem(RECOVERY_VAULT_KEY, JSON.stringify(recoveryEnvelope));
   // Remove the old extractable private JWK after both recovery paths are stored.
-  localStorage.removeItem("e2ee_private_key");
+  removeScopedItem("e2ee_private_key");
   return recoveryCode;
 }
 
@@ -105,7 +105,7 @@ async function syncPublicKey(publicKeyJwk) {
 }
 
 function getPublicKey() {
-  const raw = localStorage.getItem(PUBLIC_KEY_KEY);
+  const raw = getScopedItem(PUBLIC_KEY_KEY);
   return raw ? JSON.parse(raw) : null;
 }
 
@@ -118,7 +118,7 @@ function rememberPrivateKey(privateJwk) {
 
 export async function initializeUserKeys(password) {
   const publicKeyStored = getPublicKey();
-  const vaultRaw = localStorage.getItem(PRIVATE_VAULT_KEY);
+  const vaultRaw = getScopedItem(PRIVATE_VAULT_KEY);
 
   if (vaultRaw) {
     if (!password) {
@@ -142,7 +142,7 @@ export async function initializeUserKeys(password) {
 
   // Migrate existing local plaintext private keys without changing the key pair,
   // so existing RSA-encrypted tracker data remains decryptable.
-  const legacyPrivate = localStorage.getItem("e2ee_private_key");
+  const legacyPrivate = getScopedItem("e2ee_private_key");
   if (legacyPrivate) {
     if (!password) {
       const error = new Error("Your existing private key needs a one-time password-protected migration.");
@@ -151,7 +151,7 @@ export async function initializeUserKeys(password) {
     }
     const privateJwk = JSON.parse(legacyPrivate);
     const publicKey = publicKeyStored || publicJwkFromPrivate(privateJwk);
-    localStorage.setItem(PUBLIC_KEY_KEY, JSON.stringify(publicKey));
+    setScopedItem(PUBLIC_KEY_KEY, JSON.stringify(publicKey));
     const recoveryCode = toBase64Url(randomBytes(24));
     await persistVault(privateJwk, String(password).trim(), recoveryCode);
     const privateKey = await rememberPrivateKey(privateJwk);
@@ -180,7 +180,7 @@ export async function initializeUserKeys(password) {
   );
   const publicKey = await window.crypto.subtle.exportKey("jwk", pair.publicKey);
   const privateJwk = await window.crypto.subtle.exportKey("jwk", pair.privateKey);
-  localStorage.setItem(PUBLIC_KEY_KEY, JSON.stringify(publicKey));
+  setScopedItem(PUBLIC_KEY_KEY, JSON.stringify(publicKey));
   const recoveryCode = toBase64Url(randomBytes(24));
   await persistVault(privateJwk, String(password).trim(), recoveryCode);
   const privateKey = await rememberPrivateKey(privateJwk);
@@ -190,26 +190,26 @@ export async function initializeUserKeys(password) {
 
 export async function unlockUserKeysWithRecoveryCode(recoveryCode, newPassword) {
   if (!recoveryCode || !newPassword) throw new Error("Enter your recovery code and current account password.");
-  const recoveryRaw = localStorage.getItem(RECOVERY_VAULT_KEY);
+  const recoveryRaw = getScopedItem(RECOVERY_VAULT_KEY);
   if (!recoveryRaw) throw new Error("No recovery key is stored on this device.");
   const privateJwk = await unwrapPrivateJwk(JSON.parse(recoveryRaw), String(recoveryCode).trim());
   const newRecoveryCode = toBase64Url(randomBytes(24));
   await persistVault(privateJwk, String(newPassword).trim(), newRecoveryCode);
   const privateKey = await rememberPrivateKey(privateJwk);
   const publicKey = getPublicKey() || publicJwkFromPrivate(privateJwk);
-  localStorage.setItem(PUBLIC_KEY_KEY, JSON.stringify(publicKey));
+  setScopedItem(PUBLIC_KEY_KEY, JSON.stringify(publicKey));
   await syncPublicKey(publicKey).catch((error) => console.warn("Public-key sync will retry:", error.message));
   return { publicKey, privateKey, recoveryCode: newRecoveryCode };
 }
 
 
 export async function rotateRecoveryCode(password) {
-  const vaultRaw = localStorage.getItem(PRIVATE_VAULT_KEY);
+  const vaultRaw = getScopedItem(PRIVATE_VAULT_KEY);
   if (!vaultRaw) throw new Error("No password-protected private-key vault exists on this device.");
   const privateJwk = await unwrapPrivateJwk(JSON.parse(vaultRaw), String(password).trim());
   const recoveryCode = toBase64Url(randomBytes(24));
   const recoveryEnvelope = await wrapPrivateJwk(privateJwk, recoveryCode);
-  localStorage.setItem(RECOVERY_VAULT_KEY, JSON.stringify(recoveryEnvelope));
+  setScopedItem(RECOVERY_VAULT_KEY, JSON.stringify(recoveryEnvelope));
   await rememberPrivateKey(privateJwk);
   return recoveryCode;
 }
