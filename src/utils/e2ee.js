@@ -200,6 +200,15 @@ function rememberPrivateKey(privateJwk) {
 export async function initializeUserKeys(password) {
   let publicKeyStored = getPublicKey();
   if (!publicKeyStored) publicKeyStored = await fetchPublicKeyFromServer();
+  if (!publicKeyStored) {
+    const remoteRecovery = await fetchRecoveryEnvelopeFromServer();
+    if (remoteRecovery) {
+      setScopedItem(RECOVERY_VAULT_KEY, JSON.stringify(remoteRecovery));
+      const error = new Error("A recovery envelope exists for this account. Enter your recovery code to restore the existing private key.");
+      error.code = "KEY_VAULT_RECOVERY_REQUIRED";
+      throw error;
+    }
+  }
   const vaultRaw = getScopedItem(PRIVATE_VAULT_KEY);
 
   if (vaultRaw) {
