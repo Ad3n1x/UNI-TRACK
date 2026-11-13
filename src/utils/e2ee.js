@@ -33,7 +33,7 @@ export function setKeyVaultUser(email) {
   const normalized = String(email || "").trim().toLowerCase();
   if (!normalized) throw new Error("Cannot select a private-key vault without an account identity.");
   const nextScope = toBase64Url(new TextEncoder().encode(normalized));
-  if (nextScope !== activeUserScope) unlockedPrivateKey = null;
+  if (nextScope !== activeUserScope) {\n    unlockedPrivateKey = null;\n    sessionStorage.removeItem("unitrack.recoveryCodePending");\n  }
   activeUserScope = nextScope;
   // Move legacy single-account keys to the first account that signs in on this browser.
   for (const key of [PRIVATE_VAULT_KEY, RECOVERY_VAULT_KEY, PUBLIC_KEY_KEY, "e2ee_private_key"]) {
@@ -170,7 +170,7 @@ export async function initializeUserKeys(password) {
       await syncPublicKey(derivedPublic).catch((error) => console.warn("Public-key sync will retry:", error.message));
       return { publicKey: derivedPublic, privateKey };
     }
-    return { publicKey: publicKeyStored, privateKey };
+    await syncPublicKey(publicKeyStored).catch((error) => console.warn("Public-key sync will retry:", error.message));\n    return { publicKey: publicKeyStored, privateKey };
   }
 
   // Migrate existing local plaintext private keys without changing the key pair,
