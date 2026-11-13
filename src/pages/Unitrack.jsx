@@ -23,7 +23,7 @@ export default function UnitrackPage() {
     "url": "https://unitrack-app.vercel.app/",
     "applicationCategory": "ProductivityApplication",
     "operatingSystem": "Web browser",
-    "description": "A personal productivity and tracking application for habits, tasks, goals and metrics, with optional browser-side encryption utilities for supported tracking data. These utilities do not establish universal end-to-end encryption.",
+    "description": "A personal productivity and tracking application for habits, tasks, goals and metrics, with configurable trackers, data export and browser notifications.",
     "author": {
       "@type": "Person",
       "@id": "https://ad3n1x.github.io/Portfolio/#person",
@@ -134,10 +134,10 @@ export default function UnitrackPage() {
               <div className="col-12 col-md-6">
                 <div className="p-3 border rounded-3 bg-light h-100">
                   <div className="d-flex align-items-center gap-2 text-primary mb-2 fw-bold" style={{ fontSize: "0.95rem" }}>
-                    <ShieldCheck size={19} /> Browser-Side Encryption Utilities
+                    <ShieldCheck size={19} /> Privacy-conscious product design
                   </div>
                   <p className="text-secondary small m-0" style={{ lineHeight: "1.5" }}>
-                    The application includes browser-based encryption and decryption utilities for supported tracking data. This does not establish that every account field, request or stored record is end-to-end encrypted.
+                    UNI-TRACK is being improved with clearer data controls and security safeguards. Review the privacy information for the current scope of data handling.
                   </p>
                 </div>
               </div>
