@@ -31,6 +31,7 @@ import TrackerFilters from "../components/trackers/TrackerFilters";
 import WorkspacePanels from "../components/WorkspacePanels";
 import { getPendingTrackerWriteCount, getPendingTrackerWrites, syncEncryptedTrackerWrite, flushPendingTrackerWrites } from "../utils/offlineSync";
 import { convertTrackersToCSV } from "../utils/export";
+import { isLegacyEncryptedField, decryptLegacyField } from "../utils/legacyCrypto";
 import { saveEncryptedTrackerSnapshot, loadEncryptedTrackerSnapshot } from "../utils/offlineCache";
 import { initializeUserKeys, unlockUserKeysWithRecoveryCode, setKeyVaultUser, lockUserKeys, decryptData, encryptData } from "../utils/e2ee";
 
@@ -308,46 +309,92 @@ export default function HomePage() {
     
     try {
       setKeyVaultUser(currentUserEmail);
-      const { privateKey } = await initializeUserKeys();
+      const { privateKey, publicKey } = await initializeUserKeys();
 
       let fetchedArray = [];
+      let usedOfflineSnapshot = false;
       try {
         let response = await fetch(`${BASE_URL}/api/v1/trackers`, { headers: getAuthHeaders() });
-        if (!response.ok) {
-          response = await fetch(`${BASE_URL}/api/trackers`, { headers: getAuthHeaders() });
-        }
+        if (!response.ok) response = await fetch(`${BASE_URL}/api/trackers`, { headers: getAuthHeaders() });
         if (!response.ok) throw new Error(`Tracker service returned HTTP ${response.status}.`);
         const data = await response.json();
         fetchedArray = Array.isArray(data) ? data : Array.isArray(data.trackers) ? data.trackers : [];
-        await saveEncryptedTrackerSnapshot(currentUserEmail, fetchedArray).catch((cacheError) => {
-          console.warn("Offline snapshot could not be saved:", cacheError.message);
-        });
       } catch (networkError) {
         if (networkError instanceof TypeError || navigator.onLine === false) {
           const snapshot = await loadEncryptedTrackerSnapshot(currentUserEmail).catch(() => null);
           if (!snapshot || !Array.isArray(snapshot.trackers)) throw networkError;
           fetchedArray = snapshot.trackers;
+          usedOfflineSnapshot = true;
           setNotification(`Offline mode · showing your last saved tracker snapshot from ${new Date(snapshot.savedAt).toLocaleString()}.`);
         } else {
           throw networkError;
         }
       }
 
-      const decryptedTrackers = await Promise.all(
-        fetchedArray.map(async (tracker) => {
+      const migratedRecords = await Promise.all(fetchedArray.map(async (tracker) => {
+        const rawName = tracker.name ?? tracker.trackerName;
+        const rawTarget = tracker.target;
+        const rawEntries = tracker.entries;
+
+        const decodeField = async (value) => {
+          if (value && typeof value === "object" && value.ciphertext) return decryptData(privateKey, value);
+          if (isLegacyEncryptedField(value)) return decryptLegacyField(value);
+          return value;
+        };
+
+        let name = await decodeField(rawName);
+        let target = rawTarget !== undefined ? await decodeField(rawTarget) : rawTarget;
+        let entries = rawEntries !== undefined ? await decodeField(rawEntries) : [];
+        if (typeof entries === "string") {
+          try { entries = JSON.parse(entries); } catch { /* Preserve legacy string payload for export. */ }
+        }
+
+        const needsMigration = {};
+        if (!(rawName && typeof rawName === "object" && rawName.ciphertext) && name !== undefined && name !== null) {
+          needsMigration.name = await encryptData(publicKey, name);
+        }
+        if (rawTarget !== undefined && !(rawTarget && typeof rawTarget === "object" && rawTarget.ciphertext)) {
+          needsMigration.target = await encryptData(publicKey, target);
+        }
+        if (!(rawEntries && typeof rawEntries === "object" && rawEntries.ciphertext) && rawEntries !== undefined) {
+          needsMigration.entries = await encryptData(publicKey, entries);
+        }
+
+        let encryptedRecord = { ...tracker };
+        if (Object.keys(needsMigration).length && !usedOfflineSnapshot && navigator.onLine !== false) {
           try {
-            return {
-              ...tracker,
-              name: await decryptData(privateKey, tracker.name),
-              target: tracker.target !== undefined ? await decryptData(privateKey, tracker.target) : tracker.target,
-              entries: tracker.entries !== undefined ? await decryptData(privateKey, tracker.entries) : tracker.entries,
-            };
-          } catch (decryptErr) {
-            console.error("Failed to decrypt tracker:", decryptErr);
-            return tracker;
+            const migrationResponse = await fetch(`${BASE_URL}/api/v1/trackers/${tracker._id || tracker.id}`, {
+              method: "PUT",
+              headers: {
+                ...getAuthHeaders(),
+                ...(tracker.updatedAt ? { "If-Match": String(new Date(tracker.updatedAt).getTime()) } : {}),
+              },
+              body: JSON.stringify(needsMigration),
+            });
+            if (migrationResponse.ok) {
+              const migrated = await migrationResponse.json();
+              encryptedRecord = migrated.data || migrated;
+            } else if (migrationResponse.status !== 409) {
+              console.warn("Legacy tracker encryption migration deferred:", migrationResponse.status);
+            }
+          } catch (migrationError) {
+            console.warn("Legacy tracker encryption migration deferred:", migrationError.message);
           }
-        })
-      );
+        }
+
+        return {
+          encrypted: encryptedRecord,
+          decrypted: { ...tracker, name, target, entries: Array.isArray(entries) ? entries : entries },
+        };
+      }));
+
+      const decryptedTrackers = migratedRecords.map((item) => item.decrypted);
+      const encryptedSnapshot = migratedRecords.map((item) => item.encrypted);
+      if (!usedOfflineSnapshot) {
+        await saveEncryptedTrackerSnapshot(currentUserEmail, encryptedSnapshot).catch((cacheError) => {
+          console.warn("Offline snapshot could not be saved:", cacheError.message);
+        });
+      }
 
       const pendingWritesForTrackers = getPendingTrackerWrites();
       const trackersWithPendingEdits = await Promise.all(decryptedTrackers.map(async (tracker) => {
@@ -360,8 +407,8 @@ export default function HomePage() {
           return tracker;
         }
       }));
+
       setTrackers(trackersWithPendingEdits.reverse());
-      
       if (isManualRefresh) {
         setNotification("Trackers updated successfully!");
         setTimeout(() => setNotification(null), 2500);
