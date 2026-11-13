@@ -8,7 +8,7 @@ export const csvCell = (value) => {
 };
 
 export const convertTrackersToCSV = (trackersList = []) => {
-  const headers = ["Tracker ID", "Tracker Name", "Type", "Target", "Entry ID", "Timestamp", "Value", "Note"];
+  const headers = ["Tracker ID", "Tracker Name", "Type", "Target", "Entry ID", "Timestamp", "Value", "Note", "Record State"];
   const rows = [];
   trackersList.forEach((tracker) => {
     const entries = Array.isArray(tracker.entries) ? tracker.entries : [];
@@ -25,6 +25,7 @@ export const convertTrackersToCSV = (trackersList = []) => {
         entry?.timestamp || entry?.date || "",
         entry?.value ?? "",
         entry?.note || "",
+        tracker.deletedAt ? "recently-deleted" : tracker.archivedAt ? "archived" : "active",
       ].map(csvCell).join(","));
     });
   });
