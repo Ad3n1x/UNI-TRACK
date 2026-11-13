@@ -98,6 +98,7 @@ export default function SettingsPage() {
     if (!window.confirm("This permanently deletes your account, trackers, and registered notification subscriptions. Continue?")) return;
     setBusy("delete");
     setError("");
+    const accountEmail = localStorage.getItem("userEmail") || new Cookies().get("userEmail") || "";
     try {
       const response = await fetch(`${API}/api/v1/auth/account`, {
         method: "DELETE",
@@ -113,7 +114,7 @@ export default function SettingsPage() {
       localStorage.removeItem("pro_payment_date");
       clearUserKeyVault();
       lockUserKeys();
-      await clearEncryptedTrackerSnapshot(localStorage.getItem("userEmail") || "").catch(() => {});
+      await clearEncryptedTrackerSnapshot(accountEmail).catch(() => {});
       sessionStorage.removeItem("unitrack.recoveryCodePending");
       setMessage("Account deleted.");
       navigate("/unitrack", { replace: true });
