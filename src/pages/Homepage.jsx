@@ -30,7 +30,7 @@ import TrackerList from "../components/trackers/TrackerList";
 import TrackerFilters from "../components/trackers/TrackerFilters";
 import WorkspacePanels from "../components/WorkspacePanels";
 import { getPendingTrackerWriteCount, syncEncryptedTrackerWrite, flushPendingTrackerWrites } from "../utils/offlineSync";
-import { initializeUserKeys, decryptData, encryptData } from "../utils/e2ee";
+import { initializeUserKeys, unlockUserKeysWithRecoveryCode, decryptData, encryptData } from "../utils/e2ee";
 
 // ==========================================
 // CONFIGURATION & CONSTANTS
@@ -245,6 +245,11 @@ export default function HomePage() {
   const [typeFilter, setTypeFilter] = useState(null);
   const [newlyAddedId, setNewlyAddedId] = useState(null);
   const [notification, setNotification] = useState(null);
+  const [keyVaultLocked, setKeyVaultLocked] = useState(false);
+  const [keyVaultPassword, setKeyVaultPassword] = useState("");
+  const [keyVaultRecoveryCode, setKeyVaultRecoveryCode] = useState("");
+  const [keyVaultError, setKeyVaultError] = useState("");
+  const [recoveryCodeToSave, setRecoveryCodeToSave] = useState(() => sessionStorage.getItem("unitrack.recoveryCodePending") || "");
   const [isOnline, setIsOnline] = useState(() => typeof navigator === "undefined" ? true : navigator.onLine);
   const [pendingWrites, setPendingWrites] = useState(() => getPendingTrackerWriteCount());
 
@@ -419,6 +424,34 @@ export default function HomePage() {
       window.removeEventListener("unitrack:queue-change", updateQueueCount);
     };
   }, [fetchTrackers]);
+
+  const handleUnlockKeyVault = async (event) => {
+    event.preventDefault();
+    setKeyVaultError("");
+    try {
+      let vault;
+      if (keyVaultRecoveryCode.trim()) {
+        vault = await unlockUserKeysWithRecoveryCode(keyVaultRecoveryCode.trim(), keyVaultPassword);
+      } else {
+        vault = await initializeUserKeys(keyVaultPassword);
+      }
+      if (vault.recoveryCode) {
+        sessionStorage.setItem("unitrack.recoveryCodePending", vault.recoveryCode);
+        setRecoveryCodeToSave(vault.recoveryCode);
+      }
+      setKeyVaultLocked(false);
+      setKeyVaultPassword("");
+      setKeyVaultRecoveryCode("");
+      await fetchTrackers();
+    } catch (error) {
+      setKeyVaultError(error.message || "Could not unlock your private data.");
+    }
+  };
+
+  const acknowledgeRecoveryCode = () => {
+    sessionStorage.removeItem("unitrack.recoveryCodePending");
+    setRecoveryCodeToSave("");
+  };
 
   // --- ACTIONS ---
   const handleAlatPayPayment = async () => {
@@ -705,6 +738,32 @@ export default function HomePage() {
     );
   }
 
+  if (keyVaultLocked) {
+    return (
+      <main className="min-vh-100 d-flex align-items-center justify-content-center bg-light px-3 py-5">
+        <section className="card border-0 shadow-sm rounded-4 p-4 p-md-5 w-100" style={{ maxWidth: 520 }}>
+          <div className="d-inline-flex align-items-center justify-content-center rounded-3 bg-primary bg-opacity-10 text-primary p-3 mb-3" style={{ width: 52, height: 52 }}><Lock size={23} /></div>
+          <h1 className="h3 fw-bold mb-2">Unlock your private workspace</h1>
+          <p className="text-secondary small">Your tracker private key is protected on this device. Enter your account password to unlock it. If you recently reset your password, use your recovery code and the new password.</p>
+          {keyVaultError && <div className="alert alert-danger small" role="alert">{keyVaultError}</div>}
+          <form onSubmit={handleUnlockKeyVault} className="d-grid gap-3">
+            <div>
+              <label htmlFor="vault-password" className="form-label small fw-semibold">Account password</label>
+              <input id="vault-password" type="password" autoComplete="current-password" className="form-control" value={keyVaultPassword} onChange={(e) => setKeyVaultPassword(e.target.value)} required />
+            </div>
+            <div>
+              <label htmlFor="vault-recovery" className="form-label small fw-semibold">Recovery code (optional)</label>
+              <textarea id="vault-recovery" className="form-control" rows={2} value={keyVaultRecoveryCode} onChange={(e) => setKeyVaultRecoveryCode(e.target.value)} placeholder="Paste your saved recovery code if your password changed" />
+            </div>
+            <button className="btn btn-primary py-2" type="submit" disabled={!keyVaultPassword}>Unlock private data</button>
+          </form>
+          <p className="text-muted small mt-3 mb-0">Your password and recovery code are used locally to unlock the private key. They are not sent to the tracker API by this unlock form.</p>
+          <button type="button" className="btn btn-link btn-sm mt-3" onClick={handleLogout}>Sign out</button>
+        </section>
+      </main>
+    );
+  }
+
   const hasTrackers = trackers.length > 0;
   const filteredTrackers = typeFilter ? trackers.filter((t) => t.type === typeFilter) : trackers;
   const displayTrackers = hasTrackers ? filteredTrackers : [sampleTrackerState];
@@ -890,6 +949,16 @@ export default function HomePage() {
       </nav>
 
       {/* Main Workspace */}
+      {recoveryCodeToSave && (
+        <div className="container pt-3">
+          <div className="alert alert-warning border-warning-subtle rounded-4" role="alert">
+            <h2 className="h6 fw-bold">Save your private-data recovery code</h2>
+            <p className="small mb-2">This code can recover your encrypted trackers if you change or reset your password. It is shown once here. Store it somewhere safe and separate from this device.</p>
+            <code className="d-block bg-white text-dark rounded-3 p-3 text-break user-select-all">{recoveryCodeToSave}</code>
+            <button type="button" className="btn btn-sm btn-dark mt-3" onClick={acknowledgeRecoveryCode}>I've saved my recovery code</button>
+          </div>
+        </div>
+      )}
       <main className="container py-4">
         {!isOnline && (
           <div className="alert alert-warning d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3" role="status">
