@@ -3,7 +3,6 @@ import { Minus, Plus, RotateCcw, ExternalLink, Activity, X, Archive } from "luci
 import * as Icons from "lucide-react";
 import Cookies from "universal-cookie";
 import { toast } from "react-toastify";
-import CryptoJS from "crypto-js";
 import { initializeUserKeys, encryptData, decryptData } from "../../utils/e2ee";
 import { syncEncryptedTrackerWrite } from "../../utils/offlineSync";
 
@@ -14,7 +13,7 @@ const RAW_BASE_URL =
   "https://lv3node.onrender.com";
 
 const BASE_URL = RAW_BASE_URL.replace(/\/$/, "");
-const CLIENT_SECRET = "your_client_side_encryption_secret";
+const decryptField = (value) => value;
 
 const decryptField = (ciphertext) => {
   if (!ciphertext) return null;
