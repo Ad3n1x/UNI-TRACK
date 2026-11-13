@@ -1,8 +1,15 @@
 User-agent: *
 Allow: /
 
-# Allow OpenAI's search crawler to discover public product information.
 User-agent: OAI-SearchBot
 Allow: /
+Disallow: /login
+Disallow: /register
+Disallow: /forgot-password
+Disallow: /homepage
+
+# Opt out of OpenAI model-training crawling while keeping search discovery enabled.
+User-agent: GPTBot
+Disallow: /
 
 Sitemap: https://unitrack-app.vercel.app/sitemap.xml
