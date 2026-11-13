@@ -26,7 +26,11 @@ export function getPendingTrackerWrites() {
   return readQueue().filter((item) => item.accountEmail === email);
 }
 
-export function queueEncryptedTrackerWrite(trackerId, encryptedEntries, expectedUpdatedAt) {
+export function getPendingTrackerConflictCount() {
+  return getPendingTrackerWrites().filter((item) => item.conflict).length;
+}
+
+export function queueEncryptedTrackerWrite(trackerId, encryptedEntries, expectedUpdatedAt, conflict = false) {
   const email = currentAccount();
   const queue = readQueue().filter((item) => !(item.accountEmail === email && String(item.trackerId) === String(trackerId)));
   queue.push({
@@ -34,6 +38,7 @@ export function queueEncryptedTrackerWrite(trackerId, encryptedEntries, expected
     accountEmail: email,
     body: { entries: encryptedEntries },
     expectedUpdatedAt: expectedUpdatedAt ? new Date(expectedUpdatedAt).getTime() : null,
+    conflict: Boolean(conflict),
     queuedAt: new Date().toISOString(),
   });
   writeQueue(queue);
@@ -57,6 +62,10 @@ export async function syncEncryptedTrackerWrite({ baseUrl, trackerId, encryptedE
         : `Tracker sync failed (HTTP ${response.status}).`);
       error.status = response.status;
       error.code = response.status === 409 ? "TRACKER_VERSION_CONFLICT" : undefined;
+      if (response.status === 409) {
+        queueEncryptedTrackerWrite(trackerId, encryptedEntries, expectedUpdatedAt, true);
+        return { queued: true, conflict: true };
+      }
       throw error;
     }
     return { queued: false, response };
@@ -82,6 +91,11 @@ export async function flushPendingTrackerWrites({ baseUrl, headers }) {
   let conflicts = 0;
   const remaining = [];
   for (const item of queue) {
+    if (item.conflict) {
+      remaining.push(item);
+      conflicts += 1;
+      continue;
+    }
     try {
       const response = await fetch(`${baseUrl}/api/v1/trackers/${encodeURIComponent(item.trackerId)}`, {
         method: "PUT",
