@@ -31,6 +31,7 @@ import TrackerFilters from "../components/trackers/TrackerFilters";
 import WorkspacePanels from "../components/WorkspacePanels";
 import { getPendingTrackerWriteCount, syncEncryptedTrackerWrite, flushPendingTrackerWrites } from "../utils/offlineSync";
 import { convertTrackersToCSV } from "../utils/export";
+import { saveEncryptedTrackerSnapshot, loadEncryptedTrackerSnapshot } from "../utils/offlineCache";
 import { initializeUserKeys, unlockUserKeysWithRecoveryCode, setKeyVaultUser, lockUserKeys, decryptData, encryptData } from "../utils/e2ee";
 
 // ==========================================
@@ -310,13 +311,28 @@ export default function HomePage() {
       setKeyVaultUser(currentUserEmail);
       const { privateKey } = await initializeUserKeys();
 
-      let response = await fetch(`${BASE_URL}/api/v1/trackers`, { headers: getAuthHeaders() });
-      if (!response.ok) {
-        response = await fetch(`${BASE_URL}/api/trackers`, { headers: getAuthHeaders() });
+      let fetchedArray = [];
+      try {
+        let response = await fetch(`${BASE_URL}/api/v1/trackers`, { headers: getAuthHeaders() });
+        if (!response.ok) {
+          response = await fetch(`${BASE_URL}/api/trackers`, { headers: getAuthHeaders() });
+        }
+        if (!response.ok) throw new Error(`Tracker service returned HTTP ${response.status}.`);
+        const data = await response.json();
+        fetchedArray = Array.isArray(data) ? data : Array.isArray(data.trackers) ? data.trackers : [];
+        await saveEncryptedTrackerSnapshot(currentUserEmail, fetchedArray).catch((cacheError) => {
+          console.warn("Offline snapshot could not be saved:", cacheError.message);
+        });
+      } catch (networkError) {
+        if (networkError instanceof TypeError || navigator.onLine === false) {
+          const snapshot = await loadEncryptedTrackerSnapshot(currentUserEmail).catch(() => null);
+          if (!snapshot || !Array.isArray(snapshot.trackers)) throw networkError;
+          fetchedArray = snapshot.trackers;
+          setNotification(`Offline mode · showing your last saved tracker snapshot from ${new Date(snapshot.savedAt).toLocaleString()}.`);
+        } else {
+          throw networkError;
+        }
       }
-
-      const data = await response.json();
-      const fetchedArray = Array.isArray(data) ? data : Array.isArray(data.trackers) ? data.trackers : [];
 
       const decryptedTrackers = await Promise.all(
         fetchedArray.map(async (tracker) => {
