@@ -30,6 +30,7 @@ import TrackerList from "../components/trackers/TrackerList";
 import TrackerFilters from "../components/trackers/TrackerFilters";
 import WorkspacePanels from "../components/WorkspacePanels";
 import { getPendingTrackerWriteCount, syncEncryptedTrackerWrite, flushPendingTrackerWrites } from "../utils/offlineSync";
+import { convertTrackersToCSV } from "../utils/export";
 import { initializeUserKeys, unlockUserKeysWithRecoveryCode, setKeyVaultUser, lockUserKeys, decryptData, encryptData } from "../utils/e2ee";
 
 // ==========================================
@@ -82,41 +83,6 @@ function urlBase64ToUint8Array(base64String) {
   }
   return outputArray;
 }
-
-const csvCell = (value) => {
-  let text = String(value ?? "");
-  // Prevent spreadsheet formula execution when exported data is opened in Excel/Sheets.
-  if (/^[\\s\\u0000-\\u001f]*[=+@\\-]/.test(text)) text = `'${text}`;
-  return `"${text.replace(/"/g, '""')}"`;
-};
-
-const convertTrackersToCSV = (trackersList) => {
-  const headers = ["Tracker ID", "Tracker Name", "Type", "Target", "Entry ID", "Timestamp", "Value", "Note"];
-  const rows = [];
-
-  trackersList.forEach((tracker) => {
-    const entries = Array.isArray(tracker.entries) ? tracker.entries : [];
-    const base = [
-      tracker._id || tracker.id || "",
-      tracker.name || tracker.trackerName || "",
-      tracker.type || "",
-      tracker.target ?? "",
-    ];
-
-    const trackerEntries = entries.length ? entries : [null];
-    trackerEntries.forEach((entry) => {
-      rows.push([
-        ...base,
-        entry?._id || entry?.id || "",
-        entry?.timestamp || entry?.date || "",
-        entry?.value ?? "",
-        entry?.note || "",
-      ].map(csvCell).join(","));
-    });
-  });
-
-  return [headers.map(csvCell).join(","), ...rows].join("\r\n");
-};
 
 const downloadFile = (content, filename, contentType) => {
   const blob = new Blob([content], { type: contentType });
