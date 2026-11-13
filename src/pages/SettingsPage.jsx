@@ -1,7 +1,8 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import Cookies from "universal-cookie";
-import { ArrowLeft, ShieldCheck, MonitorSmartphone, LogOut, Trash2, RefreshCw, AlertTriangle } from "lucide-react";
+import { ArrowLeft, ShieldCheck, MonitorSmartphone, LogOut, Trash2, RefreshCw, AlertTriangle, KeyRound } from "lucide-react";
+import { rotateRecoveryCode } from "../utils/e2ee";
 
 const API = (import.meta.env.VITE_API_URL || "https://lv3node.onrender.com").replace(/\/$/, "");
 const authHeaders = () => {
@@ -17,6 +18,8 @@ export default function SettingsPage() {
   const [busy, setBusy] = useState("");
   const [password, setPassword] = useState("");
   const [confirmation, setConfirmation] = useState("");
+  const [recoveryPassword, setRecoveryPassword] = useState("");
+  const [newRecoveryCode, setNewRecoveryCode] = useState("");
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
 
@@ -72,6 +75,18 @@ export default function SettingsPage() {
     }
   };
 
+  const createRecoveryCode = async (event) => {
+    event.preventDefault();
+    setError("");
+    try {
+      const code = await rotateRecoveryCode(recoveryPassword);
+      setNewRecoveryCode(code);
+      setRecoveryPassword("");
+    } catch (err) {
+      setError(err.message || "Could not create a recovery code.");
+    }
+  };
+
   const deleteAccount = async (event) => {
     event.preventDefault();
     if (confirmation !== "DELETE") {
@@ -96,6 +111,8 @@ export default function SettingsPage() {
       localStorage.removeItem("pro_payment_date");
       localStorage.removeItem("e2ee_public_key");
       localStorage.removeItem("e2ee_private_key");
+      localStorage.removeItem("e2ee_private_vault_v2");
+      localStorage.removeItem("e2ee_recovery_vault_v1");
       setMessage("Account deleted.");
       navigate("/unitrack", { replace: true });
     } catch (err) {
@@ -150,6 +167,16 @@ export default function SettingsPage() {
           <button type="button" className="btn btn-outline-danger btn-sm mt-3 align-self-start" disabled={busy === "all" || sessions.length === 0} onClick={revokeAll}>
             <LogOut size={15} className="me-1" /> Sign out all devices
           </button>
+        </section>
+
+        <section className="card border-0 shadow-sm rounded-4 p-3 p-md-4 mb-4">
+          <div className="d-flex align-items-center gap-2 mb-2 text-primary"><KeyRound size={19} /><h2 className="h5 fw-bold mb-0">Private-data recovery code</h2></div>
+          <p className="text-secondary small">Create a fresh recovery code using your current account password. Store it offline in a password manager or another safe place. Anyone with this code and access to your account can recover your encrypted tracker key.</p>
+          {newRecoveryCode && <div className="alert alert-warning small" role="status"><strong>Save this code now. It will not be shown again.</strong><code className="d-block bg-white text-dark rounded-3 p-3 mt-2 text-break user-select-all">{newRecoveryCode}</code><button type="button" className="btn btn-sm btn-dark mt-2" onClick={() => setNewRecoveryCode("")}>I've saved it</button></div>}
+          <form onSubmit={createRecoveryCode} className="d-flex flex-wrap gap-2" style={{ maxWidth: 600 }}>
+            <input type="password" autoComplete="current-password" className="form-control flex-grow-1" style={{ minWidth: 220 }} value={recoveryPassword} onChange={(e) => setRecoveryPassword(e.target.value)} placeholder="Current account password" required />
+            <button type="submit" className="btn btn-outline-primary" disabled={!recoveryPassword}>Generate new recovery code</button>
+          </form>
         </section>
 
         <section className="card border-0 shadow-sm rounded-4 p-3 p-md-4 mb-4">
