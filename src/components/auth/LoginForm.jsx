@@ -5,6 +5,7 @@ import Cookies from "universal-cookie";
 import { Link, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import { ArrowLeft } from "lucide-react";
+import { initializeUserKeys } from "../../utils/e2ee";
 
 const RAW_BASE_URL =
   (typeof process !== "undefined" && process.env && (process.env.REACT_APP_API_URL || process.env.REACT_APP_BASE_URL)) ||
@@ -81,6 +82,17 @@ export default function LoginForm({ onSuccess }) {
         // Save Token & User Email in localStorage for instant component access
         localStorage.setItem("token", token);
         localStorage.setItem("userEmail", jwtUserEmail);
+
+        // Unlock or safely migrate this device's private-key vault while the password is available.
+        try {
+          const vault = await initializeUserKeys(password);
+          if (vault.recoveryCode) {
+            sessionStorage.setItem("unitrack.recoveryCodePending", vault.recoveryCode);
+          }
+        } catch (vaultError) {
+          console.warn("Private data vault requires recovery or unlock:", vaultError);
+          // Authentication remains successful; the workspace will show the recovery screen.
+        }
       }
 
       if (onSuccess) {
