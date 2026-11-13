@@ -32,6 +32,7 @@ function AutoLogoutWrapper({ children }) {
     }
     lockUserKeys();
     cookies.remove("token", { path: "/" });
+    cookies.remove("userEmail", { path: "/" });
     localStorage.removeItem("token");
     localStorage.removeItem("userEmail");
     toast.warning("Session expired due to 1 hour of inactivity. Please log in again.");
