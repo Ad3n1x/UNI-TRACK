@@ -173,13 +173,12 @@ const toggleBootstrapModal = (modalId, action = "show") => {
 };
 
 const safeDecrypt = async (privateKey, value) => {
+  if (value && typeof value === "object" && value.ciphertext) {
+    return decryptData(privateKey, value);
+  }
   if (typeof value !== "string" || !value) return value;
 
-  const isEncrypted = 
-    value.startsWith("U2FsdGVkX1") || 
-    value.startsWith("enc:") || 
-    value.includes(":");
-
+  const isEncrypted = value.startsWith("U2FsdGVkX1") || value.startsWith("enc:") || value.includes(":");
   if (!isEncrypted) return value;
 
   try {
@@ -482,22 +481,19 @@ export default function HomePage() {
 
     try {
       const { privateKey } = await initializeUserKeys();
+      const recoveryResponse = await fetch(`${BASE_URL}/api/v1/trackers/recovery/list`, { headers: getAuthHeaders() });
+      const recoveryData = recoveryResponse.ok ? await recoveryResponse.json() : { trackers: [] };
+      const exportSource = [...trackers, ...(recoveryData.trackers || [])];
 
       const decryptedExportTrackers = await Promise.all(
-        trackers.map(async (t) => {
+        exportSource.map(async (t) => {
           const decryptedName = await safeDecrypt(privateKey, t.name || t.trackerName);
           const decryptedTarget = await safeDecrypt(privateKey, t.target);
 
-          let rawEntries = t.entries;
+          let rawEntries = await safeDecrypt(privateKey, t.entries);
           if (typeof rawEntries === "string") {
-            const decryptedEntriesStr = await safeDecrypt(privateKey, rawEntries);
-            try {
-              rawEntries = JSON.parse(decryptedEntriesStr);
-            } catch {
-              rawEntries = decryptedEntriesStr;
-            }
+            try { rawEntries = JSON.parse(rawEntries); } catch { /* Keep legacy text entries as-is. */ }
           }
-
           const entriesList = Array.isArray(rawEntries) ? rawEntries : [];
           const decryptedEntries = await Promise.all(
             entriesList.map(async (entry) => {
