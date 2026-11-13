@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useRef, useMemo } from "react";
-import { Minus, Plus, RotateCcw, ExternalLink, Activity, X } from "lucide-react";
+import { Minus, Plus, RotateCcw, ExternalLink, Activity, X, Archive } from "lucide-react";
 import * as Icons from "lucide-react";
 import Cookies from "universal-cookie";
 import { toast } from "react-toastify";
 import CryptoJS from "crypto-js";
 import { initializeUserKeys, encryptData, decryptData } from "../../utils/e2ee";
+import { syncEncryptedTrackerWrite } from "../../utils/offlineSync";
 
 const RAW_BASE_URL =
   (typeof process !== "undefined" && process.env?.API_URL) ||
@@ -72,6 +73,7 @@ const getEntryDateString = (dateInput) => {
 export default function TrackerCard({
   tracker,
   onDelete = () => {},
+  onArchive = () => {},
   onUpdateTracker = () => {},
   fetchTrackers = () => {},
   cardRef = null,
@@ -168,28 +170,20 @@ export default function TrackerCard({
       const { publicKey } = await initializeUserKeys();
       const encryptedPayloadEntries = await encryptData(publicKey, updatedEntriesList);
 
-      let res = await fetch(`${BASE_URL}/api/v1/trackers/${trackerId}`, {
-        method: "PUT",
+      const syncResult = await syncEncryptedTrackerWrite({
+        baseUrl: BASE_URL,
+        trackerId,
+        encryptedEntries: encryptedPayloadEntries,
         headers,
-        body: JSON.stringify({ entries: encryptedPayloadEntries }),
       });
 
-      if (res.status === 404) {
-        res = await fetch(`${BASE_URL}/api/trackers/${trackerId}`, {
-          method: "PUT",
-          headers,
-          body: JSON.stringify({ entries: encryptedPayloadEntries }),
-        });
-      }
-
-      if (!res.ok) {
-        console.warn(`Server sync warning: HTTP ${res.status}. Keeping local state.`);
-        toast.success(successMessage);
-        fetchTrackers?.();
+      if (syncResult.queued) {
+        onUpdateTracker?.({ ...tracker, entries: updatedEntriesList });
+        toast.info("Saved on this device. It will sync when you're back online.");
         return;
       }
 
-      const updatedTrackerRes = await res.json();
+      const updatedTrackerRes = await syncResult.response.json();
       const finalTracker = updatedTrackerRes.data || updatedTrackerRes;
 
       if (finalTracker && finalTracker.entries) {
@@ -205,7 +199,7 @@ export default function TrackerCard({
       toast.success(successMessage);
     } catch (err) {
       console.error("Network sync error:", err);
-      toast.success(successMessage);
+      toast.error(err.message || "Could not save this update. Please try again.");
       fetchTrackers?.();
     }
   };
@@ -410,6 +404,20 @@ export default function TrackerCard({
               </p>
             </div>
           </div>
+
+          <button
+            type="button"
+            className="btn btn-sm btn-outline-secondary position-absolute"
+            style={{ top: "12px", right: "52px", zIndex: 2, borderRadius: "10px" }}
+            aria-label={`Archive ${decryptedName}`}
+            title="Archive tracker"
+            onClick={(e) => {
+              e.stopPropagation();
+              if (trackerId) onArchive(trackerId);
+            }}
+          >
+            <Archive size={15} />
+          </button>
 
           <button
             type="button"
