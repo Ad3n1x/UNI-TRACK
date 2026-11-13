@@ -1,7 +1,7 @@
 export const csvCell = (value) => {
   let text = String(value ?? "");
   // CSV quoting alone does not stop spreadsheet formula execution.
-  if (typeof value === "string" && /^[\\s\\u0000-\\u001f]*[=+\\-@]/.test(text)) {
+  if (typeof value === "string" && /^[\s\u0000-\u001f]*[=+\-@]/.test(text)) {
     text = `'${text}`;
   }
   return `"${text.replace(/"/g, '""')}"`;
@@ -28,5 +28,5 @@ export const convertTrackersToCSV = (trackersList = []) => {
       ].map(csvCell).join(","));
     });
   });
-  return [headers.map(csvCell).join(","), ...rows].join("\\r\\n");
+  return [headers.map(csvCell).join(","), ...rows].join("\r\n");
 };
