@@ -1,43 +1,125 @@
-<!DOCTYPE html>
-<html lang="en">
+<!doctype html>
+<html lang="en-NG">
   <head>
     <meta charset="UTF-8" />
-    <!-- Updated Favicon to logo.svg -->
-    <link rel="icon" type="image/svg+xml" href="/logo.svg" />
-    <link rel="apple-touch-icon" href="/logo.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#3b82f6" />
-
-    <!-- Bootstrap CSS (v5.3.3) -->
-    <link
-      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
-      rel="stylesheet"
-      integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH"
-      crossorigin="anonymous"
-    />
-
-    <!-- Font Awesome Icons -->
-    <link
-      rel="stylesheet"
-      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
-      crossorigin="anonymous"
-      referrerpolicy="no-referrer"
-    />
-
-    <!-- ALAT Pay Inline Popup SDK -->
+    <meta name="description" content="UNI-TRACK by AD3N1X is a web-based productivity and personal tracking app for habits, tasks, goals and metrics, with tracker management, CSV export and browser push notifications." />
+    <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
+    <meta name="googlebot" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
+    <meta name="author" content="AD3N1X" />
+    <meta name="application-name" content="UNI-TRACK by AD3N1X" />
+    <link rel="canonical" href="https://unitrack-app.vercel.app/" />
+    <link rel="icon" type="image/svg+xml" href="/logo.svg" />
+    <link rel="apple-touch-icon" href="/logo.svg" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="UNI-TRACK by AD3N1X" />
+    <meta property="og:title" content="UNI-TRACK by AD3N1X — Personal Tracking & Productivity" />
+    <meta property="og:description" content="Track habits, tasks, goals and personal metrics. Organise trackers, export your data and use browser push notifications." />
+    <meta property="og:url" content="https://unitrack-app.vercel.app/" />
+    <meta property="og:image" content="https://unitrack-app.vercel.app/logo.svg" />
+    <meta property="og:locale" content="en_NG" />
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="UNI-TRACK by AD3N1X — Personal Tracking & Productivity" />
+    <meta name="twitter:description" content="A personal tracking and productivity app for habits, tasks, goals and metrics. Built by AD3N1X." />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@graph": [
+          {
+            "@type": "Person",
+            "@id": "https://github.com/Ad3n1x#creator",
+            "name": "AD3N1X",
+            "url": "https://github.com/Ad3n1x",
+            "sameAs": ["https://github.com/Ad3n1x", "https://portfolio-sandy-seven-w0bgdmliak.vercel.app/"]
+          },
+          {
+            "@type": "WebSite",
+            "@id": "https://unitrack-app.vercel.app/#website",
+            "url": "https://unitrack-app.vercel.app/",
+            "name": "UNI-TRACK by AD3N1X",
+            "publisher": {"@id": "https://github.com/Ad3n1x#creator"},
+            "inLanguage": "en-NG"
+          },
+          {
+            "@type": "WebPage",
+            "@id": "https://unitrack-app.vercel.app/#webpage",
+            "url": "https://unitrack-app.vercel.app/",
+            "name": "UNI-TRACK by AD3N1X — Personal Tracking & Productivity",
+            "description": "Official website for UNI-TRACK, a personal productivity and tracking web application created by AD3N1X.",
+            "isPartOf": {"@id": "https://unitrack-app.vercel.app/#website"},
+            "about": {"@id": "https://unitrack-app.vercel.app/#software"}
+          },
+          {
+            "@type": "SoftwareApplication",
+            "@id": "https://unitrack-app.vercel.app/#software",
+            "name": "UNI-TRACK",
+            "alternateName": ["UNI-TRACK by AD3N1X", "UniTrack"],
+            "url": "https://unitrack-app.vercel.app/",
+            "applicationCategory": "ProductivityApplication",
+            "operatingSystem": "Web",
+            "description": "A web application for managing personal habits, tasks, goals and metrics through configurable trackers, data export and browser push notifications.",
+            "creator": {"@id": "https://github.com/Ad3n1x#creator"},
+            "publisher": {"@id": "https://github.com/Ad3n1x#creator"},
+            "codeRepository": "https://github.com/Ad3n1x/UNI-TRACK",
+            "featureList": ["Habit and goal tracking", "Configurable counters and logs", "Tracker lists and filters", "CSV data export", "Browser push notifications", "Email OTP account verification", "Client-side encryption and decryption utilities for supported tracking data"]
+          },
+          {
+            "@type": "FAQPage",
+            "@id": "https://unitrack-app.vercel.app/#faq",
+            "url": "https://unitrack-app.vercel.app/",
+            "mainEntity": [
+              {"@type":"Question","name":"What is UNI-TRACK?","acceptedAnswer":{"@type":"Answer","text":"UNI-TRACK is a web-based personal productivity and tracking application created by AD3N1X. It helps users organise habits, tasks, goals and personal metrics."}},
+              {"@type":"Question","name":"Who created UNI-TRACK?","acceptedAnswer":{"@type":"Answer","text":"UNI-TRACK is an independent project created by AD3N1X. Its official website is https://unitrack-app.vercel.app/ and its source repository is https://github.com/Ad3n1x/UNI-TRACK."}},
+              {"@type":"Question","name":"Can users export their tracking data?","acceptedAnswer":{"@type":"Answer","text":"The application includes CSV export for tracking data."}},
+              {"@type":"Question","name":"Is all UNI-TRACK data end-to-end encrypted?","acceptedAnswer":{"@type":"Answer","text":"The application includes client-side encryption and decryption utilities for supported tracking data. Do not assume every account field, network request or stored record is end-to-end encrypted; consult the implementation and current privacy documentation for scope."}}
+            ]
+          }
+        ]
+      }
+    </script>
+    <title>UNI-TRACK by AD3N1X — Personal Tracking & Productivity</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
     <script src="https://web.alatpay.ng/js/alatpay.js" defer></script>
   </head>
-
   <body>
-    <div id="root"></div>
-
+    <div id="root">
+      <main id="unitrack-static-fallback" class="container py-5" style="max-width:900px">
+        <header>
+          <p><strong>UNI-TRACK by AD3N1X</strong></p>
+          <h1>Personal habit, task, goal and metric tracking</h1>
+          <p>UNI-TRACK is an independent web application created by AD3N1X. It helps users organise personal routines and goals with configurable trackers, lists, filters and progress records.</p>
+        </header>
+        <section>
+          <h2>What UNI-TRACK includes</h2>
+          <ul>
+            <li>Account registration with email OTP verification, sign-in and password recovery.</li>
+            <li>Configurable trackers for habits, counters, logs and personal metrics.</li>
+            <li>Tracker lists, filters and dashboard views.</li>
+            <li>CSV export for tracking data.</li>
+            <li>Browser push-notification support where the browser and device permit it.</li>
+            <li>Automatic session logout after one hour of inactivity.</li>
+            <li>Client-side encryption and decryption utilities for supported tracking data.</li>
+          </ul>
+        </section>
+        <section>
+          <h2>Privacy and encryption scope</h2>
+          <p>The application includes browser-based cryptographic utilities using Web Crypto APIs and locally held key material. This should not be interpreted as proof that every account field, network request or stored record is end-to-end encrypted. Review the current implementation and privacy information before relying on a particular security guarantee.</p>
+        </section>
+        <section>
+          <h2>Official project references</h2>
+          <ul>
+            <li><a href="https://unitrack-app.vercel.app/">Official UNI-TRACK website and application</a></li>
+            <li><a href="https://github.com/Ad3n1x/UNI-TRACK">UNI-TRACK source repository</a></li>
+            <li><a href="https://github.com/Ad3n1x">Creator: AD3N1X on GitHub</a></li>
+          </ul>
+        </section>
+        <footer><p>UNI-TRACK by AD3N1X. Independent software project.</p></footer>
+      </main>
+    </div>
     <script type="module" src="/src/main.jsx"></script>
-
-    <!-- Bootstrap JS Bundle -->
-    <script
-      src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
-      integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
-      crossorigin="anonymous"
-    ></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
   </body>
 </html>
