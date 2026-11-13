@@ -22,6 +22,39 @@ const PRIVATE_VAULT_KEY = "e2ee_private_vault_v2";
 const RECOVERY_VAULT_KEY = "e2ee_recovery_vault_v1";
 const PUBLIC_KEY_KEY = "e2ee_public_key";
 let unlockedPrivateKey = null;
+let activeUserScope = "unassigned";
+
+const scopedKey = (key) => `unitrack:${activeUserScope}:${key}`;
+const getScopedItem = (key) => localStorage.getItem(scopedKey(key));
+const setScopedItem = (key, value) => localStorage.setItem(scopedKey(key), value);
+const removeScopedItem = (key) => localStorage.removeItem(scopedKey(key));
+
+export function setKeyVaultUser(email) {
+  const normalized = String(email || "").trim().toLowerCase();
+  if (!normalized) throw new Error("Cannot select a private-key vault without an account identity.");
+  const nextScope = toBase64Url(new TextEncoder().encode(normalized));
+  if (nextScope !== activeUserScope) unlockedPrivateKey = null;
+  activeUserScope = nextScope;
+  // Move legacy single-account keys to the first account that signs in on this browser.
+  for (const key of [PRIVATE_VAULT_KEY, RECOVERY_VAULT_KEY, PUBLIC_KEY_KEY, "e2ee_private_key"]) {
+    const scoped = scopedKey(key);
+    if (!localStorage.getItem(scoped) && localStorage.getItem(key)) {
+      localStorage.setItem(scoped, localStorage.getItem(key));
+      localStorage.removeItem(key);
+    }
+  }
+}
+
+export function lockUserKeys() {
+  unlockedPrivateKey = null;
+}
+
+export function clearUserKeyVault() {
+  for (const key of [PRIVATE_VAULT_KEY, RECOVERY_VAULT_KEY, PUBLIC_KEY_KEY, "e2ee_private_key"]) {
+    removeScopedItem(key);
+  }
+  unlockedPrivateKey = null;
+}
 
 const toBase64Url = (buffer) => arrayBufferToBase64(buffer).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
 const randomBytes = (length) => window.crypto.getRandomValues(new Uint8Array(length));
