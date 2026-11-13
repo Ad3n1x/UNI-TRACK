@@ -1068,7 +1068,7 @@ export default function HomePage() {
               <div className="dropdown">
                 <button
                   type="button"
-                  className={`btn ${isPremium ? "btn-outline-success" : "btn-outline-secondary"} btn-custom-nav dropdown-toggle`}
+                  className="btn btn-outline-secondary btn-custom-nav dropdown-toggle"
                   data-bs-toggle="dropdown"
                   aria-expanded="false"
                 >
