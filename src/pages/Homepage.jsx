@@ -28,6 +28,8 @@ import TrackerDashboard from "../components/trackers/TrackerDashboard";
 import TrackerForm from "../components/trackers/TrackerForm";
 import TrackerList from "../components/trackers/TrackerList";
 import TrackerFilters from "../components/trackers/TrackerFilters";
+import WorkspacePanels from "../components/WorkspacePanels";
+import { getPendingTrackerWriteCount, syncEncryptedTrackerWrite, flushPendingTrackerWrites } from "../utils/offlineSync";
 import { initializeUserKeys, decryptData, encryptData } from "../utils/e2ee";
 
 // ==========================================
@@ -243,6 +245,8 @@ export default function HomePage() {
   const [typeFilter, setTypeFilter] = useState(null);
   const [newlyAddedId, setNewlyAddedId] = useState(null);
   const [notification, setNotification] = useState(null);
+  const [isOnline, setIsOnline] = useState(() => typeof navigator === "undefined" ? true : navigator.onLine);
+  const [pendingWrites, setPendingWrites] = useState(() => getPendingTrackerWriteCount());
 
   const [subscribing, setSubscribing] = useState(false);
   const [subscribed, setSubscribed] = useState(false);
@@ -388,6 +392,34 @@ export default function HomePage() {
     return () => clearTimeout(task);
   }, [token, fetchTrackers, fetchUserSubscriptionStatus]);
 
+  useEffect(() => {
+    const updateQueueCount = () => setPendingWrites(getPendingTrackerWriteCount());
+    const handleOffline = () => setIsOnline(false);
+    const handleOnline = async () => {
+      setIsOnline(true);
+      try {
+        const result = await flushPendingTrackerWrites({ baseUrl: BASE_URL, headers: getAuthHeaders() });
+        updateQueueCount();
+        if (result.synced > 0) {
+          setNotification(`${result.synced} pending update${result.synced === 1 ? "" : "s"} synced.`);
+          fetchTrackers();
+        }
+      } catch (error) {
+        console.warn("Pending tracker sync will retry later:", error);
+      }
+    };
+    window.addEventListener("offline", handleOffline);
+    window.addEventListener("online", handleOnline);
+    window.addEventListener("unitrack:queue-change", updateQueueCount);
+    updateQueueCount();
+    if (navigator.onLine) handleOnline();
+    return () => {
+      window.removeEventListener("offline", handleOffline);
+      window.removeEventListener("online", handleOnline);
+      window.removeEventListener("unitrack:queue-change", updateQueueCount);
+    };
+  }, [fetchTrackers]);
+
   // --- ACTIONS ---
   const handleAlatPayPayment = async () => {
     // The former inline checkout exposed the ALATPay server credential in the browser.
@@ -427,12 +459,7 @@ export default function HomePage() {
   };
 
   const handleExportData = async (format = "json") => {
-    if (!isPremium) {
-      toggleBootstrapModal("premiumModal", "show");
-      setNotification("Data export is available exclusively for PRO users.");
-      setTimeout(() => setNotification(null), 4000);
-      return;
-    }
+    // Personal data portability is available to every account tier.
 
     const timestamp = Date.now();
 
@@ -512,22 +539,16 @@ export default function HomePage() {
     try {
       const { publicKey } = await initializeUserKeys();
       const encryptedEntries = await encryptData(publicKey, updatedEntries);
-
-      let response = await fetch(`${BASE_URL}/api/v1/trackers/${trackerId}`, {
-        method: "PUT",
+      const result = await syncEncryptedTrackerWrite({
+        baseUrl: BASE_URL,
+        trackerId,
+        encryptedEntries,
         headers: getAuthHeaders(),
-        body: JSON.stringify({ entries: encryptedEntries }),
       });
-
-      if (response.status === 404) {
-        response = await fetch(`${BASE_URL}/api/trackers/${trackerId}`, {
-          method: "PUT",
-          headers: getAuthHeaders(),
-          body: JSON.stringify({ entries: encryptedEntries }),
-        });
+      if (result.queued) {
+        setNotification("Saved securely on this device. It will sync when you're back online.");
+        return;
       }
-
-      if (!response.ok) throw new Error("Failed to sync entries.");
     } catch (error) {
       console.error("Error syncing entry modification:", error);
       await fetchTrackers(); 
@@ -599,6 +620,21 @@ export default function HomePage() {
     await syncTrackerEntriesWithBackend(trackerId, updatedEntries);
   };
 
+  const handleArchiveTracker = async (trackerId) => {
+    try {
+      const response = await fetch(`${BASE_URL}/api/v1/trackers/${trackerId}/archive`, {
+        method: "POST",
+        headers: getAuthHeaders(),
+      });
+      if (!response.ok) throw new Error("Could not archive tracker.");
+      await fetchTrackers();
+      setNotification("Tracker archived. You can restore it anytime from Archive & trash.");
+    } catch (error) {
+      setNotification(error.message || "Could not archive tracker.");
+    }
+    setTimeout(() => setNotification(null), 3500);
+  };
+
   const handleDeleteTracker = async (trackerId) => {
     if (trackerId === SAMPLE_TRACKER._id) return;
 
@@ -618,7 +654,7 @@ export default function HomePage() {
       if (!response.ok) throw new Error("Failed to delete tracker.");
 
       await fetchTrackers();
-      setNotification("Tracker deleted successfully!");
+      setNotification("Tracker moved to recently deleted. You can restore it from Archive & trash.");
       setTimeout(() => setNotification(null), 2500);
     } catch (error) {
       console.error("Error deleting tracker:", error);
@@ -834,6 +870,11 @@ export default function HomePage() {
               <span>{isPremium ? "PRO Active" : "Upgrade PRO"}</span>
             </button>
 
+            <a href="/settings" className={`btn ${darkMode ? "btn-outline-light" : "btn-outline-secondary"} btn-custom-nav text-decoration-none`} aria-label="Privacy and security settings">
+              <ShieldCheck size={15} />
+              <span className="d-none d-sm-inline">Security</span>
+            </a>
+
             <button
               type="button"
               className="btn btn-outline-danger btn-custom-nav"
@@ -850,6 +891,19 @@ export default function HomePage() {
 
       {/* Main Workspace */}
       <main className="container py-4">
+        {!isOnline && (
+          <div className="alert alert-warning d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3" role="status">
+            <span><strong>You're offline.</strong> Your current workspace remains open; new progress is queued locally until connection returns.</span>
+            {pendingWrites > 0 && <span className="badge text-bg-dark">{pendingWrites} pending sync</span>}
+          </div>
+        )}
+        {isOnline && pendingWrites > 0 && (
+          <div className="alert alert-info d-flex align-items-center justify-content-between gap-2 mb-3" role="status">
+            <span>{pendingWrites} encrypted update{pendingWrites === 1 ? "" : "s"} waiting to sync.</span>
+            <button type="button" className="btn btn-sm btn-outline-primary" onClick={async () => { const result = await flushPendingTrackerWrites({ baseUrl: BASE_URL, headers: getAuthHeaders() }); setPendingWrites(result.pending); if (result.synced) fetchTrackers(); }}>Sync now</button>
+          </div>
+        )}
+
         
         {/* Welcome Banner */}
         <div className={`p-4 p-md-5 glass-card shadow-sm border mb-4 position-relative overflow-hidden ${darkMode ? "bg-dark border-secondary" : "bg-white"}`}>
@@ -1006,6 +1060,7 @@ export default function HomePage() {
 
         </div>
 
+        <WorkspacePanels baseUrl={BASE_URL} darkMode={darkMode} onRefresh={fetchTrackers} />
       </main>
 
       {/* Floating Support Button */}
