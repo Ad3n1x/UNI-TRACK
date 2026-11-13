@@ -133,7 +133,7 @@ export async function initializeUserKeys(password) {
     const privateKey = await rememberPrivateKey(privateJwk);
     if (!publicKeyStored) {
       const derivedPublic = publicJwkFromPrivate(privateJwk);
-      localStorage.setItem(PUBLIC_KEY_KEY, JSON.stringify(derivedPublic));
+      setScopedItem(PUBLIC_KEY_KEY, JSON.stringify(derivedPublic));
       await syncPublicKey(derivedPublic).catch((error) => console.warn("Public-key sync will retry:", error.message));
       return { publicKey: derivedPublic, privateKey };
     }
