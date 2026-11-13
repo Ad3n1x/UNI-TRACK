@@ -175,6 +175,7 @@ export default function TrackerCard({
         trackerId,
         encryptedEntries: encryptedPayloadEntries,
         headers,
+        expectedUpdatedAt: tracker.updatedAt,
       });
 
       if (syncResult.queued) {
