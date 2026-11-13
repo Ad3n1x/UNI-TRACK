@@ -4,6 +4,7 @@ import TrackerCard from './TrackerCard';
 export default function TrackerList({
   trackers = [],
   onDeleteTracker,
+  onArchiveTracker,
   onAddEntry,
   onDeleteEntry,
   onUpdate,
@@ -144,6 +145,7 @@ export default function TrackerList({
               <TrackerCard
                 tracker={tracker}
                 onDelete={() => onDeleteTracker?.(tracker.id || tracker._id)}
+                onArchive={() => onArchiveTracker?.(tracker.id || tracker._id)}
                 onAddEntry={(entry) => onAddEntry?.(tracker.id || tracker._id, entry)}
                 onDeleteEntry={(entryId) => onDeleteEntry?.(tracker.id || tracker._id, entryId)}
                 onUpdate={(updatedData) => onUpdate?.(tracker.id || tracker._id, updatedData.entries)}
