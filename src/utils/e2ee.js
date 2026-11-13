@@ -134,7 +134,7 @@ export async function initializeUserKeys(password) {
     if (!publicKeyStored) {
       const derivedPublic = publicJwkFromPrivate(privateJwk);
       localStorage.setItem(PUBLIC_KEY_KEY, JSON.stringify(derivedPublic));
-      await syncPublicKey(derivedPublic);
+      await syncPublicKey(derivedPublic).catch((error) => console.warn("Public-key sync will retry:", error.message));
       return { publicKey: derivedPublic, privateKey };
     }
     return { publicKey: publicKeyStored, privateKey };
@@ -155,7 +155,7 @@ export async function initializeUserKeys(password) {
     const recoveryCode = toBase64Url(randomBytes(24));
     await persistVault(privateJwk, String(password).trim(), recoveryCode);
     const privateKey = await rememberPrivateKey(privateJwk);
-    await syncPublicKey(publicKey);
+    await syncPublicKey(publicKey).catch((error) => console.warn("Public-key sync will retry:", error.message));
     return { publicKey, privateKey, recoveryCode };
   }
 
@@ -184,7 +184,7 @@ export async function initializeUserKeys(password) {
   const recoveryCode = toBase64Url(randomBytes(24));
   await persistVault(privateJwk, String(password).trim(), recoveryCode);
   const privateKey = await rememberPrivateKey(privateJwk);
-  await syncPublicKey(publicKey);
+  await syncPublicKey(publicKey).catch((error) => console.warn("Public-key sync will retry:", error.message));
   return { publicKey, privateKey, recoveryCode };
 }
 
