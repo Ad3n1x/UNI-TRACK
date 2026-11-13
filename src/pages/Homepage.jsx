@@ -157,11 +157,16 @@ async function registerServiceWorkerAndSubscribe() {
     applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
   });
 
-  await fetch(`${BASE_URL}/api/v1/subscribe`, {
+  const response = await fetch(`${BASE_URL}/api/v1/subscribe`, {
     method: "POST",
     headers: getAuthHeaders(),
     body: JSON.stringify(subscription),
   });
+
+  if (!response.ok) {
+    await subscription.unsubscribe().catch(() => {});
+    throw new Error("Could not save notification preferences. Please try again.");
+  }
 
   return true;
 }
