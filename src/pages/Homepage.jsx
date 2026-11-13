@@ -578,6 +578,7 @@ export default function HomePage() {
             trackerName: decryptedName,
             target: decryptedTarget,
             entries: decryptedEntries,
+            recordState: t.deletedAt ? "recently-deleted" : t.archivedAt ? "archived" : "active",
           };
         })
       );
