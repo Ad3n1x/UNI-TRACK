@@ -177,9 +177,10 @@ const safeDecrypt = async (privateKey, value) => {
   if (value && typeof value === "object" && value.ciphertext) {
     return decryptData(privateKey, value);
   }
+  if (isLegacyEncryptedField(value)) return decryptLegacyField(value);
   if (typeof value !== "string" || !value) return value;
 
-  const isEncrypted = value.startsWith("U2FsdGVkX1") || value.startsWith("enc:") || value.includes(":");
+  const isEncrypted = value.startsWith("enc:") || value.includes(":");
   if (!isEncrypted) return value;
 
   try {
