@@ -77,6 +77,14 @@ function AutoLogoutWrapper({ children }) {
 }
 
 export default function App() {
+  useEffect(() => {
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("/sw.js").catch((error) => {
+        console.warn("Offline app shell registration failed:", error.message);
+      });
+    }
+  }, []);
+
   return (
     <AutoLogoutWrapper>
       <Routes>
