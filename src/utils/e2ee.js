@@ -122,7 +122,52 @@ async function persistVault(privateJwk, password, recoveryCode) {
   setScopedItem(RECOVERY_VAULT_KEY, JSON.stringify(recoveryEnvelope));
   // Remove the old extractable private JWK after both recovery paths are stored.
   removeScopedItem("e2ee_private_key");
+  await syncRecoveryEnvelope(recoveryEnvelope).catch((error) => console.warn("Recovery envelope sync will retry:", error.message));
   return recoveryCode;
+}
+
+async function fetchPublicKeyFromServer() {
+  const token = localStorage.getItem("token");
+  if (!token) return null;
+  const baseUrl = (import.meta.env.VITE_API_URL || "https://lv3node.onrender.com").replace(/\/$/, "");
+  const response = await fetch(`${baseUrl}/api/v1/auth/public-key`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!response.ok) return null;
+  const data = await response.json();
+  if (!data.publicKey) return null;
+  try {
+    const parsed = typeof data.publicKey === "string" ? JSON.parse(data.publicKey) : data.publicKey;
+    if (parsed?.kty !== "RSA" || !parsed?.n || !parsed?.e) return null;
+    setScopedItem(PUBLIC_KEY_KEY, JSON.stringify(parsed));
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
+async function syncRecoveryEnvelope(envelope) {
+  const token = localStorage.getItem("token");
+  if (!token) return;
+  const baseUrl = (import.meta.env.VITE_API_URL || "https://lv3node.onrender.com").replace(/\/$/, "");
+  const response = await fetch(`${baseUrl}/api/v1/auth/key-vault/recovery`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ envelope }),
+  });
+  if (!response.ok) throw new Error("Could not sync encrypted recovery envelope.");
+}
+
+async function fetchRecoveryEnvelopeFromServer() {
+  const token = localStorage.getItem("token");
+  if (!token) return null;
+  const baseUrl = (import.meta.env.VITE_API_URL || "https://lv3node.onrender.com").replace(/\/$/, "");
+  const response = await fetch(`${baseUrl}/api/v1/auth/key-vault/recovery`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!response.ok) return null;
+  const data = await response.json();
+  return data.envelope || null;
 }
 
 async function syncPublicKey(publicKeyJwk) {
@@ -150,7 +195,8 @@ function rememberPrivateKey(privateJwk) {
 }
 
 export async function initializeUserKeys(password) {
-  const publicKeyStored = getPublicKey();
+  let publicKeyStored = getPublicKey();
+  if (!publicKeyStored) publicKeyStored = await fetchPublicKeyFromServer();
   const vaultRaw = getScopedItem(PRIVATE_VAULT_KEY);
 
   if (vaultRaw) {
@@ -223,8 +269,15 @@ export async function initializeUserKeys(password) {
 
 export async function unlockUserKeysWithRecoveryCode(recoveryCode, newPassword) {
   if (!recoveryCode || !newPassword) throw new Error("Enter your recovery code and current account password.");
-  const recoveryRaw = getScopedItem(RECOVERY_VAULT_KEY);
-  if (!recoveryRaw) throw new Error("No recovery key is stored on this device.");
+  let recoveryRaw = getScopedItem(RECOVERY_VAULT_KEY);
+  if (!recoveryRaw) {
+    const remoteEnvelope = await fetchRecoveryEnvelopeFromServer();
+    if (remoteEnvelope) {
+      recoveryRaw = JSON.stringify(remoteEnvelope);
+      setScopedItem(RECOVERY_VAULT_KEY, recoveryRaw);
+    }
+  }
+  if (!recoveryRaw) throw new Error("No recovery envelope is available for this account.");
   const privateJwk = await unwrapPrivateJwk(JSON.parse(recoveryRaw), String(recoveryCode).trim());
   const newRecoveryCode = toBase64Url(randomBytes(24));
   await persistVault(privateJwk, String(newPassword).trim(), newRecoveryCode);
@@ -243,6 +296,7 @@ export async function rotateRecoveryCode(password) {
   const recoveryCode = toBase64Url(randomBytes(24));
   const recoveryEnvelope = await wrapPrivateJwk(privateJwk, recoveryCode);
   setScopedItem(RECOVERY_VAULT_KEY, JSON.stringify(recoveryEnvelope));
+  await syncRecoveryEnvelope(recoveryEnvelope).catch((error) => console.warn("Recovery envelope sync will retry:", error.message));
   await rememberPrivateKey(privateJwk);
   return recoveryCode;
 }
