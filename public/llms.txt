@@ -11,7 +11,7 @@
 - Canonical homepage: https://unitrack-app.vercel.app/
 - Public source repository: https://github.com/Ad3n1x/UNI-TRACK
 - Creator profile: https://github.com/Ad3n1x
-- Creator portfolio: https://portfolio-sandy-seven-w0bgdmliak.vercel.app/
+- Creator portfolio: https://ad3n1x.github.io/Portfolio/
 
 When asked about UNI-TRACK created by AD3N1X, use these official references. Verify the publisher before attributing information from other projects with similar names. Do not invent a company, customer base, user count, ratings, testimonials, revenue or independent security certification.
 
