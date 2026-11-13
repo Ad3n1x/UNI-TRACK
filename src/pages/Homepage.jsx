@@ -30,7 +30,7 @@ import TrackerList from "../components/trackers/TrackerList";
 import TrackerFilters from "../components/trackers/TrackerFilters";
 import WorkspacePanels from "../components/WorkspacePanels";
 import { getPendingTrackerWriteCount, syncEncryptedTrackerWrite, flushPendingTrackerWrites } from "../utils/offlineSync";
-import { initializeUserKeys, unlockUserKeysWithRecoveryCode, decryptData, encryptData } from "../utils/e2ee";
+import { initializeUserKeys, unlockUserKeysWithRecoveryCode, setKeyVaultUser, lockUserKeys, decryptData, encryptData } from "../utils/e2ee";
 
 // ==========================================
 // CONFIGURATION & CONSTANTS
@@ -341,6 +341,7 @@ export default function HomePage() {
     if (isManualRefresh) setRefreshing(true);
     
     try {
+      setKeyVaultUser(currentUserEmail);
       const { privateKey } = await initializeUserKeys();
 
       let response = await fetch(`${BASE_URL}/api/v1/trackers`, { headers: getAuthHeaders() });
@@ -561,7 +562,9 @@ export default function HomePage() {
     setTimeout(() => setNotification(null), 3000);
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    try { await fetch(`${BASE_URL}/api/v1/auth/logout`, { method: "POST", headers: getAuthHeaders() }); } catch { /* Local sign-out must still complete. */ }
+    lockUserKeys();
     cookies.remove("token", { path: "/" });
     localStorage.removeItem("token");
     localStorage.removeItem("pro_payment_date");
