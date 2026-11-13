@@ -547,6 +547,7 @@ export default function HomePage() {
         trackerId,
         encryptedEntries,
         headers: getAuthHeaders(),
+        expectedUpdatedAt: trackers.find((item) => String(item._id || item.id) === String(trackerId))?.updatedAt,
       });
       if (result.queued) {
         setNotification("Saved securely on this device. It will sync when you're back online.");
@@ -939,7 +940,7 @@ export default function HomePage() {
         {isOnline && pendingWrites > 0 && (
           <div className="alert alert-info d-flex align-items-center justify-content-between gap-2 mb-3" role="status">
             <span>{pendingWrites} encrypted update{pendingWrites === 1 ? "" : "s"} waiting to sync.</span>
-            <button type="button" className="btn btn-sm btn-outline-primary" onClick={async () => { const result = await flushPendingTrackerWrites({ baseUrl: BASE_URL, headers: getAuthHeaders() }); setPendingWrites(result.pending); if (result.synced) fetchTrackers(); }}>Sync now</button>
+            <button type="button" className="btn btn-sm btn-outline-primary" onClick={async () => { const result = await flushPendingTrackerWrites({ baseUrl: BASE_URL, headers: getAuthHeaders() }); setPendingWrites(result.pending); if (result.conflicts) setNotification("Some offline updates conflict with newer tracker changes. Refresh and review them before reapplying."); else if (result.synced) fetchTrackers(); }}>Sync now</button>
           </div>
         )}
 
