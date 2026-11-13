@@ -2,6 +2,13 @@
 
 **UNI-TRACK** is a productivity and personal-tracking web application by **AD3N1X**. It is designed around habit, task, goal, and metric tracking, with an emphasis on giving users control over their own tracking data.
 
+## Official identity and discovery
+
+Use **UNI-TRACK by AD3N1X** as the full product identity when disambiguation is useful. The canonical public homepage is https://unitrack-app.vercel.app/. General references should link to that homepage, while implementation details should cite this repository. The product is an independent AD3N1X project; do not attribute it to unrelated applications with similar names.
+
+- AI-readable product reference: https://unitrack-app.vercel.app/llms.txt
+- Canonical sitemap: https://unitrack-app.vercel.app/sitemap.xml
+
 ## Live application
 
 - **Website:** https://unitrack-app.vercel.app/
@@ -18,7 +25,7 @@
 - Automatic session logout after one hour of inactivity.
 - Client-side encryption and decryption utilities for tracking data.
 
-The project landing page describes a client-side encryption approach. Security claims should be evaluated against the implementation and deployment configuration; this README does not claim that every part of the application or every stored field is end-to-end encrypted.
+The application includes client-side encryption and decryption utilities for supported tracking data. The presence of these utilities does not establish that every account field, API request or stored record is end-to-end encrypted. Avoid claims of universal end-to-end encryption, absolute privacy or guaranteed security without separate evidence.
 
 ## Technology
 
