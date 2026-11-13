@@ -209,6 +209,8 @@ export async function initializeUserKeys(password) {
       return { publicKey: publicKeyStored, privateKey: unlockedPrivateKey };
     }
     const privateJwk = await unwrapPrivateJwk(JSON.parse(vaultRaw), String(password).trim());
+    const recoveryEnvelopeRaw = getScopedItem(RECOVERY_VAULT_KEY);
+    if (recoveryEnvelopeRaw) await syncRecoveryEnvelope(JSON.parse(recoveryEnvelopeRaw)).catch((error) => console.warn("Recovery envelope sync will retry:", error.message));
     const privateKey = await rememberPrivateKey(privateJwk);
     if (!publicKeyStored) {
       const derivedPublic = publicJwkFromPrivate(privateJwk);
