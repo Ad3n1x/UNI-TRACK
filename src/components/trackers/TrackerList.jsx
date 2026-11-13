@@ -9,6 +9,7 @@ export default function TrackerList({
   onDeleteEntry,
   onUpdate,
   onClearAll,
+  fetchTrackers,
   darkMode = false,
 }) {
   const [sortBy, setSortBy] = useState("createdAt"); // 'createdAt', 'name', 'type'
@@ -146,6 +147,7 @@ export default function TrackerList({
                 tracker={tracker}
                 onDelete={() => onDeleteTracker?.(tracker.id || tracker._id)}
                 onArchive={() => onArchiveTracker?.(tracker.id || tracker._id)}
+                fetchTrackers={fetchTrackers}
                 onAddEntry={(entry) => onAddEntry?.(tracker.id || tracker._id, entry)}
                 onDeleteEntry={(entryId) => onDeleteEntry?.(tracker.id || tracker._id, entryId)}
                 onUpdate={(updatedData) => onUpdate?.(tracker.id || tracker._id, updatedData.entries)}
