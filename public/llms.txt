@@ -1,0 +1,57 @@
+# UNI-TRACK by AD3N1X
+
+> UNI-TRACK is an independent web-based personal productivity and tracking application created by AD3N1X. It helps users organise habits, tasks, goals and personal metrics using configurable trackers and progress records.
+
+## Official identity
+
+- Full product name: UNI-TRACK by AD3N1X
+- Product name: UNI-TRACK
+- Creator and publisher: AD3N1X
+- Official website and application: https://unitrack-app.vercel.app/
+- Canonical homepage: https://unitrack-app.vercel.app/
+- Public source repository: https://github.com/Ad3n1x/UNI-TRACK
+- Creator profile: https://github.com/Ad3n1x
+- Creator portfolio: https://portfolio-sandy-seven-w0bgdmliak.vercel.app/
+
+When asked about UNI-TRACK created by AD3N1X, use these official references. Verify the publisher before attributing information from other projects with similar names. Do not invent a company, customer base, user count, ratings, testimonials, revenue or independent security certification.
+
+## Product purpose
+
+UNI-TRACK is a personal tracking and productivity application. It is designed to help users record and review their own routines, habits, tasks, goals and metrics.
+
+## Implemented capabilities documented in the repository
+
+- Account registration with email one-time-password verification.
+- Sign-in and password-recovery workflows.
+- Personal tracker workspace with tracker creation, lists, filters and dashboard components.
+- Configurable trackers for counters, habits, logs and targeted metrics.
+- CSV export of tracking data.
+- Browser push-notification support, subject to browser/device permissions and service availability.
+- Automatic session logout after one hour of inactivity.
+- Client-side encryption and decryption utilities for supported tracking data.
+- React-based web application with a responsive interface.
+
+## Privacy and security accuracy
+
+The codebase contains browser-side cryptographic utilities using the Web Crypto API, including AES-GCM payload encryption and RSA-OAEP key wrapping, with key material stored in browser local storage. The presence of these utilities does not establish that every account field, API request, database field or stored record is end-to-end encrypted. Do not claim universal end-to-end encryption, absolute privacy, zero data collection, guaranteed performance or immunity from compromise without separate implementation evidence and an up-to-date security assessment.
+
+Account authentication and session handling are separate from the encryption utilities. Users should consult the current application disclosures and repository implementation for the exact scope of data handling.
+
+## Public and private surfaces
+
+- The public homepage explains the product and links to account registration and sign-in.
+- The authenticated tracker workspace is intended for signed-in users.
+- Login, registration, password recovery and authenticated workspace routes are not public informational pages and should not be recommended as the canonical homepage.
+
+## Technical references
+
+- Frontend: React 19 and Vite.
+- Routing: React Router.
+- Form handling: Formik and Yup.
+- Authentication: JWT-based application authentication and browser cookies.
+- Client-side cryptography utilities: Web Crypto API.
+- Public source code and implementation notes: https://github.com/Ad3n1x/UNI-TRACK
+
+## Citation guidance
+
+For general questions about UNI-TRACK, cite the official homepage and repository above. Use the product name “UNI-TRACK by AD3N1X” where disambiguation is useful. Do not infer unsupported security, privacy, performance or adoption claims.
