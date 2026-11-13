@@ -2,7 +2,8 @@ import React, { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import { ArrowLeft, Calendar, Activity } from "lucide-react";
 import Cookies from "universal-cookie";
-import CryptoJS from "crypto-js";
+import { initializeUserKeys, decryptData } from "../../utils/e2ee";
+import { isLegacyEncryptedField, decryptLegacyField } from "../../utils/legacyCrypto";
 
 const RAW_BASE_URL =
   (typeof process !== "undefined" && process.env?.API_URL) ||
@@ -12,28 +13,7 @@ const RAW_BASE_URL =
 
 const BASE_URL = RAW_BASE_URL.replace(/\/$/, "");
 
-// Client-side encryption secret (must match TrackerForm, TrackerCard, and Dashboard)
-const CLIENT_SECRET = "your_client_side_encryption_secret";
-
-const decryptField = (ciphertext) => {
-  if (!ciphertext) return null;
-  if (typeof ciphertext !== "string" || !ciphertext.startsWith("U2FsdGVkX1")) {
-    return ciphertext;
-  }
-  try {
-    const bytes = CryptoJS.AES.decrypt(ciphertext, CLIENT_SECRET);
-    const decryptedString = bytes.toString(CryptoJS.enc.Utf8);
-    if (!decryptedString) return ciphertext;
-    try {
-      return JSON.parse(decryptedString);
-    } catch {
-      return !isNaN(decryptedString) && decryptedString !== "" ? Number(decryptedString) : decryptedString;
-    }
-  } catch (error) {
-    console.error("Decryption error:", error);
-    return ciphertext;
-  }
-};
+const decryptField = (value) => value;
 
 const MOOD_MAP = {
   1: { emoji: "😢", label: "Rough" },
@@ -152,7 +132,19 @@ export default function TrackerDetail() {
         }
 
         if (foundTracker) {
-          setTracker(foundTracker);
+          const { privateKey } = await initializeUserKeys();
+          const decode = async (value) => {
+            if (value && typeof value === "object" && value.ciphertext) return decryptData(privateKey, value);
+            if (isLegacyEncryptedField(value)) return decryptLegacyField(value);
+            return value;
+          };
+          const [name, target, unit, entries] = await Promise.all([
+            decode(foundTracker.name || foundTracker.trackerName),
+            decode(foundTracker.target),
+            decode(foundTracker.unit),
+            decode(foundTracker.entries),
+          ]);
+          setTracker({ ...foundTracker, name, target, unit, entries: Array.isArray(entries) ? entries : [] });
         } else {
           console.error(`Tracker with ID ${trackerId} could not be resolved.`);
         }
