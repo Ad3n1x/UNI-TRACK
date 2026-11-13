@@ -18,15 +18,18 @@ export default function UnitrackPage() {
   const structuredData = {
     "@context": "https://schema.org",
     "@type": "WebApplication",
-    "name": "UNI-TRACK",
-    "alternateName": ["UNITRACK", "UniTrack App"],
-    "url": "https://unitrack-app.vercel.app",
+    "name": "UNI-TRACK by AD3N1X",
+    "alternateName": ["UNI-TRACK", "UNITRACK"],
+    "url": "https://unitrack-app.vercel.app/",
     "applicationCategory": "ProductivityApplication",
-    "operatingSystem": "All",
-    "abstract": "A personal productivity and tracking application for habits, tasks, goals and metrics, with client-side encryption utilities for supported tracking data.",
+    "operatingSystem": "Web browser",
+    "description": "A personal productivity and tracking application for habits, tasks, goals and metrics, with optional browser-side encryption utilities for supported tracking data. These utilities do not establish universal end-to-end encryption.",
     "author": {
       "@type": "Person",
-      "name": "AD3N1X"
+      "@id": "https://ad3n1x.github.io/Portfolio/#person",
+      "name": "AD3N1X",
+      "url": "https://ad3n1x.github.io/Portfolio/",
+      "sameAs": ["https://github.com/Ad3n1x", "https://www.linkedin.com/in/adeniran-victor-ba28a7432/"]
     }
   };
 
@@ -37,23 +40,25 @@ export default function UnitrackPage() {
         <title>UNI-TRACK by AD3N1X — Personal Tracking & Productivity</title>
         <meta 
           name="description" 
-          content="Official UNI-TRACK platform by AD3N1X. A personal tracking and productivity application for habits, tasks, goals and metrics, with configurable trackers, CSV export and browser push notifications." 
+          content="UNI-TRACK by AD3N1X is a personal tracking and productivity application for habits, tasks, goals and metrics, with configurable trackers, CSV export and browser push notifications." 
         />
-        <meta name="keywords" content="UNI-TRACK, UNITRACK, AD3N1X, privacy tracking app, E2EE productivity app, encrypted habit tracker" />
-        <link rel="canonical" href="https://unitrack-app.vercel.app" />
+        <meta name="robots" content="index, follow, max-image-preview:large" />
+        <link rel="canonical" href="https://unitrack-app.vercel.app/" />
+        <link rel="describedby" href="https://unitrack-app.vercel.app/llms.txt" />
 
         {/* OpenGraph / Social Media Tags */}
         <meta property="og:title" content="UNI-TRACK by AD3N1X — Personal Tracking & Productivity" />
         <meta property="og:description" content="Organise habits, tasks, goals and metrics with configurable trackers, CSV export and browser push notifications." />
         <meta property="og:type" content="website" />
-        <meta property="og:url" content="https://unitrack-app.vercel.app" />
+        <meta property="og:url" content="https://unitrack-app.vercel.app/" />
         <meta property="og:image" content="https://unitrack-app.vercel.app/logo.svg" />
-        <meta property="og:site_name" content="UNI-TRACK" />
+        <meta property="og:site_name" content="UNI-TRACK by AD3N1X" />
+        <meta property="og:locale" content="en_NG" />
 
         {/* Twitter Card Tags */}
         <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content="UNI-TRACK | Privacy-First Tracking Ecosystem" />
-        <meta name="twitter:description" content="Take control of your workflow with client-side end-to-end encryption, zero latency, and PWA capabilities." />
+        <meta name="twitter:title" content="UNI-TRACK by AD3N1X — Personal Tracking & Productivity" />
+        <meta name="twitter:description" content="Organise habits, tasks, goals and metrics with configurable trackers, CSV export and browser push notifications." />
         <meta name="twitter:image" content="https://unitrack-app.vercel.app/logo.svg" />
 
         {/* JSON-LD Structured Data Schema */}
@@ -100,7 +105,7 @@ export default function UnitrackPage() {
           <main className="bg-white p-4 p-md-5 rounded-4 shadow-sm border mb-4">
             
             <div className="badge bg-primary bg-opacity-10 text-primary mb-3 px-3 py-2 rounded-pill fw-semibold d-inline-flex align-items-center gap-1 text-wrap text-start" style={{ fontSize: "0.825rem" }}>
-              <Zap size={13} className="flex-shrink-0" /> The Ultimate Productivity & Privacy Ecosystem
+              <Zap size={13} className="flex-shrink-0" /> Personal Tracking & Productivity
             </div>
 
             <h1 className="fw-bold mb-3 fs-3 fs-md-2 text-dark" style={{ letterSpacing: "-0.7px", lineHeight: "1.2" }}>
@@ -129,7 +134,7 @@ export default function UnitrackPage() {
               <div className="col-12 col-md-6">
                 <div className="p-3 border rounded-3 bg-light h-100">
                   <div className="d-flex align-items-center gap-2 text-primary mb-2 fw-bold" style={{ fontSize: "0.95rem" }}>
-                    <ShieldCheck size={19} /> Client-Side Encryption Utilities
+                    <ShieldCheck size={19} /> Browser-Side Encryption Utilities
                   </div>
                   <p className="text-secondary small m-0" style={{ lineHeight: "1.5" }}>
                     The application includes browser-based encryption and decryption utilities for supported tracking data. This does not establish that every account field, request or stored record is end-to-end encrypted.
@@ -192,7 +197,7 @@ export default function UnitrackPage() {
 
           {/* Footer info */}
           <footer className="text-center text-muted small pb-3 d-flex flex-column align-items-center gap-1" style={{ fontSize: "0.85rem" }}>
-            <div>&copy; {new Date().getFullYear()} UNI-TRACK. Built for privacy, speed, and focus.</div>
+            <div>&copy; {new Date().getFullYear()} UNI-TRACK. Built for tracking, clarity, and focus.</div>
             <div className="text-secondary" style={{ fontSize: "0.75rem", letterSpacing: "0.3px" }}>
               Crafted by <span className="fw-semibold text-dark">AD3N1X</span>
             </div>
