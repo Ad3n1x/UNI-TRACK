@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import Cookies from "universal-cookie";
 import { ArrowLeft, ShieldCheck, MonitorSmartphone, LogOut, Trash2, RefreshCw, AlertTriangle, KeyRound } from "lucide-react";
 import { rotateRecoveryCode, setKeyVaultUser, lockUserKeys, clearUserKeyVault } from "../utils/e2ee";
+import { clearEncryptedTrackerSnapshot } from "../utils/offlineCache";
 
 const API = (import.meta.env.VITE_API_URL || "https://lv3node.onrender.com").replace(/\/$/, "");
 const authHeaders = () => {
@@ -112,6 +113,8 @@ export default function SettingsPage() {
       localStorage.removeItem("pro_payment_date");
       clearUserKeyVault();
       lockUserKeys();
+      await clearEncryptedTrackerSnapshot(localStorage.getItem("userEmail") || "").catch(() => {});
+      sessionStorage.removeItem("unitrack.recoveryCodePending");
       setMessage("Account deleted.");
       navigate("/unitrack", { replace: true });
     } catch (err) {
@@ -180,7 +183,7 @@ export default function SettingsPage() {
 
         <section className="card border-0 shadow-sm rounded-4 p-3 p-md-4 mb-4">
           <h2 className="h5 fw-bold mb-2">How your privacy works</h2>
-          <p className="text-secondary small mb-2">Tracker content is encrypted in the browser before it is sent to the API using a public-key encryption flow. The current private-key storage and legacy encryption paths still need a complete, recovery-safe migration.</p>
+          <p className="text-secondary small mb-2">Tracker payloads use browser-side AES-GCM encryption with per-payload keys wrapped by RSA-OAEP. The private key is stored in a password-derived AES-GCM vault on this device, with a separate recovery code. This protects the key at rest, but it does not protect against a compromised browser, malicious extensions, XSS, or every account and tracker metadata field.</p>
           <div className="alert alert-warning small mb-0"><AlertTriangle size={15} className="me-1" /> UNI-TRACK does not currently claim that every account field, device backup or stored record is end-to-end encrypted. Avoid using it as a vault for passwords, financial credentials or highly sensitive secrets.</div>
         </section>
 
