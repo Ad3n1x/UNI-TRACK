@@ -29,7 +29,7 @@ import TrackerForm from "../components/trackers/TrackerForm";
 import TrackerList from "../components/trackers/TrackerList";
 import TrackerFilters from "../components/trackers/TrackerFilters";
 import WorkspacePanels from "../components/WorkspacePanels";
-import { getPendingTrackerWriteCount, syncEncryptedTrackerWrite, flushPendingTrackerWrites } from "../utils/offlineSync";
+import { getPendingTrackerWriteCount, getPendingTrackerWrites, syncEncryptedTrackerWrite, flushPendingTrackerWrites } from "../utils/offlineSync";
 import { convertTrackersToCSV } from "../utils/export";
 import { saveEncryptedTrackerSnapshot, loadEncryptedTrackerSnapshot } from "../utils/offlineCache";
 import { initializeUserKeys, unlockUserKeysWithRecoveryCode, setKeyVaultUser, lockUserKeys, decryptData, encryptData } from "../utils/e2ee";
@@ -349,7 +349,18 @@ export default function HomePage() {
         })
       );
 
-      setTrackers(decryptedTrackers.reverse());
+      const pendingWritesForTrackers = getPendingTrackerWrites();
+      const trackersWithPendingEdits = await Promise.all(decryptedTrackers.map(async (tracker) => {
+        const pending = pendingWritesForTrackers.find((item) => String(item.trackerId) === String(tracker._id || tracker.id));
+        if (!pending) return tracker;
+        try {
+          const pendingEntries = await decryptData(privateKey, pending.body.entries);
+          return Array.isArray(pendingEntries) ? { ...tracker, entries: pendingEntries, hasPendingOfflineEdits: true } : tracker;
+        } catch {
+          return tracker;
+        }
+      }));
+      setTrackers(trackersWithPendingEdits.reverse());
       
       if (isManualRefresh) {
         setNotification("Trackers updated successfully!");
