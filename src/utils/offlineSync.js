@@ -9,23 +9,29 @@ function readQueue() {
   }
 }
 
+const currentAccount = () => String(localStorage.getItem("userEmail") || "").trim().toLowerCase();
+
 function writeQueue(queue) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(queue.slice(-100)));
   window.dispatchEvent(new CustomEvent("unitrack:queue-change"));
 }
 
 export function getPendingTrackerWriteCount() {
-  return readQueue().length;
+  const email = currentAccount();
+  return readQueue().filter((item) => item.accountEmail === email).length;
 }
 
 export function getPendingTrackerWrites() {
-  return readQueue();
+  const email = currentAccount();
+  return readQueue().filter((item) => item.accountEmail === email);
 }
 
 export function queueEncryptedTrackerWrite(trackerId, encryptedEntries, expectedUpdatedAt) {
-  const queue = readQueue().filter((item) => String(item.trackerId) !== String(trackerId));
+  const email = currentAccount();
+  const queue = readQueue().filter((item) => !(item.accountEmail === email && String(item.trackerId) === String(trackerId)));
   queue.push({
     trackerId: String(trackerId),
+    accountEmail: email,
     body: { entries: encryptedEntries },
     expectedUpdatedAt: expectedUpdatedAt ? new Date(expectedUpdatedAt).getTime() : null,
     queuedAt: new Date().toISOString(),
@@ -64,7 +70,10 @@ export async function syncEncryptedTrackerWrite({ baseUrl, trackerId, encryptedE
 }
 
 export async function flushPendingTrackerWrites({ baseUrl, headers }) {
-  const queue = readQueue();
+  const email = currentAccount();
+  const allQueued = readQueue();
+  const otherAccounts = allQueued.filter((item) => item.accountEmail !== email);
+  const queue = allQueued.filter((item) => item.accountEmail === email);
   if (!queue.length || (typeof navigator !== "undefined" && navigator.onLine === false)) {
     return { synced: 0, pending: queue.length, conflicts: 0 };
   }
@@ -96,6 +105,12 @@ export async function flushPendingTrackerWrites({ baseUrl, headers }) {
     }
   }
 
-  writeQueue(remaining);
+  const preservedQueue = [...otherAccounts, ...remaining];
+  writeQueue(preservedQueue);
   return { synced, pending: remaining.length, conflicts };
+}
+
+export function clearPendingTrackerWrites(email = currentAccount()) {
+  const normalized = String(email || "").trim().toLowerCase();
+  writeQueue(readQueue().filter((item) => item.accountEmail !== normalized));
 }
