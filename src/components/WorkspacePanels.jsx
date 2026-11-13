@@ -1,13 +1,14 @@
 import React, { useEffect, useState } from "react";
-import { Activity, Archive, RotateCcw, Clock3, Trash2 } from "lucide-react";
+import { Activity, Archive, RotateCcw, Clock3 } from "lucide-react";
 import { initializeUserKeys, decryptData } from "../utils/e2ee";
+import { isLegacyEncryptedField, decryptLegacyField } from "../utils/legacyCrypto";
 
 const getToken = () => localStorage.getItem("token");
 
 async function decryptLabel(value) {
   try {
     const { privateKey } = await initializeUserKeys();
-    const result = await decryptData(privateKey, value);
+    const result = isLegacyEncryptedField(value) ? decryptLegacyField(value) : await decryptData(privateKey, value);
     return typeof result === "string" ? result : "Private tracker";
   } catch {
     return "Private tracker";
