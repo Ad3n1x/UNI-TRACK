@@ -1,4 +1,8 @@
 User-agent: *
 Allow: /
 
+# Allow OpenAI's search crawler to discover public product information.
+User-agent: OAI-SearchBot
+Allow: /
+
 Sitemap: https://unitrack-app.vercel.app/sitemap.xml
