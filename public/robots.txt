@@ -3,10 +3,6 @@ Allow: /
 
 User-agent: OAI-SearchBot
 Allow: /
-Disallow: /login
-Disallow: /register
-Disallow: /forgot-password
-Disallow: /homepage
 
 # Opt out of OpenAI model-training crawling while keeping search discovery enabled.
 User-agent: GPTBot
