@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import Cookies from "universal-cookie";
 import { ArrowLeft, ShieldCheck, MonitorSmartphone, LogOut, Trash2, RefreshCw, AlertTriangle, KeyRound } from "lucide-react";
-import { rotateRecoveryCode } from "../utils/e2ee";
+import { rotateRecoveryCode, setKeyVaultUser, lockUserKeys, clearUserKeyVault } from "../utils/e2ee";
 
 const API = (import.meta.env.VITE_API_URL || "https://lv3node.onrender.com").replace(/\/$/, "");
 const authHeaders = () => {
@@ -42,7 +42,7 @@ export default function SettingsPage() {
     }
   }, [navigate]);
 
-  useEffect(() => { loadSessions(); }, [loadSessions]);
+  useEffect(() => {\n    try { setKeyVaultUser(localStorage.getItem("userEmail") || new Cookies().get("userEmail")); } catch (err) { setError(err.message); }\n  }, []);\n\n  useEffect(() => { loadSessions(); }, [loadSessions]);
 
   const revokeSession = async (id) => {
     setBusy(id);
@@ -65,6 +65,7 @@ export default function SettingsPage() {
     try {
       const response = await fetch(`${API}/api/v1/auth/logout-all`, { method: "POST", headers: authHeaders() });
       if (!response.ok) throw new Error("Could not revoke all sessions.");
+      lockUserKeys();
       new Cookies().remove("token", { path: "/" });
       localStorage.removeItem("token");
       localStorage.removeItem("userEmail");
@@ -109,10 +110,8 @@ export default function SettingsPage() {
       localStorage.removeItem("token");
       localStorage.removeItem("userEmail");
       localStorage.removeItem("pro_payment_date");
-      localStorage.removeItem("e2ee_public_key");
-      localStorage.removeItem("e2ee_private_key");
-      localStorage.removeItem("e2ee_private_vault_v2");
-      localStorage.removeItem("e2ee_recovery_vault_v1");
+      clearUserKeyVault();
+      lockUserKeys();
       setMessage("Account deleted.");
       navigate("/unitrack", { replace: true });
     } catch (err) {
