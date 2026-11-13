@@ -2,7 +2,7 @@ import { useState, useRef } from "react";
 import { Check, Circle, Loader2 } from "lucide-react";
 import * as Icons from "lucide-react";
 import Cookies from "universal-cookie";
-import CryptoJS from "crypto-js";
+import { initializeUserKeys, encryptData } from "../../utils/e2ee";
 
 const RAW_BASE_URL =
   (typeof process !== "undefined" && process.env?.API_URL) ||
@@ -11,13 +11,6 @@ const RAW_BASE_URL =
   "https://lv3node.onrender.com";
 
 const BASE_URL = RAW_BASE_URL.replace(/\/$/, "");
-
-const CLIENT_SECRET = "your_client_side_encryption_secret";
-const encryptField = (data) => {
-  if (data === null || data === undefined || data === "") return data;
-  const stringValue = typeof data === "object" ? JSON.stringify(data) : String(data);
-  return CryptoJS.AES.encrypt(stringValue, CLIENT_SECRET).toString();
-};
 
 const TRACKER_TYPES = [
   { value: "habit", label: "Habit", description: "Daily yes/no check-in", emoji: "✅", defaultTarget: "", defaultUnit: "", namePlaceholder: "e.g. Morning Jog..." },
@@ -84,14 +77,15 @@ export default function TrackerForm({ onCreate, onClose, darkMode = false }) {
     setErrorMsg(null);
 
     try {
+      const { publicKey } = await initializeUserKeys();
       const payload = {
-        name: encryptField(name.trim()),
+        name: await encryptData(publicKey, name.trim()),
         type,
         icon,
         color,
-        ...(TARGET_TYPES.has(type) && target ? { target: encryptField(parseFloat(target)) } : {}),
+        ...(TARGET_TYPES.has(type) && target ? { target: await encryptData(publicKey, parseFloat(target)) } : {}),
         ...(unit.trim() && { unit: unit.trim() }),
-        entries: encryptField([]),
+        entries: await encryptData(publicKey, []),
       };
 
       const headers = {
