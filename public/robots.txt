@@ -1,8 +1,4 @@
 User-agent: *
 Allow: /
-Disallow: /login
-Disallow: /register
-Disallow: /forgot-password
-Disallow: /homepage
 
 Sitemap: https://unitrack-app.vercel.app/sitemap.xml
