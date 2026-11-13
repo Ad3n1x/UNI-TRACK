@@ -1185,7 +1185,7 @@ export default function HomePage() {
                     </div>
                     <div className="d-flex align-items-center gap-2 small fw-semibold">
                       <Check size={16} className="text-success" />
-                      <span>Priority Support & E2EE Cloud Backups</span>
+                      <span>Priority Support & enhanced account tools</span>
                     </div>
                   </div>
 
