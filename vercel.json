@@ -1,4 +1,15 @@
 {
+  "redirects": [
+    { "source": "/unitrack", "destination": "/", "permanent": true }
+  ],
+  "headers": [
+    {
+      "source": "/(login|register|homepage|forgot-password)(.*)",
+      "headers": [
+        { "key": "X-Robots-Tag", "value": "noindex, nofollow, noarchive" }
+      ]
+    }
+  ],
   "rewrites": [
     { "source": "/sitemap.xml", "destination": "/sitemap.xml" },
     { "source": "/(.*)", "destination": "/" }
