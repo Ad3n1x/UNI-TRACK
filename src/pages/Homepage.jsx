@@ -316,7 +316,21 @@ export default function HomePage() {
       let usedOfflineSnapshot = false;
       try {
         let response = await fetch(`${BASE_URL}/api/v1/trackers`, { headers: getAuthHeaders() });
+        if (response.status === 401) {
+          lockUserKeys();
+          cookies.remove("token", { path: "/" });
+          localStorage.removeItem("token");
+          window.location.href = "/login";
+          return;
+        }
         if (!response.ok) response = await fetch(`${BASE_URL}/api/trackers`, { headers: getAuthHeaders() });
+        if (response.status === 401) {
+          lockUserKeys();
+          cookies.remove("token", { path: "/" });
+          localStorage.removeItem("token");
+          window.location.href = "/login";
+          return;
+        }
         if (!response.ok) throw new Error(`Tracker service returned HTTP ${response.status}.`);
         const data = await response.json();
         fetchedArray = Array.isArray(data) ? data : Array.isArray(data.trackers) ? data.trackers : [];
