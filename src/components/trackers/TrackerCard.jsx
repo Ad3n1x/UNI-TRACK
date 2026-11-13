@@ -350,6 +350,7 @@ export default function TrackerCard({
               : "0 4px 6px -1px rgba(0, 0, 0, 0.02)",
           transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
           overflow: "hidden",
+          position: "relative",
           scrollMarginTop: "1.5rem",
         }}
       >
