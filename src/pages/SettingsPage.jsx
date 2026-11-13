@@ -43,7 +43,15 @@ export default function SettingsPage() {
     }
   }, [navigate]);
 
-  useEffect(() => {\n    try { setKeyVaultUser(localStorage.getItem("userEmail") || new Cookies().get("userEmail")); } catch (err) { setError(err.message); }\n  }, []);\n\n  useEffect(() => { loadSessions(); }, [loadSessions]);
+  useEffect(() => {
+    try {
+      setKeyVaultUser(localStorage.getItem("userEmail") || new Cookies().get("userEmail"));
+    } catch (err) {
+      setError(err.message);
+    }
+  }, []);
+
+  useEffect(() => { loadSessions(); }, [loadSessions]);
 
   const revokeSession = async (id) => {
     setBusy(id);
