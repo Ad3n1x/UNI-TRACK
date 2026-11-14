@@ -19,6 +19,10 @@ function AutoLogoutWrapper({ children }) {
 
   const handleLogout = useCallback(() => {
     cookies.remove("token", { path: "/" });
+    cookies.remove("userEmail", { path: "/" });
+    cookies.remove("userId", { path: "/" });
+    localStorage.removeItem("token");
+    localStorage.removeItem("userEmail");
     toast.warning("Session expired due to 1 hour of inactivity. Please log in again.");
     navigate("/login", { replace: true });
   }, [navigate]);
@@ -28,7 +32,7 @@ function AutoLogoutWrapper({ children }) {
 
     const resetTimer = () => {
       if (timeoutId) clearTimeout(timeoutId);
-      if (cookies.get("token")) {
+      if (cookies.get("token") || localStorage.getItem("token")) {
         timeoutId = setTimeout(handleLogout, INACTIVITY_LIMIT_MS);
       }
     };

@@ -1,29 +1,57 @@
-// ==========================================
-// 1. BASE64 CONVERSION HELPERS
-// ==========================================
-
+// UNI-TRACK browser-side encryption helpers.
+// Private RSA keys are stored as non-extractable CryptoKey objects in IndexedDB.
 function arrayBufferToBase64(buffer) {
+  const bytes = new Uint8Array(buffer);
   let binary = "";
-  let bytes = new Uint8Array(buffer);
-  for (let i = 0; i < bytes.byteLength; i++) {
-    binary += String.fromCharCode(bytes[i]);
-  }
+  for (let index = 0; index < bytes.length; index += 1) binary += String.fromCharCode(bytes[index]);
   return window.btoa(binary);
 }
 
 function base64ToArrayBuffer(base64) {
-  let binary_string = window.atob(base64);
-  let len = binary_string.length;
-  let bytes = new Uint8Array(len);
-  for (let i = 0; i < len; i++) {
-    bytes[i] = binary_string.charCodeAt(i);
-  }
+  const binary = window.atob(base64);
+  const bytes = new Uint8Array(binary.length);
+  for (let index = 0; index < binary.length; index += 1) bytes[index] = binary.charCodeAt(index);
   return bytes.buffer;
 }
 
-// ==========================================
-// 2. HYBRID ENCRYPTION (AES-GCM + RSA-OAEP)
-// ==========================================
+const KEY_DATABASE = "unitrack-secure-key-store";
+const KEY_STORE = "user-keys";
+const KEY_ID = "primary";
+
+function openKeyDatabase() {
+  return new Promise((resolve, reject) => {
+    if (!("indexedDB" in window)) {
+      reject(new Error("Secure browser key storage is unavailable in this browser."));
+      return;
+    }
+    const request = window.indexedDB.open(KEY_DATABASE, 1);
+    request.onupgradeneeded = () => {
+      const database = request.result;
+      if (!database.objectStoreNames.contains(KEY_STORE)) database.createObjectStore(KEY_STORE, { keyPath: "id" });
+    };
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error || new Error("Could not open secure key storage."));
+    request.onblocked = () => reject(new Error("Secure key storage is blocked by another browser tab."));
+  });
+}
+
+function readKeyRecord(database) {
+  return new Promise((resolve, reject) => {
+    const request = database.transaction(KEY_STORE, "readonly").objectStore(KEY_STORE).get(KEY_ID);
+    request.onsuccess = () => resolve(request.result || null);
+    request.onerror = () => reject(request.error || new Error("Could not read the encryption key."));
+  });
+}
+
+function writeKeyRecord(database, record) {
+  return new Promise((resolve, reject) => {
+    const transaction = database.transaction(KEY_STORE, "readwrite");
+    transaction.objectStore(KEY_STORE).put(record);
+    transaction.oncomplete = () => resolve();
+    transaction.onerror = () => reject(transaction.error || new Error("Could not save the encryption key."));
+    transaction.onabort = () => reject(transaction.error || new Error("Saving the encryption key was interrupted."));
+  });
+}
 
 export async function encryptData(publicKeyJwk, plaintextData) {
   const publicKey = await window.crypto.subtle.importKey(
@@ -33,158 +61,117 @@ export async function encryptData(publicKeyJwk, plaintextData) {
     false,
     ["encrypt"]
   );
-
-  // Generate a random AES-GCM key for this specific payload
-  const aesKey = await window.crypto.subtle.generateKey(
-    { name: "AES-GCM", length: 256 },
-    true,
-    ["encrypt", "decrypt"]
-  );
-
+  const aesKey = await window.crypto.subtle.generateKey({ name: "AES-GCM", length: 256 }, true, ["encrypt", "decrypt"]);
   const iv = window.crypto.getRandomValues(new Uint8Array(12));
   const encoded = new TextEncoder().encode(JSON.stringify(plaintextData));
-
-  // Encrypt the actual data with AES
-  const ciphertextBuffer = await window.crypto.subtle.encrypt(
-    { name: "AES-GCM", iv },
-    aesKey,
-    encoded
-  );
-
-  // Export and lock the AES key using the user's RSA Public Key
+  const ciphertextBuffer = await window.crypto.subtle.encrypt({ name: "AES-GCM", iv }, aesKey, encoded);
   const rawAesKey = await window.crypto.subtle.exportKey("raw", aesKey);
-  const encryptedKeyBuffer = await window.crypto.subtle.encrypt(
-    { name: "RSA-OAEP" },
-    publicKey,
-    rawAesKey
-  );
-
+  const encryptedKeyBuffer = await window.crypto.subtle.encrypt({ name: "RSA-OAEP" }, publicKey, rawAesKey);
   return {
+    version: 1,
+    algorithm: "RSA-OAEP-256+A256GCM",
     ciphertext: arrayBufferToBase64(ciphertextBuffer),
     iv: arrayBufferToBase64(iv),
     encryptedKey: arrayBufferToBase64(encryptedKeyBuffer),
   };
 }
 
-// ==========================================
-// 3. HYBRID DECRYPTION
-// ==========================================
-
 export async function decryptData(privateKeyInput, encryptedPayload) {
-  // Fallback if data is unencrypted or plain text
-  if (!encryptedPayload || typeof encryptedPayload !== "object" || !encryptedPayload.ciphertext) {
-    return encryptedPayload;
-  }
+  if (!encryptedPayload || typeof encryptedPayload !== "object" || !encryptedPayload.ciphertext) return encryptedPayload;
+  const privateKey = privateKeyInput && privateKeyInput.kty
+    ? await window.crypto.subtle.importKey("jwk", privateKeyInput, { name: "RSA-OAEP", hash: "SHA-256" }, false, ["decrypt"])
+    : privateKeyInput;
+  const rawAesKey = await window.crypto.subtle.decrypt(
+    { name: "RSA-OAEP" },
+    privateKey,
+    base64ToArrayBuffer(encryptedPayload.encryptedKey)
+  );
+  const aesKey = await window.crypto.subtle.importKey("raw", rawAesKey, { name: "AES-GCM" }, false, ["decrypt"]);
+  const decryptedBuffer = await window.crypto.subtle.decrypt(
+    { name: "AES-GCM", iv: base64ToArrayBuffer(encryptedPayload.iv) },
+    aesKey,
+    base64ToArrayBuffer(encryptedPayload.ciphertext)
+  );
+  const decoded = new TextDecoder().decode(decryptedBuffer);
+  try { return JSON.parse(decoded); } catch { return decoded; }
+}
 
+function publicJwkFromPrivate(privateJwk) {
+  const publicJwk = { ...privateJwk };
+  ["d", "p", "q", "dp", "dq", "qi"].forEach((field) => delete publicJwk[field]);
+  publicJwk.key_ops = ["encrypt"];
+  return publicJwk;
+}
+
+export async function initializeUserKeys() {
+  const database = await openKeyDatabase();
   try {
-    let privateKey = privateKeyInput;
-    if (typeof privateKeyInput === "object" && privateKeyInput.kty) {
+    let record = await readKeyRecord(database);
+    if (record?.privateKey && record?.publicKeyJwk) {
+      localStorage.setItem("e2ee_public_key", record.publicKeyJwk);
+      return { publicKey: JSON.parse(record.publicKeyJwk), privateKey: record.privateKey };
+    }
+
+    const legacyPrivate = localStorage.getItem("e2ee_private_key");
+    const legacyPublic = localStorage.getItem("e2ee_public_key");
+    let publicKeyJwk = legacyPublic;
+    let privateKey;
+    let newlyGenerated = false;
+
+    if (legacyPrivate) {
+      const privateJwk = JSON.parse(legacyPrivate);
+      if (!publicKeyJwk) publicKeyJwk = JSON.stringify(publicJwkFromPrivate(privateJwk));
       privateKey = await window.crypto.subtle.importKey(
         "jwk",
-        privateKeyInput,
+        privateJwk,
         { name: "RSA-OAEP", hash: "SHA-256" },
         false,
         ["decrypt"]
       );
+    } else {
+      if (legacyPublic) {
+        throw new Error("Your encryption private key is missing from this browser. Existing encrypted records cannot be unlocked without that key.");
+      }
+      const keyPair = await window.crypto.subtle.generateKey(
+        { name: "RSA-OAEP", modulusLength: 2048, publicExponent: new Uint8Array([1, 0, 1]), hash: "SHA-256" },
+        true,
+        ["encrypt", "decrypt"]
+      );
+      const exportedPublic = await window.crypto.subtle.exportKey("jwk", keyPair.publicKey);
+      const exportedPrivate = await window.crypto.subtle.exportKey("jwk", keyPair.privateKey);
+      publicKeyJwk = JSON.stringify(exportedPublic);
+      privateKey = await window.crypto.subtle.importKey(
+        "jwk",
+        exportedPrivate,
+        { name: "RSA-OAEP", hash: "SHA-256" },
+        false,
+        ["decrypt"]
+      );
+      newlyGenerated = true;
     }
 
-    const encryptedKeyBuffer = base64ToArrayBuffer(encryptedPayload.encryptedKey);
-    const iv = base64ToArrayBuffer(encryptedPayload.iv);
-    const ciphertextBuffer = base64ToArrayBuffer(encryptedPayload.ciphertext);
-
-    // Decrypt the AES key using the RSA Private Key
-    const rawAesKey = await window.crypto.subtle.decrypt(
-      { name: "RSA-OAEP" },
-      privateKey,
-      encryptedKeyBuffer
-    );
-
-    const aesKey = await window.crypto.subtle.importKey(
-      "raw",
-      rawAesKey,
-      { name: "AES-GCM" },
-      false,
-      ["decrypt"]
-    );
-
-    // Decrypt the data using the AES key
-    const decryptedBuffer = await window.crypto.subtle.decrypt(
-      { name: "AES-GCM", iv },
-      aesKey,
-      ciphertextBuffer
-    );
-
-    const decodedString = new TextDecoder().decode(decryptedBuffer);
-    try {
-      return JSON.parse(decodedString);
-    } catch {
-      return decodedString;
-    }
-  } catch (err) {
-    console.error("Decryption error:", err);
-    return encryptedPayload;
-  }
-}
-
-// ==========================================
-// 4. KEY INITIALIZATION & BACKEND SYNC
-// ==========================================
-
-export async function initializeUserKeys() {
-  let publicKeyJwk = localStorage.getItem("e2ee_public_key");
-  let privateKeyJwk = localStorage.getItem("e2ee_private_key");
-
-  if (!publicKeyJwk || !privateKeyJwk) {
-    // Generate RSA Key Pair
-    const keyPair = await window.crypto.subtle.generateKey(
-      {
-        name: "RSA-OAEP",
-        modulusLength: 2048,
-        publicExponent: new Uint8Array([1, 0, 1]),
-        hash: "SHA-256",
-      },
-      true,
-      ["encrypt", "decrypt"]
-    );
-
-    const pubKeyExported = await window.crypto.subtle.exportKey("jwk", keyPair.publicKey);
-    const privKeyExported = await window.crypto.subtle.exportKey("jwk", keyPair.privateKey);
-
-    publicKeyJwk = JSON.stringify(pubKeyExported);
-    privateKeyJwk = JSON.stringify(privKeyExported);
-
+    record = { id: KEY_ID, privateKey, publicKeyJwk };
+    await writeKeyRecord(database, record);
     localStorage.setItem("e2ee_public_key", publicKeyJwk);
-    localStorage.setItem("e2ee_private_key", privateKeyJwk);
+    localStorage.removeItem("e2ee_private_key");
 
-    // Auto-sync public key to backend
-    try {
+    if (newlyGenerated) {
       const token = localStorage.getItem("token");
       if (token) {
-        await fetch("https://lv3node.onrender.com/api/v1/auth/public-key", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({ publicKey: JSON.stringify(pubKeyExported) }),
-        });
+        try {
+          await fetch("https://lv3node.onrender.com/api/v1/auth/public-key", {
+            method: "POST",
+            headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+            body: JSON.stringify({ publicKey: publicKeyJwk }),
+          });
+        } catch (error) {
+          console.error("Public-key sync will need to be retried:", error);
+        }
       }
-    } catch (err) {
-      console.error("Failed to sync public key to backend:", err);
     }
+
+    return { publicKey: JSON.parse(publicKeyJwk), privateKey };
+  } finally {
+    database.close();
   }
-
-  // Import private key as a usable CryptoKey object
-  const privateKeyObj = await window.crypto.subtle.importKey(
-    "jwk",
-    JSON.parse(privateKeyJwk),
-    { name: "RSA-OAEP", hash: "SHA-256" },
-    false,
-    ["decrypt"]
-  );
-
-  return {
-    publicKey: JSON.parse(publicKeyJwk),
-    privateKey: privateKeyObj,
-  };
 }
