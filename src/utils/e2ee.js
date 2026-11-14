@@ -116,7 +116,6 @@ export async function initializeUserKeys() {
     const legacyPublic = localStorage.getItem("e2ee_public_key");
     let publicKeyJwk = legacyPublic;
     let privateKey;
-    let newlyGenerated = false;
 
     if (legacyPrivate) {
       const privateJwk = JSON.parse(legacyPrivate);
@@ -147,7 +146,6 @@ export async function initializeUserKeys() {
         false,
         ["decrypt"]
       );
-      newlyGenerated = true;
     }
 
     record = { id: KEY_ID, privateKey, publicKeyJwk };
@@ -155,18 +153,17 @@ export async function initializeUserKeys() {
     localStorage.setItem("e2ee_public_key", publicKeyJwk);
     localStorage.removeItem("e2ee_private_key");
 
-    if (newlyGenerated) {
-      const token = localStorage.getItem("token");
-      if (token) {
-        try {
-          await fetch("https://lv3node.onrender.com/api/v1/auth/public-key", {
-            method: "POST",
-            headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-            body: JSON.stringify({ publicKey: publicKeyJwk }),
-          });
-        } catch (error) {
-          console.error("Public-key sync will need to be retried:", error);
-        }
+    const token = localStorage.getItem("token");
+    if (token && localStorage.getItem("e2ee_public_key_synced") !== publicKeyJwk) {
+      try {
+        const response = await fetch("https://lv3node.onrender.com/api/v1/auth/public-key", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ publicKey: publicKeyJwk }),
+        });
+        if (response.ok) localStorage.setItem("e2ee_public_key_synced", publicKeyJwk);
+      } catch (error) {
+        console.error("Public-key sync will be retried when the key is next initialized:", error);
       }
     }
 

@@ -192,7 +192,7 @@ export default function UnitrackPage() {
               </div>
               <div className="ut-privacy-points">
                 <div className="ut-privacy-point"><Fingerprint size={17} /> Your trackers are tied to your signed-in account.</div>
-                <div className="ut-privacy-point"><LockKeyhole size={17} /> Selected tracker payloads use browser-side encryption utilities.</div>
+                <div className="ut-privacy-point"><LockKeyhole size={17} /> Browser-held, non-extractable encryption keys support compatible encrypted records on this device.</div>
                 <div className="ut-privacy-point"><Wallet size={17} /> Export tools help you keep a copy of your records.</div>
                 <div className="ut-privacy-point"><Timer size={17} /> Reminder support depends on browser and device permissions.</div>
               </div>

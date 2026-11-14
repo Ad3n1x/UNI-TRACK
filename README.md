@@ -72,3 +72,8 @@ Built by **AD3N1X**.
 
 - GitHub: https://github.com/Ad3n1x
 - Portfolio: https://ad3n1x.github.io/Portfolio/
+
+
+## Browser key handling
+
+Compatible encrypted records use a browser-held RSA private key stored as a non-extractable Web Crypto key in IndexedDB. Older exported private-key records are migrated into that store when the app initializes the key system. Clearing browser site data or losing the device can make those compatible records unreadable; a user-facing recovery/export flow is not yet implemented. This is not a claim that every account field, API request or database record is end-to-end encrypted.
