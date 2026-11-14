@@ -113,7 +113,7 @@ const convertTrackersToCSV = (trackersList) => {
     });
   });
 
-  return [headers.map(csvCell).join(","), ...rows].join("\\r\\n");
+  return [headers.map(csvCell).join(","), ...rows].join("\r\n");
 };
 
 const downloadFile = (content, filename, contentType) => {
