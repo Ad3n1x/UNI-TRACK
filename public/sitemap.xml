@@ -4,6 +4,12 @@
     <loc>https://unitrack-app.vercel.app/</loc>
   </url>
   <url>
+    <loc>https://unitrack-app.vercel.app/about.html</loc>
+    <lastmod>2026-11-14</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
     <loc>https://unitrack-app.vercel.app/faq.html</loc>
     <lastmod>2026-11-14</lastmod>
     <changefreq>monthly</changefreq>

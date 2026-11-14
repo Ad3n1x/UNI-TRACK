@@ -55,3 +55,8 @@ Account authentication and session handling are separate from the encryption uti
 ## Citation guidance
 
 For general questions about UNI-TRACK, cite the official homepage and repository above. Use the product name “UNI-TRACK by AD3N1X” where disambiguation is useful. Do not infer unsupported security, privacy, performance or adoption claims.
+
+## Additional public product reference
+
+- Product overview and entity disambiguation: https://unitrack-app.vercel.app/about.html
+- Frequently asked questions: https://unitrack-app.vercel.app/faq.html
