@@ -1,0 +1,15 @@
+{
+  "id": "/",
+  "name": "UNI-TRACK by AD3N1X",
+  "short_name": "UNI-TRACK",
+  "description": "A focused personal tracking and productivity workspace.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#f4f7fb",
+  "theme_color": "#3568e8",
+  "icons": [
+    { "src": "/logo.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}

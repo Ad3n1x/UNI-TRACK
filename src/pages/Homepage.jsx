@@ -81,47 +81,39 @@ function urlBase64ToUint8Array(base64String) {
   return outputArray;
 }
 
+const csvCell = (value) => {
+  let text = String(value ?? "");
+  // Prevent spreadsheet formula execution when exported data is opened in Excel/Sheets.
+  if (/^[\\s\\u0000-\\u001f]*[=+@\\-]/.test(text)) text = `'${text}`;
+  return `"${text.replace(/"/g, '""')}"`;
+};
+
 const convertTrackersToCSV = (trackersList) => {
   const headers = ["Tracker ID", "Tracker Name", "Type", "Target", "Entry ID", "Timestamp", "Value", "Note"];
   const rows = [];
 
-  trackersList.forEach((t) => {
-    const trackerId = t._id || t.id || "";
-    const trackerName = String(t.name || t.trackerName || "").replace(/"/g, '""');
-    const trackerType = t.type || "";
-    const trackerTarget = t.target !== undefined && t.target !== null ? String(t.target).replace(/"/g, '""') : "";
-    const entries = Array.isArray(t.entries) ? t.entries : [];
+  trackersList.forEach((tracker) => {
+    const entries = Array.isArray(tracker.entries) ? tracker.entries : [];
+    const base = [
+      tracker._id || tracker.id || "",
+      tracker.name || tracker.trackerName || "",
+      tracker.type || "",
+      tracker.target ?? "",
+    ];
 
-    if (entries.length === 0) {
+    const trackerEntries = entries.length ? entries : [null];
+    trackerEntries.forEach((entry) => {
       rows.push([
-        `"${trackerId}"`,
-        `"${trackerName}"`,
-        `"${trackerType}"`,
-        `"${trackerTarget}"`,
-        '""', '""', '""', '""'
-      ].join(","));
-    } else {
-      entries.forEach((e) => {
-        const entryId = e._id || e.id || "";
-        const timestamp = e.timestamp || "";
-        const value = e.value !== undefined ? String(e.value).replace(/"/g, '""') : "";
-        const note = String(e.note || "").replace(/"/g, '""');
-
-        rows.push([
-          `"${trackerId}"`,
-          `"${trackerName}"`,
-          `"${trackerType}"`,
-          `"${trackerTarget}"`,
-          `"${entryId}"`,
-          `"${timestamp}"`,
-          `"${value}"`,
-          `"${note}"`
-        ].join(","));
-      });
-    }
+        ...base,
+        entry?._id || entry?.id || "",
+        entry?.timestamp || entry?.date || "",
+        entry?.value ?? "",
+        entry?.note || "",
+      ].map(csvCell).join(","));
+    });
   });
 
-  return [headers.join(","), ...rows].join("\n");
+  return [headers.map(csvCell).join(","), ...rows].join("\r\n");
 };
 
 const downloadFile = (content, filename, contentType) => {
@@ -165,11 +157,16 @@ async function registerServiceWorkerAndSubscribe() {
     applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
   });
 
-  await fetch(`${BASE_URL}/api/v1/subscribe`, {
+  const response = await fetch(`${BASE_URL}/api/v1/subscribe`, {
     method: "POST",
     headers: getAuthHeaders(),
     body: JSON.stringify(subscription),
   });
+
+  if (!response.ok) {
+    await subscription.unsubscribe().catch(() => {});
+    throw new Error("Could not save notification preferences. Please try again.");
+  }
 
   return true;
 }
@@ -881,7 +878,7 @@ export default function HomePage() {
           
           <div className={`alert ${darkMode ? "bg-dark text-info border-info" : "bg-info bg-opacity-10 text-info border-info-subtle"} d-flex align-items-center gap-2 mb-4 py-2 px-3 rounded-3 small border`}>
             <Info size={18} className="flex-shrink-0" />
-            <span>Changes sync automatically end-to-end. Tap <strong>Refresh</strong> to sync analytics manually.</span>
+            <span>Changes sync with your account. Tap <strong>Refresh</strong> to reload your tracker data.</span>
           </div>
 
           {/* Tracker Limit Indicator */}
@@ -1150,7 +1147,7 @@ export default function HomePage() {
                     </div>
                     <div className="d-flex align-items-center gap-2 small fw-semibold">
                       <Check size={16} className="text-success" />
-                      <span>Priority Support & E2EE Cloud Backups</span>
+                      <span>Priority Support & enhanced account tools</span>
                     </div>
                   </div>
 
@@ -1188,7 +1185,7 @@ export default function HomePage() {
                     </div>
                     <div className="d-flex align-items-center gap-2 small fw-semibold">
                       <Check size={16} className="text-success" />
-                      <span>Priority Support & E2EE Cloud Backups</span>
+                      <span>Priority Support & enhanced account tools</span>
                     </div>
                   </div>
 

@@ -1,33 +1,37 @@
-// Listen for push events sent from the backend cron job / web-push
+// UNI-TRACK service worker: push support only.
+// Private tracker data is deliberately not cached by this worker.
 self.addEventListener("push", (event) => {
-  const data = event.data ? event.data.json() : { title: "Uni-Track Reminder", body: "Keep your streak alive!" };
+  let data = { title: "UNI-TRACK reminder", body: "You have an update to review." };
+  try {
+    if (event.data) data = { ...data, ...event.data.json() };
+  } catch {
+    if (event.data) data.body = event.data.text();
+  }
 
   const options = {
-    body: data.body,
-    icon: "/favicon.ico", // Change this if you have a custom app icon in public/
-    badge: "/favicon.ico",
+    body: data.body || "You have an update to review.",
+    icon: "/logo.svg",
+    badge: "/logo.svg",
+    tag: data.tag || "unitrack-reminder",
+    renotify: Boolean(data.renotify),
+    data: { url: typeof data.url === "string" ? data.url : "/" },
   };
 
-  event.waitUntil(
-    self.registration.showNotification(data.title, options)
-  );
+  event.waitUntil(self.registration.showNotification(data.title || "UNI-TRACK reminder", options));
 });
 
-// Handle notification click event (opens the app when clicked)
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
-  event.waitUntil(
-    clients.matchAll({ type: "window", includeUncontrolled: true }).then((windowClients) => {
-      // If a window is already open, focus it
-      for (let client of windowClients) {
-        if (client.url && "focus" in client) {
-          return client.focus();
-        }
+  const target = new URL(event.notification.data?.url || "/", self.location.origin);
+  if (target.origin !== self.location.origin) target.href = self.location.origin + "/";
+  event.waitUntil((async () => {
+    const windows = await clients.matchAll({ type: "window", includeUncontrolled: true });
+    for (const client of windows) {
+      if (new URL(client.url).origin === self.location.origin && "focus" in client) {
+        await client.navigate(target.href);
+        return client.focus();
       }
-      // Otherwise, open a new window at the root URL
-      if (clients.openWindow) {
-        return clients.openWindow("/");
-      }
-    })
-  );
+    }
+    return clients.openWindow(target.href);
+  })());
 });
