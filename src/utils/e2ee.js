@@ -166,7 +166,7 @@ export async function initializeUserKeys() {
             "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
           },
-          body: JSON.stringify({ publicKey: pubKeyExported }),
+          body: JSON.stringify({ publicKey: JSON.stringify(pubKeyExported) }),
         });
       }
     } catch (err) {
