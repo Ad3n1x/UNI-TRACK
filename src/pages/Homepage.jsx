@@ -219,7 +219,7 @@ const safeDecrypt = async (privateKey, value) => {
 // ==========================================
 export default function HomePage() {
   const cookies = new Cookies();
-  const token = cookies.get("token") || localStorage.getItem("token");
+  const token = cookies.get("token") || localStorage.getItem("token") || localStorage.getItem("unitrack_authenticated");
 
   const currentUserEmail = (
     localStorage.getItem("userEmail") || 
