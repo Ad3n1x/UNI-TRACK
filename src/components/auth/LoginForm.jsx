@@ -33,12 +33,15 @@ export default function LoginForm({ onSuccess }) {
         timeout: 30000,
         withCredentials: true,
       });
-      if (!sessionResponse.data?.user?.email) {
+      // The API currently returns the profile at the top level. Accept both
+      // that shape and the nested shape so a valid session is not misreported.
+      const sessionUser = sessionResponse.data?.user || sessionResponse.data;
+      if (!sessionUser?.email) {
         throw new Error("The server did not establish an authenticated session. Please try again.");
       }
 
       toast.success(response.data.message || "Login successful! 🎉");
-      const userEmail = (sessionResponse.data.user.email || response.data.user?.email || email).trim().toLowerCase();
+      const userEmail = String(sessionUser.email || response.data.user?.email || email).trim().toLowerCase();
       const cookies = new Cookies();
       // Remove any legacy JavaScript-readable token. The server now owns the HttpOnly session cookie.
       cookies.remove("token", { path: "/" });
@@ -58,7 +61,9 @@ export default function LoginForm({ onSuccess }) {
       if (err.code === "ECONNABORTED" || err.message?.includes("timeout")) {
         errorMsg = "Request took too long. Please try again.";
       } else if (!err.response) {
-        errorMsg = "Network error: Unable to complete request. Check your connection.";
+        errorMsg = err.message?.includes("authenticated session")
+          ? err.message
+          : "Network error: Unable to complete request. Check your connection.";
       } else {
         errorMsg = err.response?.data?.message || err.response?.data?.error || errorMsg;
       }
@@ -103,8 +108,6 @@ export default function LoginForm({ onSuccess }) {
 
       <div className="login-container d-flex flex-column align-items-center justify-content-center p-3">
         <div className="login-card p-4 p-md-5 rounded-4 shadow-lg bg-white border-0">
-          
-          {/* Back to Unitrack Link */}
           <div className="mb-3">
             <Link to="/unitrack" className="text-secondary text-decoration-none small d-inline-flex align-items-center gap-1 fw-semibold">
               <ArrowLeft size={14} /> Back to Uni-Track
