@@ -1,3 +1,5 @@
+import CryptoJS from "crypto-js";
+
 // UNI-TRACK browser-side encryption helpers.
 // Private RSA keys are stored as non-extractable CryptoKey objects in IndexedDB.
 function arrayBufferToBase64(buffer) {
@@ -74,6 +76,49 @@ export async function encryptData(publicKeyJwk, plaintextData) {
     iv: arrayBufferToBase64(iv),
     encryptedKey: arrayBufferToBase64(encryptedKeyBuffer),
   };
+}
+
+
+// Legacy compatibility only: old records were encrypted with this client-side key.
+// New records must use encryptData() and the user's public key. Remove this fallback
+// only after the account migration has been completed and verified.
+const LEGACY_CLIENT_SECRET = "your_client_side_encryption_secret";
+
+export function decryptLegacyField(value) {
+  if (typeof value !== "string" || !value.startsWith("U2FsdGVkX1")) return value;
+  try {
+    const bytes = CryptoJS.AES.decrypt(value, LEGACY_CLIENT_SECRET);
+    const decoded = bytes.toString(CryptoJS.enc.Utf8);
+    if (!decoded) return value;
+    try {
+      return JSON.parse(decoded);
+    } catch {
+      return decoded !== "" && Number.isFinite(Number(decoded)) ? Number(decoded) : decoded;
+    }
+  } catch {
+    return value;
+  }
+}
+
+export async function decryptField(privateKey, value) {
+  if (typeof value === "string") {
+    if (value.startsWith("U2FsdGVkX1")) return decryptLegacyField(value);
+    try {
+      const parsed = JSON.parse(value);
+      if (parsed && typeof parsed === "object" && parsed.ciphertext) {
+        return decryptData(privateKey, parsed);
+      }
+    } catch {
+      // A non-JSON string is a normal plaintext value or a legacy payload we cannot decode.
+    }
+    return value;
+  }
+  return decryptData(privateKey, value);
+}
+
+export async function encryptField(publicKey, value, serialize = false) {
+  const encrypted = await encryptData(publicKey, value);
+  return serialize ? JSON.stringify(encrypted) : encrypted;
 }
 
 export async function decryptData(privateKeyInput, encryptedPayload) {
