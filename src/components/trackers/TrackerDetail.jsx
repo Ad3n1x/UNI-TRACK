@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import { ArrowLeft, Calendar, Activity } from "lucide-react";
 import Cookies from "universal-cookie";
-import CryptoJS from "crypto-js";
+import { initializeUserKeys, decryptField } from "../../utils/e2ee";
 
 const RAW_BASE_URL =
   (typeof process !== "undefined" && process.env?.API_URL) ||
@@ -11,29 +11,6 @@ const RAW_BASE_URL =
   "https://lv3node.onrender.com";
 
 const BASE_URL = RAW_BASE_URL.replace(/\/$/, "");
-
-// Client-side encryption secret (must match TrackerForm, TrackerCard, and Dashboard)
-const CLIENT_SECRET = "your_client_side_encryption_secret";
-
-const decryptField = (ciphertext) => {
-  if (!ciphertext) return null;
-  if (typeof ciphertext !== "string" || !ciphertext.startsWith("U2FsdGVkX1")) {
-    return ciphertext;
-  }
-  try {
-    const bytes = CryptoJS.AES.decrypt(ciphertext, CLIENT_SECRET);
-    const decryptedString = bytes.toString(CryptoJS.enc.Utf8);
-    if (!decryptedString) return ciphertext;
-    try {
-      return JSON.parse(decryptedString);
-    } catch {
-      return !isNaN(decryptedString) && decryptedString !== "" ? Number(decryptedString) : decryptedString;
-    }
-  } catch (error) {
-    console.error("Decryption error:", error);
-    return ciphertext;
-  }
-};
 
 const MOOD_MAP = {
   1: { emoji: "😢", label: "Rough" },
@@ -45,7 +22,7 @@ const MOOD_MAP = {
 
 const getAuthHeaders = () => {
   const cookies = new Cookies();
-  const token = cookies.get("token");
+  const token = cookies.get("token") || localStorage.getItem("token");
   return {
     "Content-Type": "application/json",
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
@@ -152,7 +129,13 @@ export default function TrackerDetail() {
         }
 
         if (foundTracker) {
-          setTracker(foundTracker);
+          const { privateKey } = await initializeUserKeys();
+          const [name, target, entries] = await Promise.all([
+            decryptField(privateKey, foundTracker.name ?? foundTracker.trackerName),
+            decryptField(privateKey, foundTracker.target),
+            decryptField(privateKey, foundTracker.entries),
+          ]);
+          setTracker({ ...foundTracker, name, trackerName: name, target, entries });
         } else {
           console.error(`Tracker with ID ${trackerId} could not be resolved.`);
         }
@@ -184,20 +167,11 @@ export default function TrackerDetail() {
     );
   }
 
-  // Decrypt tracker properties
-  const decryptedName = decryptField(tracker.name) || tracker.trackerName || "Untitled Tracker";
-  const decryptedType = decryptField(tracker.type) || "tracker";
-  const decryptedTarget = decryptField(tracker.target);
-  const decryptedUnit = decryptField(tracker.unit);
-
-  // Decrypt entries safely ensuring it falls back to a clean array
-  let entries = [];
-  const rawDecryptedEntries = decryptField(tracker.entries);
-  if (Array.isArray(rawDecryptedEntries)) {
-    entries = rawDecryptedEntries;
-  } else if (Array.isArray(tracker.entries)) {
-    entries = tracker.entries;
-  }
+  const decryptedName = tracker.name || tracker.trackerName || "Untitled Tracker";
+  const decryptedType = tracker.type || "tracker";
+  const decryptedTarget = tracker.target;
+  const decryptedUnit = tracker.unit;
+  const entries = Array.isArray(tracker.entries) ? tracker.entries : [];
 
   return (
     <div className={`min-vh-100 py-5 ${darkMode ? "bg-dark text-light" : "bg-light text-dark"}`} data-bs-theme={darkMode ? "dark" : "light"}>
