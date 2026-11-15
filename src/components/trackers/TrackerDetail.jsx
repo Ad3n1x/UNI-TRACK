@@ -2,7 +2,6 @@ import React, { useState, useEffect } from "react";
 import { apiFetch, getAuthHeaders } from "../../utils/api";
 import { useParams, Link } from "react-router-dom";
 import { ArrowLeft, Calendar, Activity } from "lucide-react";
-import Cookies from "universal-cookie";
 import { initializeUserKeys, decryptField } from "../../utils/e2ee";
 
 const RAW_BASE_URL = import.meta.env?.DEV ? (import.meta.env.VITE_API_URL || "") : "";
