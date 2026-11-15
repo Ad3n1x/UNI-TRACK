@@ -2,7 +2,6 @@ import { useState, useRef } from "react";
 import { apiFetch } from "../../utils/api";
 import { Check, Circle, Loader2 } from "lucide-react";
 import * as Icons from "lucide-react";
-import Cookies from "universal-cookie";
 import { initializeUserKeys, encryptField } from "../../utils/e2ee";
 
 const RAW_BASE_URL =
@@ -65,14 +64,6 @@ export default function TrackerForm({ onCreate, onClose, darkMode = false }) {
     e.preventDefault();
     if (!name.trim() || isSubmittingRef.current || loading) return;
 
-    const cookies = new Cookies();
-    const token = cookies.get("token") || localStorage.getItem("token");
-
-    if (!token) {
-      setErrorMsg("Session expired or missing authentication token.");
-      return;
-    }
-
     isSubmittingRef.current = true;
     setLoading(true);
     setErrorMsg(null);
@@ -95,10 +86,7 @@ export default function TrackerForm({ onCreate, onClose, darkMode = false }) {
         entries: encryptedEntries,
       };
 
-      const headers = {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      };
+      const headers = { "Content-Type": "application/json" };
 
       let response = await apiFetch(`${BASE_URL}/api/v1/trackers`, {
         method: "POST",
