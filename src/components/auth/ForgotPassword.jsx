@@ -35,7 +35,7 @@ const ForgotPassword = () => {
         {
           email: email.trim().toLowerCase(),
         },
-        { timeout: 60000 }
+        { timeout: 60000, withCredentials: true }
       );
 
       toast.success(res.data.message || "Reset code sent! 🎉");
@@ -77,7 +77,7 @@ const ForgotPassword = () => {
           otp,
           newPassword,
         },
-        { timeout: 60000 }
+        { timeout: 60000, withCredentials: true }
       );
 
       toast.success(res.data.message || "Password reset successfully! 🎉");
