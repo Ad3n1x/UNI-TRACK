@@ -1,4 +1,5 @@
 import { useState, useRef } from "react";
+import { apiFetch } from "../../utils/api";
 import { Check, Circle, Loader2 } from "lucide-react";
 import * as Icons from "lucide-react";
 import Cookies from "universal-cookie";
@@ -99,14 +100,14 @@ export default function TrackerForm({ onCreate, onClose, darkMode = false }) {
         Authorization: `Bearer ${token}`,
       };
 
-      let response = await fetch(`${BASE_URL}/api/v1/trackers`, {
+      let response = await apiFetch(`${BASE_URL}/api/v1/trackers`, {
         method: "POST",
         headers,
         body: JSON.stringify(payload),
       });
 
       if (response.status === 404) {
-        response = await fetch(`${BASE_URL}/api/trackers`, {
+        response = await apiFetch(`${BASE_URL}/api/trackers`, {
           method: "POST",
           headers,
           body: JSON.stringify(payload),
