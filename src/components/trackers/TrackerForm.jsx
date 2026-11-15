@@ -59,6 +59,15 @@ export default function TrackerForm({ onCreate, onClose, darkMode = false }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!name.trim() || isSubmittingRef.current || loading) return;
+    if (name.trim().length > 120) {
+      setErrorMsg("Tracker names must be 120 characters or fewer.");
+      return;
+    }
+    const targetValue = TARGET_TYPES.has(type) && target.trim() ? Number(target) : undefined;
+    if (targetValue !== undefined && (!Number.isFinite(targetValue) || targetValue < 0 || targetValue > 1e12)) {
+      setErrorMsg("Enter a valid target between 0 and 1,000,000,000,000.");
+      return;
+    }
 
     isSubmittingRef.current = true;
     setLoading(true);
@@ -69,7 +78,7 @@ export default function TrackerForm({ onCreate, onClose, darkMode = false }) {
       const encryptedName = await encryptField(publicKey, name.trim(), true);
       const encryptedEntries = await encryptField(publicKey, []);
       const encryptedTarget = TARGET_TYPES.has(type) && target
-        ? await encryptField(publicKey, parseFloat(target))
+        ? await encryptField(publicKey, targetValue)
         : undefined;
 
       const payload = {
@@ -147,6 +156,7 @@ export default function TrackerForm({ onCreate, onClose, darkMode = false }) {
         <label style={styles.label}>Tracker Name</label>
         <input
           type="text"
+          maxLength={120}
           value={name}
           onChange={(e) => setName(e.target.value)}
           placeholder={activeTypeConfig.namePlaceholder}
