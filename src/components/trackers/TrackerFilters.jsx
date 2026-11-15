@@ -103,7 +103,7 @@ export default function TrackerFilters({
       color: isSelected 
         ? '#ffffff' 
         : darkMode ? '#f8fafc' : '#1e293b',
-      fontWeight: isSelected ? '600' : '4n',
+      fontWeight: isSelected ? '600' : '400',
       transition: 'background-color 0.1s ease',
     }),
   };
