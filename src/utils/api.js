@@ -1,4 +1,4 @@
-const RAW_API_BASE = (import.meta.env?.VITE_API_URL || "").trim();
+const RAW_API_BASE = (import.meta.env?.DEV ? import.meta.env.VITE_API_URL || "" : "").trim();
 export const API_BASE_URL = RAW_API_BASE.replace(/\/$/, "");
 
 export function apiUrl(path) {
