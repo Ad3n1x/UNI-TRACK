@@ -1,4 +1,5 @@
 import CryptoJS from "crypto-js";
+import { apiFetch } from "./api";
 
 // UNI-TRACK browser-side encryption helpers.
 // Private RSA keys are stored as non-extractable CryptoKey objects in IndexedDB.
@@ -204,11 +205,10 @@ export async function initializeUserKeys() {
 
     // Keep key publication independent of key creation/migration. Existing IndexedDB
     // records must also retry if a previous network request failed or the marker was lost.
-    const token = localStorage.getItem("token");
-    const apiBase = (import.meta.env?.VITE_API_URL || "https://lv3node.onrender.com").replace(/\/$/, "");
-    if (token && localStorage.getItem("e2ee_public_key_synced") !== publicKeyJwk) {
+    const apiBase = (import.meta.env?.VITE_API_URL || "").replace(/\/$/, "");
+    if (localStorage.getItem("e2ee_public_key_synced") !== publicKeyJwk) {
       try {
-        const response = await fetch(`${apiBase}/api/v1/auth/public-key`, {
+        const response = await apiFetch(`${apiBase}/api/v1/auth/public-key`, {
           method: "POST",
           headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
           body: JSON.stringify({ publicKey: publicKeyJwk }),
