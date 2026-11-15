@@ -44,7 +44,7 @@ const getEnvVar = (key) => {
   return null;
 };
 
-const RAW_BASE_URL = getEnvVar("API_URL") || "";
+const RAW_BASE_URL = import.meta.env?.DEV ? (getEnvVar("API_URL") || "") : "";
 const BASE_URL = RAW_BASE_URL.replace(/\/$/, "");
 
 const VAPID_PUBLIC_KEY = getEnvVar("VAPID_PUBLIC_KEY") || "BEaflZfmm8QfrFsL7r06HB-QrsdDAefJpRk2vw-zcHIKD-t8evj3TIS7k9k0w0am9BboNqiqbZ99Y-1WxYNcZcw";
@@ -64,7 +64,7 @@ const SAMPLE_TRACKER = {
 // ==========================================
 const getAuthHeaders = () => {
   const cookies = new Cookies();
-  const token = cookies.get("token") || localStorage.getItem("token") || localStorage.getItem("unitrack_authenticated");
+  const token = cookies.get("token") || localStorage.getItem("token");
   return {
     "Content-Type": "application/json",
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
