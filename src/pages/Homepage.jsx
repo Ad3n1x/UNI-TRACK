@@ -327,8 +327,18 @@ export default function HomePage() {
       const { privateKey, publicKey } = await initializeUserKeys();
 
       let response = await apiFetch(`${BASE_URL}/api/v1/trackers`, { headers: getAuthHeaders() });
+      if (response.status === 401 || response.status === 403) {
+        localStorage.removeItem("unitrack_authenticated");
+        window.location.href = "/login";
+        return;
+      }
       if (!response.ok) {
         response = await apiFetch(`${BASE_URL}/api/trackers`, { headers: getAuthHeaders() });
+      }
+      if (response.status === 401 || response.status === 403) {
+        localStorage.removeItem("unitrack_authenticated");
+        window.location.href = "/login";
+        return;
       }
       if (!response.ok) throw new Error(`Tracker request failed with status ${response.status}.`);
 
