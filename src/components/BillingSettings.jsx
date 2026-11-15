@@ -1,11 +1,12 @@
 // 3. Frontend Billing Management Component (components/BillingSettings.jsx)
+import { apiFetch } from "../utils/api";
 // Allows Pro users to update their payment card or cancel their subscription.
 import React from 'react';
 
 const BillingSettings = ({ darkMode, isPro }) => {
   const handleManageBilling = async () => {
     try {
-      const response = await fetch('/api/v1/subscription/create-portal-session', {
+      const response = await apiFetch('/api/v1/subscription/create-portal-session', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
