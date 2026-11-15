@@ -10,7 +10,7 @@ const RAW_BASE_URL =
   (typeof process !== "undefined" && process.env?.API_URL) ||
   (typeof import.meta !== "undefined" && import.meta.env?.VITE_API_URL) ||
   (typeof process !== "undefined" && process.env?.REACT_APP_API_URL) ||
-  "https://lv3node.onrender.com";
+  "";
 
 const BASE_URL = RAW_BASE_URL.replace(/\/$/, "");
 const decryptField = decryptLegacyField;
