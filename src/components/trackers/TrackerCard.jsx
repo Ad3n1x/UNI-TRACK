@@ -183,8 +183,8 @@ export default function TrackerCard({
       }
 
       if (!res.ok) {
-        console.warn(`Server sync warning: HTTP ${res.status}. Keeping local state.`);
-        toast.success(successMessage);
+        console.warn(`Server sync failed: HTTP ${res.status}. Refreshing from the server.`);
+        toast.error("Progress could not be saved. Your tracker is being refreshed.");
         fetchTrackers?.();
         return;
       }
@@ -205,7 +205,7 @@ export default function TrackerCard({
       toast.success(successMessage);
     } catch (err) {
       console.error("Network sync error:", err);
-      toast.success(successMessage);
+      toast.error("Could not reach the server. Your tracker is being refreshed.");
       fetchTrackers?.();
     }
   };
