@@ -28,7 +28,7 @@ import TrackerDashboard from "../components/trackers/TrackerDashboard";
 import TrackerForm from "../components/trackers/TrackerForm";
 import TrackerList from "../components/trackers/TrackerList";
 import TrackerFilters from "../components/trackers/TrackerFilters";
-import { initializeUserKeys, decryptData, encryptData } from "../utils/e2ee";
+import { initializeUserKeys, decryptData, decryptField, encryptData, encryptField } from "../utils/e2ee";
 
 // ==========================================
 // CONFIGURATION & CONSTANTS
@@ -204,17 +204,8 @@ const toggleBootstrapModal = (modalId, action = "show") => {
 };
 
 const safeDecrypt = async (privateKey, value) => {
-  if (typeof value !== "string" || !value) return value;
-
-  const isEncrypted = 
-    value.startsWith("U2FsdGVkX1") || 
-    value.startsWith("enc:") || 
-    value.includes(":");
-
-  if (!isEncrypted) return value;
-
   try {
-    const decrypted = await decryptData(privateKey, value);
+    const decrypted = await decryptField(privateKey, value);
     return decrypted !== undefined && decrypted !== null ? decrypted : value;
   } catch (err) {
     console.warn("Decryption fallback triggered:", err);
@@ -332,29 +323,62 @@ export default function HomePage() {
     if (isManualRefresh) setRefreshing(true);
     
     try {
-      const { privateKey } = await initializeUserKeys();
+      const { privateKey, publicKey } = await initializeUserKeys();
 
       let response = await fetch(`${BASE_URL}/api/v1/trackers`, { headers: getAuthHeaders() });
       if (!response.ok) {
         response = await fetch(`${BASE_URL}/api/trackers`, { headers: getAuthHeaders() });
       }
+      if (!response.ok) throw new Error(`Tracker request failed with status ${response.status}.`);
 
       const data = await response.json();
       const fetchedArray = Array.isArray(data) ? data : Array.isArray(data.trackers) ? data.trackers : [];
 
       const decryptedTrackers = await Promise.all(
         fetchedArray.map(async (tracker) => {
-          try {
-            return {
-              ...tracker,
-              name: await decryptData(privateKey, tracker.name),
-              target: tracker.target !== undefined ? await decryptData(privateKey, tracker.target) : tracker.target,
-              entries: tracker.entries !== undefined ? await decryptData(privateKey, tracker.entries) : tracker.entries,
-            };
-          } catch (decryptErr) {
-            console.error("Failed to decrypt tracker:", decryptErr);
-            return tracker;
+          const decryptOrKeep = async (value) => {
+            try { return await decryptField(privateKey, value); }
+            catch (error) {
+              console.warn("A tracker field could not be decrypted in this browser:", error);
+              return value;
+            }
+          };
+
+          const name = await decryptOrKeep(tracker.name ?? tracker.trackerName);
+          const target = tracker.target !== undefined ? await decryptOrKeep(tracker.target) : tracker.target;
+          const entries = tracker.entries !== undefined ? await decryptOrKeep(tracker.entries) : tracker.entries;
+          const decrypted = { ...tracker, name, trackerName: name, target, entries };
+
+          // Migrate old shared-key AES fields to this account's public-key encryption
+          // after successful decryption. Failed or unavailable legacy keys are never overwritten.
+          const migration = {};
+          if (typeof tracker.name === "string" && tracker.name.startsWith("U2FsdGVkX1") && name !== tracker.name) {
+            migration.name = await encryptField(publicKey, name, true);
           }
+          if (typeof tracker.target === "string" && tracker.target.startsWith("U2FsdGVkX1") && target !== tracker.target) {
+            migration.target = await encryptField(publicKey, target);
+          }
+          if (typeof tracker.entries === "string" && tracker.entries.startsWith("U2FsdGVkX1") && entries !== tracker.entries) {
+            migration.entries = await encryptField(publicKey, entries);
+          }
+
+          const trackerId = tracker._id || tracker.id;
+          if (trackerId && Object.keys(migration).length > 0) {
+            try {
+              const migrationResponse = await fetch(`${BASE_URL}/api/v1/trackers/${trackerId}`, {
+                method: "PUT",
+                headers: getAuthHeaders(),
+                body: JSON.stringify(migration),
+              });
+              if (!migrationResponse.ok) {
+                console.warn(`Legacy tracker migration deferred for ${trackerId}: HTTP ${migrationResponse.status}`);
+              }
+            } catch (migrationError) {
+              console.warn("Legacy tracker migration will be retried on a later refresh:", migrationError);
+            }
+          }
+
+          return decrypted;
         })
       );
 
