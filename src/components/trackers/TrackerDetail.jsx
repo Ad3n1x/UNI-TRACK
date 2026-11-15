@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { apiFetch } from "../../utils/api";
+import { apiFetch, getAuthHeaders } from "../../utils/api";
 import { useParams, Link } from "react-router-dom";
 import { ArrowLeft, Calendar, Activity } from "lucide-react";
 import Cookies from "universal-cookie";
@@ -15,15 +15,6 @@ const MOOD_MAP = {
   3: { emoji: "😐", label: "Okay" },
   4: { emoji: "🙂", label: "Good" },
   5: { emoji: "😄", label: "Great" },
-};
-
-const getAuthHeaders = () => {
-  const cookies = new Cookies();
-  const token = cookies.get("token") || localStorage.getItem("token");
-  return {
-    "Content-Type": "application/json",
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
-  };
 };
 
 const SAMPLE_TRACKER = {
