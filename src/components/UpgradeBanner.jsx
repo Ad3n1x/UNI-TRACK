@@ -1,10 +1,11 @@
 // 5. Frontend React Upgrade Component (components/UpgradeBanner.jsx)
+import { apiFetch } from "../utils/api";
 import React from 'react';
 
 const UpgradeBanner = ({ darkMode }) => {
   const handleUpgrade = async () => {
     try {
-      const response = await fetch('/api/subscription/create-checkout-session', {
+      const response = await apiFetch('/api/subscription/create-checkout-session', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
