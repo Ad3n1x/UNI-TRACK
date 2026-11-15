@@ -55,7 +55,7 @@ const Register = () => {
             email: values.email.trim().toLowerCase(),
             password: values.password,
           },
-          { timeout: 60000 }
+          { timeout: 60000, withCredentials: true }
         );
 
         toast.success(response.data.message || "OTP sent to your email! 🎉");
@@ -96,7 +96,7 @@ const Register = () => {
           email: registeredEmail,
           otp: otpValue,
         },
-        { timeout: 60000 }
+        { timeout: 60000, withCredentials: true }
       );
 
       toast.success("Account verified successfully! 🎉 Please sign in.");
