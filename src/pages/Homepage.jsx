@@ -28,7 +28,7 @@ import TrackerDashboard from "../components/trackers/TrackerDashboard";
 import TrackerForm from "../components/trackers/TrackerForm";
 import TrackerList from "../components/trackers/TrackerList";
 import TrackerFilters from "../components/trackers/TrackerFilters";
-import { initializeUserKeys, decryptData, decryptField, encryptData, encryptField } from "../utils/e2ee";
+import { initializeUserKeys, decryptField, encryptData, encryptField } from "../utils/e2ee";
 
 // ==========================================
 // CONFIGURATION & CONSTANTS
