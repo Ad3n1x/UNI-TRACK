@@ -29,9 +29,16 @@ export default function LoginForm({ onSuccess }) {
         { timeout: 60000, withCredentials: true }
       );
 
+      const sessionResponse = await axios.get(`${BASE_URL}/api/v1/auth/me`, {
+        timeout: 30000,
+        withCredentials: true,
+      });
+      if (!sessionResponse.data?.user?.email) {
+        throw new Error("The server did not establish an authenticated session. Please try again.");
+      }
+
       toast.success(response.data.message || "Login successful! 🎉");
-      
-      const userEmail = (response.data.user?.email || email).trim().toLowerCase();
+      const userEmail = (sessionResponse.data.user.email || response.data.user?.email || email).trim().toLowerCase();
       const cookies = new Cookies();
       // Remove any legacy JavaScript-readable token. The server now owns the HttpOnly session cookie.
       cookies.remove("token", { path: "/" });
