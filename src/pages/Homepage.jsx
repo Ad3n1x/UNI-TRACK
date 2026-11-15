@@ -64,7 +64,7 @@ const SAMPLE_TRACKER = {
 // ==========================================
 const getAuthHeaders = () => {
   const cookies = new Cookies();
-  const token = cookies.get("token") || localStorage.getItem("token");
+  const token = cookies.get("token") || localStorage.getItem("token") || localStorage.getItem("unitrack_authenticated");
   return {
     "Content-Type": "application/json",
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
@@ -525,9 +525,16 @@ export default function HomePage() {
     setTimeout(() => setNotification(null), 3000);
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    try {
+      await apiFetch("/api/v1/auth/logout", { method: "POST" });
+    } catch (error) {
+      console.warn("Server logout could not be confirmed:", error);
+    }
     cookies.remove("token", { path: "/" });
     localStorage.removeItem("token");
+    localStorage.removeItem("unitrack_authenticated");
+    localStorage.removeItem("userEmail");
     localStorage.removeItem("pro_payment_date");
     window.location.href = "/login";
   };
