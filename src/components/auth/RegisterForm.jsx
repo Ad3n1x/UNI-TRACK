@@ -6,10 +6,7 @@ import { useNavigate, Link } from "react-router-dom";
 import { toast } from "react-toastify";
 import { ArrowLeft } from "lucide-react";
 
-const RAW_BASE_URL =
-  (typeof process !== "undefined" && process.env && (process.env.REACT_APP_API_URL || process.env.REACT_APP_BASE_URL)) ||
-  (typeof import.meta !== "undefined" && import.meta.env && (import.meta.env.VITE_API_URL || import.meta.env.VITE_BASE_URL)) ||
-  "";
+const RAW_BASE_URL = import.meta.env?.DEV ? (import.meta.env.VITE_API_URL || "") : "";
 
 const BASE_URL = RAW_BASE_URL.replace(/\/$/, "");
 
