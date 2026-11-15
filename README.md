@@ -35,8 +35,8 @@ The application includes client-side encryption and decryption utilities for sup
 - JavaScript
 - Axios
 - Formik and Yup
-- JWT-based authentication
-- Browser cookies
+- JWT-backed authentication stored in an HttpOnly session cookie
+- CSRF-protected same-origin API requests
 - React Toastify
 - Lucide icons
 
@@ -50,7 +50,7 @@ cd UNI-TRACK
 npm install
 ```
 
-Create a `.env` file in the project root and configure the API URL using the variable supported by the application (for example, `VITE_API_URL`). Then run:
+The Vite development server proxies `/api` to the configured UNI-TRACK API by default. Set `VITE_API_URL` only when you intentionally use a different API during local development. Production requests use the Vercel same-origin API rewrite; do not set a direct Render API URL in production because cookie authentication relies on the app origin. Then run:
 
 ```bash
 npm run dev
@@ -77,3 +77,12 @@ Built by **AD3N1X**.
 ## Browser key handling
 
 Compatible encrypted records use a browser-held RSA private key stored as a non-extractable Web Crypto key in IndexedDB. Older exported private-key records are migrated into that store when the app initializes the key system. Clearing browser site data or losing the device can make those compatible records unreadable; a user-facing recovery/export flow is not yet implemented. This is not a claim that every account field, API request or database record is end-to-end encrypted.
+
+
+## Session and API security
+
+Successful sign-in creates an HttpOnly session cookie; the JWT is no longer returned to the frontend for storage in localStorage. Mutating requests include a double-submit CSRF token. Production API traffic is routed through the Vercel app origin, while local Vite development uses the configured proxy. Legacy Bearer-token sessions remain accepted temporarily for compatibility.
+
+## Tracker encryption migration
+
+New tracker names, targets and entries are encrypted using the user's public key. Existing records encrypted with the legacy shared client-side key are decrypted locally and migrated when the dashboard can successfully unlock them. The legacy decryptor remains temporarily for compatibility, so the transition is not yet a claim that every old record has been migrated. A user-facing private-key recovery/export flow is still required before describing the system as fully recoverable end-to-end encryption.
