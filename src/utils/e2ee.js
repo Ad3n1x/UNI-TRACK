@@ -205,7 +205,7 @@ export async function initializeUserKeys() {
 
     // Keep key publication independent of key creation/migration. Existing IndexedDB
     // records must also retry if a previous network request failed or the marker was lost.
-    const apiBase = (import.meta.env?.VITE_API_URL || "").replace(/\/$/, "");
+    const apiBase = (import.meta.env?.DEV ? import.meta.env.VITE_API_URL || "" : "").replace(/\/$/, "");
     if (localStorage.getItem("e2ee_public_key_synced") !== publicKeyJwk) {
       try {
         const response = await apiFetch(`${apiBase}/api/v1/auth/public-key`, {
