@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
+import { apiFetch } from "../utils/api";
 import Cookies from "universal-cookie";
 import { 
   PlusCircle, 
@@ -157,7 +158,7 @@ async function registerServiceWorkerAndSubscribe() {
     applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
   });
 
-  const response = await fetch(`${BASE_URL}/api/v1/subscribe`, {
+  const response = await apiFetch(`${BASE_URL}/api/v1/subscribe`, {
     method: "POST",
     headers: getAuthHeaders(),
     body: JSON.stringify(subscription),
@@ -183,7 +184,7 @@ async function unsubscribeFromPush() {
     await subscription.unsubscribe();
 
     try {
-      await fetch(`${BASE_URL}/api/v1/unsubscribe`, {
+      await apiFetch(`${BASE_URL}/api/v1/unsubscribe`, {
         method: "POST",
         headers: getAuthHeaders(),
         body: JSON.stringify({ endpoint }),
@@ -266,7 +267,7 @@ export default function HomePage() {
 
   const fetchUserSubscriptionStatus = useCallback(async () => {
     try {
-      const res = await fetch(`${BASE_URL}/api/v1/user/status`, { headers: getAuthHeaders() });
+      const res = await apiFetch(`${BASE_URL}/api/v1/user/status`, { headers: getAuthHeaders() });
       if (res.ok) {
         const data = await res.json();
         let active = Boolean(data.isPremium);
@@ -325,9 +326,9 @@ export default function HomePage() {
     try {
       const { privateKey, publicKey } = await initializeUserKeys();
 
-      let response = await fetch(`${BASE_URL}/api/v1/trackers`, { headers: getAuthHeaders() });
+      let response = await apiFetch(`${BASE_URL}/api/v1/trackers`, { headers: getAuthHeaders() });
       if (!response.ok) {
-        response = await fetch(`${BASE_URL}/api/trackers`, { headers: getAuthHeaders() });
+        response = await apiFetch(`${BASE_URL}/api/trackers`, { headers: getAuthHeaders() });
       }
       if (!response.ok) throw new Error(`Tracker request failed with status ${response.status}.`);
 
@@ -365,7 +366,7 @@ export default function HomePage() {
           const trackerId = tracker._id || tracker.id;
           if (trackerId && Object.keys(migration).length > 0) {
             try {
-              const migrationResponse = await fetch(`${BASE_URL}/api/v1/trackers/${trackerId}`, {
+              const migrationResponse = await apiFetch(`${BASE_URL}/api/v1/trackers/${trackerId}`, {
                 method: "PUT",
                 headers: getAuthHeaders(),
                 body: JSON.stringify(migration),
@@ -537,14 +538,14 @@ export default function HomePage() {
       const { publicKey } = await initializeUserKeys();
       const encryptedEntries = await encryptData(publicKey, updatedEntries);
 
-      let response = await fetch(`${BASE_URL}/api/v1/trackers/${trackerId}`, {
+      let response = await apiFetch(`${BASE_URL}/api/v1/trackers/${trackerId}`, {
         method: "PUT",
         headers: getAuthHeaders(),
         body: JSON.stringify({ entries: encryptedEntries }),
       });
 
       if (response.status === 404) {
-        response = await fetch(`${BASE_URL}/api/trackers/${trackerId}`, {
+        response = await apiFetch(`${BASE_URL}/api/trackers/${trackerId}`, {
           method: "PUT",
           headers: getAuthHeaders(),
           body: JSON.stringify({ entries: encryptedEntries }),
@@ -627,13 +628,13 @@ export default function HomePage() {
     if (trackerId === SAMPLE_TRACKER._id) return;
 
     try {
-      let response = await fetch(`${BASE_URL}/api/v1/trackers/${trackerId}`, {
+      let response = await apiFetch(`${BASE_URL}/api/v1/trackers/${trackerId}`, {
         method: "DELETE",
         headers: getAuthHeaders(),
       });
 
       if (response.status === 404) {
-        response = await fetch(`${BASE_URL}/api/trackers/${trackerId}`, {
+        response = await apiFetch(`${BASE_URL}/api/trackers/${trackerId}`, {
           method: "DELETE",
           headers: getAuthHeaders(),
         });
