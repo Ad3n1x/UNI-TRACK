@@ -7,11 +7,7 @@ import { toast } from "react-toastify";
 
 import { initializeUserKeys, encryptData, decryptData, decryptLegacyField, decryptField as decryptStoredField } from "../../utils/e2ee";
 
-const RAW_BASE_URL =
-  (typeof process !== "undefined" && process.env?.API_URL) ||
-  (typeof import.meta !== "undefined" && import.meta.env?.VITE_API_URL) ||
-  (typeof process !== "undefined" && process.env?.REACT_APP_API_URL) ||
-  "";
+const RAW_BASE_URL = import.meta.env?.DEV ? (import.meta.env.VITE_API_URL || "") : "";
 
 const BASE_URL = RAW_BASE_URL.replace(/\/$/, "");
 const decryptField = decryptLegacyField;
