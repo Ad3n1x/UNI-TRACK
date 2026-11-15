@@ -233,7 +233,10 @@ export default function TrackerCard({
 
   const handleSaveAmount = () => {
     const val = parseFloat(inputValue);
-    if (isNaN(val)) return;
+    if (!Number.isFinite(val) || val <= 0) {
+      toast.error("Enter a valid amount greater than zero.");
+      return;
+    }
 
     const currentVal = Number(todayEntry?.value) || 0;
     const nextVal = currentVal + val;
