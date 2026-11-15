@@ -210,7 +210,7 @@ export async function initializeUserKeys() {
       try {
         const response = await apiFetch(`${apiBase}/api/v1/auth/public-key`, {
           method: "POST",
-          headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ publicKey: publicKeyJwk }),
         });
         if (response.ok) {
