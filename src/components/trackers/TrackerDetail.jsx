@@ -91,7 +91,7 @@ export default function TrackerDetail() {
 
         for (const url of endpoints) {
           try {
-            const res = await fetch(url, { headers });
+            const res = await apiFetch(url, { headers });
             if (res.ok) {
               const data = await res.json();
               foundTracker = data.data || data;
@@ -110,7 +110,7 @@ export default function TrackerDetail() {
 
           for (const listUrl of listEndpoints) {
             try {
-              const res = await fetch(listUrl, { headers });
+              const res = await apiFetch(listUrl, { headers });
               if (res.ok) {
                 const data = await res.json();
                 const trackersList = Array.isArray(data) ? data : (data.data || data.trackers || []);
