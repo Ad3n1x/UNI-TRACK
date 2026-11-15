@@ -3,6 +3,7 @@ import { Routes, Route, useNavigate } from "react-router-dom";
 // ❌ Removed unused Helmet import
 import Cookies from "universal-cookie";
 import { toast } from "react-toastify";
+import { apiFetch } from "./utils/api";
 
 import Homepage from "./pages/Homepage";
 import LoginForm from "./components/auth/LoginForm";
@@ -17,12 +18,18 @@ const cookies = new Cookies();
 function AutoLogoutWrapper({ children }) {
   const navigate = useNavigate();
 
-  const handleLogout = useCallback(() => {
+  const handleLogout = useCallback(async () => {
+    try {
+      await apiFetch("/api/v1/auth/logout", { method: "POST" });
+    } catch (error) {
+      console.warn("Server logout could not be confirmed:", error);
+    }
     cookies.remove("token", { path: "/" });
     cookies.remove("userEmail", { path: "/" });
     cookies.remove("userId", { path: "/" });
     localStorage.removeItem("token");
     localStorage.removeItem("userEmail");
+    localStorage.removeItem("unitrack_authenticated");
     toast.warning("Session expired due to 1 hour of inactivity. Please log in again.");
     navigate("/login", { replace: true });
   }, [navigate]);
@@ -32,7 +39,7 @@ function AutoLogoutWrapper({ children }) {
 
     const resetTimer = () => {
       if (timeoutId) clearTimeout(timeoutId);
-      if (cookies.get("token") || localStorage.getItem("token")) {
+      if (cookies.get("token") || localStorage.getItem("token") || localStorage.getItem("unitrack_authenticated") === "true") {
         timeoutId = setTimeout(handleLogout, INACTIVITY_LIMIT_MS);
       }
     };

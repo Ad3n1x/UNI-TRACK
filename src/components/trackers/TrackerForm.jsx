@@ -1,23 +1,12 @@
 import { useState, useRef } from "react";
+import { apiFetch } from "../../utils/api";
 import { Check, Circle, Loader2 } from "lucide-react";
 import * as Icons from "lucide-react";
-import Cookies from "universal-cookie";
-import CryptoJS from "crypto-js";
+import { initializeUserKeys, encryptField } from "../../utils/e2ee";
 
-const RAW_BASE_URL =
-  (typeof process !== "undefined" && process.env?.API_URL) ||
-  (typeof import.meta !== "undefined" && import.meta.env?.VITE_API_URL) ||
-  (typeof process !== "undefined" && process.env?.REACT_APP_API_URL) ||
-  "https://lv3node.onrender.com";
+const RAW_BASE_URL = import.meta.env?.DEV ? (import.meta.env.VITE_API_URL || "") : "";
 
 const BASE_URL = RAW_BASE_URL.replace(/\/$/, "");
-
-const CLIENT_SECRET = "your_client_side_encryption_secret";
-const encryptField = (data) => {
-  if (data === null || data === undefined || data === "") return data;
-  const stringValue = typeof data === "object" ? JSON.stringify(data) : String(data);
-  return CryptoJS.AES.encrypt(stringValue, CLIENT_SECRET).toString();
-};
 
 const TRACKER_TYPES = [
   { value: "habit", label: "Habit", description: "Daily yes/no check-in", emoji: "✅", defaultTarget: "", defaultUnit: "", namePlaceholder: "e.g. Morning Jog..." },
@@ -70,12 +59,13 @@ export default function TrackerForm({ onCreate, onClose, darkMode = false }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!name.trim() || isSubmittingRef.current || loading) return;
-
-    const cookies = new Cookies();
-    const token = cookies.get("token") || localStorage.getItem("token");
-
-    if (!token) {
-      setErrorMsg("Session expired or missing authentication token.");
+    if (name.trim().length > 120) {
+      setErrorMsg("Tracker names must be 120 characters or fewer.");
+      return;
+    }
+    const targetValue = TARGET_TYPES.has(type) && target.trim() ? Number(target) : undefined;
+    if (targetValue !== undefined && (!Number.isFinite(targetValue) || targetValue < 0 || targetValue > 1e12)) {
+      setErrorMsg("Enter a valid target between 0 and 1,000,000,000,000.");
       return;
     }
 
@@ -84,29 +74,33 @@ export default function TrackerForm({ onCreate, onClose, darkMode = false }) {
     setErrorMsg(null);
 
     try {
+      const { publicKey } = await initializeUserKeys();
+      const encryptedName = await encryptField(publicKey, name.trim(), true);
+      const encryptedEntries = await encryptField(publicKey, []);
+      const encryptedTarget = TARGET_TYPES.has(type) && target
+        ? await encryptField(publicKey, targetValue)
+        : undefined;
+
       const payload = {
-        name: encryptField(name.trim()),
+        name: encryptedName,
         type,
         icon,
         color,
-        ...(TARGET_TYPES.has(type) && target ? { target: encryptField(parseFloat(target)) } : {}),
+        ...(encryptedTarget !== undefined ? { target: encryptedTarget } : {}),
         ...(unit.trim() && { unit: unit.trim() }),
-        entries: encryptField([]),
+        entries: encryptedEntries,
       };
 
-      const headers = {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      };
+      const headers = { "Content-Type": "application/json" };
 
-      let response = await fetch(`${BASE_URL}/api/v1/trackers`, {
+      let response = await apiFetch(`${BASE_URL}/api/v1/trackers`, {
         method: "POST",
         headers,
         body: JSON.stringify(payload),
       });
 
       if (response.status === 404) {
-        response = await fetch(`${BASE_URL}/api/trackers`, {
+        response = await apiFetch(`${BASE_URL}/api/trackers`, {
           method: "POST",
           headers,
           body: JSON.stringify(payload),
@@ -162,6 +156,7 @@ export default function TrackerForm({ onCreate, onClose, darkMode = false }) {
         <label style={styles.label}>Tracker Name</label>
         <input
           type="text"
+          maxLength={120}
           value={name}
           onChange={(e) => setName(e.target.value)}
           placeholder={activeTypeConfig.namePlaceholder}

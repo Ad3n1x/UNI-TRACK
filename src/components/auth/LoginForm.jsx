@@ -1,15 +1,11 @@
 import React, { useState } from "react";
 import axios from "axios";
-import { jwtDecode } from "jwt-decode";
 import Cookies from "universal-cookie";
 import { Link, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import { ArrowLeft } from "lucide-react";
 
-const RAW_BASE_URL =
-  (typeof process !== "undefined" && process.env && (process.env.REACT_APP_API_URL || process.env.REACT_APP_BASE_URL)) ||
-  (typeof import.meta !== "undefined" && import.meta.env && (import.meta.env.VITE_API_URL || import.meta.env.VITE_BASE_URL)) ||
-  "https://lv3node.onrender.com";
+const RAW_BASE_URL = import.meta.env?.DEV ? (import.meta.env.VITE_API_URL || "") : "";
 
 const BASE_URL = RAW_BASE_URL.replace(/\/$/, "");
 
@@ -30,58 +26,25 @@ export default function LoginForm({ onSuccess }) {
           email: email.trim().toLowerCase(),
           password: password,
         },
-        { timeout: 60000 }
+        { timeout: 60000, withCredentials: true }
       );
 
-      toast.success(response.data.message || "Login successful! 🎉");
-      
-      // Extract JWT Token
-      const token = response.data.token || response.data.data?.token;
-
-      if (token) {
-        const cookies = new Cookies();
-        let jwtUserEmail = email.trim().toLowerCase(); // Fallback to submitted email
-
-        try {
-          // Decode JWT payload
-          const decodedToken = jwtDecode(token);
-
-          // Extract identity claims directly from JWT payload
-          if (decodedToken?.email) {
-            jwtUserEmail = decodedToken.email;
-          } else if (decodedToken?.userEmail) {
-            jwtUserEmail = decodedToken.userEmail;
-          } else if (decodedToken?.sub && decodedToken.sub.includes("@")) {
-            jwtUserEmail = decodedToken.sub;
-          }
-
-          jwtUserEmail = jwtUserEmail.trim().toLowerCase();
-
-          // Standardize Cookie configuration matching JWT expiration
-          const cookieOptions = {
-            path: "/",
-            secure: window.location.protocol === "https:",
-            sameSite: "lax",
-            expires: decodedToken?.exp ? new Date(decodedToken.exp * 1000) : undefined,
-          };
-
-          // Save Token & JWT Identity into Cookies
-          cookies.set("token", token, cookieOptions);
-          cookies.set("userEmail", jwtUserEmail, cookieOptions);
-
-          if (decodedToken?.id || decodedToken?.userId) {
-            cookies.set("userId", decodedToken.id || decodedToken.userId, cookieOptions);
-          }
-        } catch (decodeErr) {
-          console.error("JWT decoding failed:", decodeErr);
-          cookies.set("token", token, { path: "/", secure: window.location.protocol === "https:" });
-          cookies.set("userEmail", jwtUserEmail, { path: "/", secure: window.location.protocol === "https:" });
-        }
-
-        // Save Token & User Email in localStorage for instant component access
-        localStorage.setItem("token", token);
-        localStorage.setItem("userEmail", jwtUserEmail);
+      const sessionResponse = await axios.get(`${BASE_URL}/api/v1/auth/me`, {
+        timeout: 30000,
+        withCredentials: true,
+      });
+      if (!sessionResponse.data?.user?.email) {
+        throw new Error("The server did not establish an authenticated session. Please try again.");
       }
+
+      toast.success(response.data.message || "Login successful! 🎉");
+      const userEmail = (sessionResponse.data.user.email || response.data.user?.email || email).trim().toLowerCase();
+      const cookies = new Cookies();
+      // Remove any legacy JavaScript-readable token. The server now owns the HttpOnly session cookie.
+      cookies.remove("token", { path: "/" });
+      localStorage.removeItem("token");
+      localStorage.setItem("unitrack_authenticated", "true");
+      localStorage.setItem("userEmail", userEmail);
 
       if (onSuccess) {
         onSuccess(response.data);

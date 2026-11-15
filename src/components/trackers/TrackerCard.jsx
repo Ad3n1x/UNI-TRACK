@@ -1,39 +1,16 @@
 import React, { useState, useEffect, useRef, useMemo } from "react";
+import { apiFetch } from "../../utils/api";
 import { Minus, Plus, RotateCcw, ExternalLink, Activity, X } from "lucide-react";
 import * as Icons from "lucide-react";
 import Cookies from "universal-cookie";
 import { toast } from "react-toastify";
-import CryptoJS from "crypto-js";
-import { initializeUserKeys, encryptData, decryptData } from "../../utils/e2ee";
 
-const RAW_BASE_URL =
-  (typeof process !== "undefined" && process.env?.API_URL) ||
-  (typeof import.meta !== "undefined" && import.meta.env?.VITE_API_URL) ||
-  (typeof process !== "undefined" && process.env?.REACT_APP_API_URL) ||
-  "https://lv3node.onrender.com";
+import { initializeUserKeys, encryptData, decryptData, decryptLegacyField, decryptField as decryptStoredField } from "../../utils/e2ee";
+
+const RAW_BASE_URL = import.meta.env?.DEV ? (import.meta.env.VITE_API_URL || "") : "";
 
 const BASE_URL = RAW_BASE_URL.replace(/\/$/, "");
-const CLIENT_SECRET = "your_client_side_encryption_secret";
-
-const decryptField = (ciphertext) => {
-  if (!ciphertext) return null;
-  if (typeof ciphertext !== "string" || !ciphertext.startsWith("U2FsdGVkX1")) {
-    return ciphertext;
-  }
-  try {
-    const bytes = CryptoJS.AES.decrypt(ciphertext, CLIENT_SECRET);
-    const decryptedString = bytes.toString(CryptoJS.enc.Utf8);
-    if (!decryptedString) return ciphertext;
-    try {
-      return JSON.parse(decryptedString);
-    } catch {
-      return !isNaN(decryptedString) && decryptedString !== "" ? Number(decryptedString) : decryptedString;
-    }
-  } catch (error) {
-    console.error("Decryption error:", error);
-    return ciphertext;
-  }
-};
+const decryptField = decryptLegacyField;
 
 const TYPE_COLORS = {
   habit: "#10b981",
@@ -108,7 +85,7 @@ export default function TrackerCard({
       }
       try {
         const { privateKey } = await initializeUserKeys();
-        const decrypted = await decryptData(privateKey, tracker.entries);
+        const decrypted = await decryptStoredField(privateKey, tracker.entries);
         if (isMounted) {
           if (Array.isArray(decrypted)) {
             setLocalEntries(decrypted);
@@ -168,14 +145,14 @@ export default function TrackerCard({
       const { publicKey } = await initializeUserKeys();
       const encryptedPayloadEntries = await encryptData(publicKey, updatedEntriesList);
 
-      let res = await fetch(`${BASE_URL}/api/v1/trackers/${trackerId}`, {
+      let res = await apiFetch(`${BASE_URL}/api/v1/trackers/${trackerId}`, {
         method: "PUT",
         headers,
         body: JSON.stringify({ entries: encryptedPayloadEntries }),
       });
 
       if (res.status === 404) {
-        res = await fetch(`${BASE_URL}/api/trackers/${trackerId}`, {
+        res = await apiFetch(`${BASE_URL}/api/trackers/${trackerId}`, {
           method: "PUT",
           headers,
           body: JSON.stringify({ entries: encryptedPayloadEntries }),
@@ -183,8 +160,8 @@ export default function TrackerCard({
       }
 
       if (!res.ok) {
-        console.warn(`Server sync warning: HTTP ${res.status}. Keeping local state.`);
-        toast.success(successMessage);
+        console.warn(`Server sync failed: HTTP ${res.status}. Refreshing from the server.`);
+        toast.error("Progress could not be saved. Your tracker is being refreshed.");
         fetchTrackers?.();
         return;
       }
@@ -205,7 +182,7 @@ export default function TrackerCard({
       toast.success(successMessage);
     } catch (err) {
       console.error("Network sync error:", err);
-      toast.success(successMessage);
+      toast.error("Could not reach the server. Your tracker is being refreshed.");
       fetchTrackers?.();
     }
   };
@@ -256,7 +233,10 @@ export default function TrackerCard({
 
   const handleSaveAmount = () => {
     const val = parseFloat(inputValue);
-    if (isNaN(val)) return;
+    if (!Number.isFinite(val) || val <= 0) {
+      toast.error("Enter a valid amount greater than zero.");
+      return;
+    }
 
     const currentVal = Number(todayEntry?.value) || 0;
     const nextVal = currentVal + val;

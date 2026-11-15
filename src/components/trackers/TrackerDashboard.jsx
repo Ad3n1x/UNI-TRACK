@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useRef } from "react";
+import { decryptLegacyField } from "../../utils/e2ee";
 import {
   TrendingUp,
   Target,
@@ -8,35 +9,10 @@ import {
   ArrowLeft,
   ListTodo
 } from "lucide-react";
-import CryptoJS from "crypto-js";
+
 
 // Must match the secret used across your application
-const CLIENT_SECRET = "your_client_side_encryption_secret";
-
-/**
- * Utility function to decrypt AES encrypted strings or standard objects/primitives.
- */
-const decryptField = (ciphertext) => {
-  if (!ciphertext) return null;
-  if (typeof ciphertext !== "string" || !ciphertext.startsWith("U2FsdGVkX1")) {
-    return ciphertext;
-  }
-  try {
-    const bytes = CryptoJS.AES.decrypt(ciphertext, CLIENT_SECRET);
-    const decryptedString = bytes.toString(CryptoJS.enc.Utf8);
-    if (!decryptedString) return ciphertext;
-    try {
-      return JSON.parse(decryptedString);
-    } catch {
-      return !isNaN(decryptedString) && decryptedString !== ""
-        ? Number(decryptedString)
-        : decryptedString;
-    }
-  } catch (error) {
-    console.error("Decryption error:", error);
-    return ciphertext;
-  }
-};
+const decryptField = decryptLegacyField;
 
 /**
  * Universal date string formatter (YYYY-MM-DD)
