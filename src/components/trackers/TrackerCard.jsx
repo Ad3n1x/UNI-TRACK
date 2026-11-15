@@ -4,7 +4,7 @@ import * as Icons from "lucide-react";
 import Cookies from "universal-cookie";
 import { toast } from "react-toastify";
 
-import { initializeUserKeys, encryptData, decryptData, decryptLegacyField } from "../../utils/e2ee";
+import { initializeUserKeys, encryptData, decryptData, decryptLegacyField, decryptField as decryptStoredField } from "../../utils/e2ee";
 
 const RAW_BASE_URL =
   (typeof process !== "undefined" && process.env?.API_URL) ||
@@ -88,7 +88,7 @@ export default function TrackerCard({
       }
       try {
         const { privateKey } = await initializeUserKeys();
-        const decrypted = await decryptData(privateKey, tracker.entries);
+        const decrypted = await decryptStoredField(privateKey, tracker.entries);
         if (isMounted) {
           if (Array.isArray(decrypted)) {
             setLocalEntries(decrypted);
