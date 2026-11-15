@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from "react";
+import { apiFetch } from "../../utils/api";
 import { Minus, Plus, RotateCcw, ExternalLink, Activity, X } from "lucide-react";
 import * as Icons from "lucide-react";
 import Cookies from "universal-cookie";
@@ -148,14 +149,14 @@ export default function TrackerCard({
       const { publicKey } = await initializeUserKeys();
       const encryptedPayloadEntries = await encryptData(publicKey, updatedEntriesList);
 
-      let res = await fetch(`${BASE_URL}/api/v1/trackers/${trackerId}`, {
+      let res = await apiFetch(`${BASE_URL}/api/v1/trackers/${trackerId}`, {
         method: "PUT",
         headers,
         body: JSON.stringify({ entries: encryptedPayloadEntries }),
       });
 
       if (res.status === 404) {
-        res = await fetch(`${BASE_URL}/api/trackers/${trackerId}`, {
+        res = await apiFetch(`${BASE_URL}/api/trackers/${trackerId}`, {
           method: "PUT",
           headers,
           body: JSON.stringify({ entries: encryptedPayloadEntries }),
