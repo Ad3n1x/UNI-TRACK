@@ -3,8 +3,8 @@ import { Minus, Plus, RotateCcw, ExternalLink, Activity, X } from "lucide-react"
 import * as Icons from "lucide-react";
 import Cookies from "universal-cookie";
 import { toast } from "react-toastify";
-import CryptoJS from "crypto-js";
-import { initializeUserKeys, encryptData, decryptData } from "../../utils/e2ee";
+
+import { initializeUserKeys, encryptData, decryptData, decryptLegacyField } from "../../utils/e2ee";
 
 const RAW_BASE_URL =
   (typeof process !== "undefined" && process.env?.API_URL) ||
@@ -13,27 +13,7 @@ const RAW_BASE_URL =
   "https://lv3node.onrender.com";
 
 const BASE_URL = RAW_BASE_URL.replace(/\/$/, "");
-const CLIENT_SECRET = "your_client_side_encryption_secret";
-
-const decryptField = (ciphertext) => {
-  if (!ciphertext) return null;
-  if (typeof ciphertext !== "string" || !ciphertext.startsWith("U2FsdGVkX1")) {
-    return ciphertext;
-  }
-  try {
-    const bytes = CryptoJS.AES.decrypt(ciphertext, CLIENT_SECRET);
-    const decryptedString = bytes.toString(CryptoJS.enc.Utf8);
-    if (!decryptedString) return ciphertext;
-    try {
-      return JSON.parse(decryptedString);
-    } catch {
-      return !isNaN(decryptedString) && decryptedString !== "" ? Number(decryptedString) : decryptedString;
-    }
-  } catch (error) {
-    console.error("Decryption error:", error);
-    return ciphertext;
-  }
-};
+const decryptField = decryptLegacyField;
 
 const TYPE_COLORS = {
   habit: "#10b981",
