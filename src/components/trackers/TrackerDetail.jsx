@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { apiFetch } from "../../utils/api";
 import { useParams, Link } from "react-router-dom";
 import { ArrowLeft, Calendar, Activity } from "lucide-react";
 import Cookies from "universal-cookie";
