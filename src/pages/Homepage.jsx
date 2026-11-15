@@ -43,7 +43,7 @@ const getEnvVar = (key) => {
   return null;
 };
 
-const RAW_BASE_URL = getEnvVar("API_URL") || "https://lv3node.onrender.com";
+const RAW_BASE_URL = getEnvVar("API_URL") || "";
 const BASE_URL = RAW_BASE_URL.replace(/\/$/, "");
 
 const VAPID_PUBLIC_KEY = getEnvVar("VAPID_PUBLIC_KEY") || "BEaflZfmm8QfrFsL7r06HB-QrsdDAefJpRk2vw-zcHIKD-t8evj3TIS7k9k0w0am9BboNqiqbZ99Y-1WxYNcZcw";
