@@ -1,11 +1,8 @@
 import React, { useState, useEffect, useRef, useMemo } from "react";
-import { apiFetch } from "../../utils/api";
 import { Minus, Plus, RotateCcw, ExternalLink, Activity, X } from "lucide-react";
 import { TRACKER_ICONS } from "../../utils/trackerIcons";
-import Cookies from "universal-cookie";
 import { toast } from "react-toastify";
 
-import { initializeUserKeys, encryptData, decryptData } from "../../utils/e2ee";
 
 const RAW_BASE_URL = import.meta.env?.DEV ? (import.meta.env.VITE_API_URL || "") : "";
 
@@ -50,7 +47,7 @@ export default function TrackerCard({
   tracker,
   onDelete = () => {},
   onUpdateTracker = () => {},
-  fetchTrackers = () => {},
+
   cardRef = null,
   isNewlyAdded = false,
   darkMode = false,
@@ -100,63 +97,16 @@ export default function TrackerCard({
 
   const syncEntryToDb = async (updatedEntriesList, successMessage = "Progress updated!") => {
     if (!trackerId) {
-      toast.error("Cannot sync entry: Tracker ID is missing");
+      toast.error("Cannot update this tracker because its ID is missing.");
       return;
     }
-
     setLocalEntries(updatedEntriesList);
-
-    const cookies = new Cookies();
-    const token = cookies.get("token") || localStorage.getItem("token");
-
-    const headers = {
-      "Content-Type": "application/json",
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    };
-
     try {
-      const { publicKey } = await initializeUserKeys();
-      const encryptedPayloadEntries = await encryptData(publicKey, updatedEntriesList);
-
-      let res = await apiFetch(`${BASE_URL}/api/v1/trackers/${trackerId}`, {
-        method: "PUT",
-        headers,
-        body: JSON.stringify({ entries: encryptedPayloadEntries }),
-      });
-
-      if (res.status === 404) {
-        res = await apiFetch(`${BASE_URL}/api/trackers/${trackerId}`, {
-          method: "PUT",
-          headers,
-          body: JSON.stringify({ entries: encryptedPayloadEntries }),
-        });
-      }
-
-      if (!res.ok) {
-        console.warn(`Server sync failed: HTTP ${res.status}. Refreshing from the server.`);
-        toast.error("Progress could not be saved. Your tracker is being refreshed.");
-        fetchTrackers?.();
-        return;
-      }
-
-      const updatedTrackerRes = await res.json();
-      const finalTracker = updatedTrackerRes.data || updatedTrackerRes;
-
-      if (finalTracker && finalTracker.entries) {
-        const { privateKey } = await initializeUserKeys();
-        const serverDecrypted = await decryptData(privateKey, finalTracker.entries);
-        if (Array.isArray(serverDecrypted)) {
-          setLocalEntries(serverDecrypted);
-        }
-      }
-
-      onUpdateTracker?.(finalTracker);
-      fetchTrackers?.();
+      await onUpdateTracker?.({ ...tracker, entries: updatedEntriesList });
       toast.success(successMessage);
-    } catch (err) {
-      console.error("Network sync error:", err);
-      toast.error("Could not reach the server. Your tracker is being refreshed.");
-      fetchTrackers?.();
+    } catch (error) {
+      console.error("Tracker update failed:", error);
+      toast.error("Progress could not be saved. Please refresh and try again.");
     }
   };
 
