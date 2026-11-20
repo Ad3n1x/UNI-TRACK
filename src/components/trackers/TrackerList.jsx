@@ -17,7 +17,7 @@ export default function TrackerList({
     const query = searchTerm.trim().toLowerCase();
     if (!query) return trackers;
     return trackers.filter((tracker) => [tracker.name, tracker.trackerName, tracker.type, tracker.description, tracker.unit].filter(Boolean).join(" ").toLowerCase().includes(query));
-  }, [trackers, searchTerm]);    // 'asc' or 'desc'
+  }, [trackers, searchTerm]);
 
   // Sort trackers dynamically based on user selection
   const sortedTrackers = [...matchingTrackers].sort((a, b) => {
@@ -30,9 +30,9 @@ export default function TrackerList({
       valB = b.createdAt ? new Date(b.createdAt).getTime() : (b._id ? parseInt(b._id.substring(0, 8), 16) * 1000 : 0);
     }
 
-    if (typeof valA === "string") {
-      valA = valA.toLowerCase();
-      valB = valB.toLowerCase();
+    if (typeof valA === "string" || typeof valB === "string") {
+      valA = String(valA ?? "").toLowerCase();
+      valB = String(valB ?? "").toLowerCase();
     }
 
     if (valA < valB) return sortOrder === "asc" ? -1 : 1;
