@@ -793,3 +793,15 @@ img, svg { max-width: 100%; }
  .ut-trackers-panel .tracker-list-container > .d-flex { flex-direction:column; align-items:stretch !important; }
  .ut-trackers-panel .ut-tracker-search { width:100%; max-width:none; }
 }
+
+
+.ut-locked-tracker { display:flex; align-items:center; gap:14px; padding:18px 20px !important; border:1px solid #f0d9a9 !important; border-radius:18px !important; background:#fffaf0 !important; color:#75531b; }
+.ut-locked-mark { width:40px; height:40px; flex:none; display:grid; place-items:center; border-radius:13px; background:#fff0ce; font-size:1.15rem; }
+.ut-locked-copy { display:flex; flex:1; min-width:0; flex-direction:column; gap:4px; }
+.ut-locked-copy strong { color:#674815; font-size:.92rem; }
+.ut-locked-copy span { color:#876b3b; font-size:.78rem; line-height:1.5; }
+.ut-locked-tracker .btn { flex:none; }
+.ut-workspace[data-bs-theme="dark"] .ut-locked-tracker { background:#302817 !important; border-color:#6e5425 !important; color:#f7dfa8; }
+.ut-workspace[data-bs-theme="dark"] .ut-locked-copy strong { color:#ffebbd; }
+.ut-workspace[data-bs-theme="dark"] .ut-locked-copy span { color:#ddc58e; }
+@media(max-width:520px) { .ut-locked-tracker { align-items:flex-start; flex-wrap:wrap; } .ut-locked-copy { flex-basis:calc(100% - 56px); } .ut-locked-tracker .btn { margin-left:54px; } }
