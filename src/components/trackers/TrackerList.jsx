@@ -168,7 +168,7 @@ export default function TrackerList({
                 onDelete={() => onDeleteTracker?.(tracker.id || tracker._id)}
                 onAddEntry={(entry) => onAddEntry?.(tracker.id || tracker._id, entry)}
                 onDeleteEntry={(entryId) => onDeleteEntry?.(tracker.id || tracker._id, entryId)}
-                onUpdate={(updatedData) => onUpdate?.(tracker.id || tracker._id, updatedData.entries)}
+                onUpdateTracker={(updatedTracker) => onUpdate?.(tracker.id || tracker._id, updatedTracker.entries)}
                 darkMode={darkMode}
               />
             </div>
