@@ -403,14 +403,18 @@ export default function HomePage() {
         };
 
         const safeName = typeof name === "string" && name.trim() ? name : (lockedFields.includes("name") ? "Locked tracker" : "Untitled tracker");
-        const safeEntries = Array.isArray(entries) ? await Promise.all(entries.map(async (entry) => {
+        const safeEntries = Array.isArray(entries) ? (await Promise.all(entries.map(async (entry) => {
+          if (typeof entry === "string" && isEncryptedValue(entry)) {
+            const decodedEntry = await readFieldValue(entry, "entry");
+            return decodedEntry && typeof decodedEntry === "object" ? decodedEntry : undefined;
+          }
           if (!entry || typeof entry !== "object" || Array.isArray(entry)) return entry;
           const [entryValue, entryNote] = await Promise.all([
             entry.value !== undefined ? readFieldValue(entry.value, "entry.value") : undefined,
             entry.note !== undefined ? readFieldValue(entry.note, "entry.note") : undefined,
           ]);
           return { ...entry, ...(entry.value !== undefined ? { value: entryValue } : {}), ...(entry.note !== undefined ? { note: entryNote } : {}) };
-        })) : [];
+        }))).filter((entry) => entry !== undefined) : [];
         return {
           ...tracker,
           name: safeName,
