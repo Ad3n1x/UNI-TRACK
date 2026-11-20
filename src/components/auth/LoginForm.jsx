@@ -106,8 +106,9 @@ export default function LoginForm({ onSuccess }) {
         }
       `}</style>
 
-      <div className="login-container d-flex flex-column align-items-center justify-content-center p-3">
-        <div className="login-card p-4 p-md-5 rounded-4 shadow-lg bg-white border-0">
+      <div className="auth-shell login-container d-flex flex-column align-items-center justify-content-center p-3">
+        <div className="auth-card login-card p-4 p-md-5 rounded-4 shadow-lg bg-white border-0">
+          <div className="auth-brand"><img src="/logo.svg" alt="" /><div><strong>UNI-TRACK</strong><span>BUILT BY AD3N1X</span></div></div>
           <div className="mb-3">
             <Link to="/unitrack" className="text-secondary text-decoration-none small d-inline-flex align-items-center gap-1 fw-semibold">
               <ArrowLeft size={14} /> Back to Uni-Track
