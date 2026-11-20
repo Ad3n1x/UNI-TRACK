@@ -938,3 +938,27 @@ img, svg { max-width: 100%; }
   -webkit-text-fill-color: currentColor !important;
   visibility: visible !important;
 }
+
+
+/* Light theme: use blue typography on white surfaces for clear, consistent contrast.
+   The dark welcome banner keeps its existing white typography. */
+.ut-workspace[data-bs-theme="light"] :is(.glass-card,.tracker-card-item,.ut-stat-card,.modal-content,.dropdown-menu,.toast,.ut-workspace-nav):not(.ut-hero-panel) :is(h1,h2,h3,h4,h5,h6,strong,b,.fw-bold,.fw-semibold) {
+  color: #1749a5 !important;
+  -webkit-text-fill-color: #1749a5 !important;
+}
+.ut-workspace[data-bs-theme="light"] :is(.glass-card,.tracker-card-item,.ut-stat-card,.modal-content,.dropdown-menu,.toast,.ut-workspace-nav):not(.ut-hero-panel) :is(p,span,small,label,li,dt,dd,th,td,.text-muted,.form-text) {
+  color: #315b96 !important;
+  -webkit-text-fill-color: #315b96 !important;
+}
+.ut-workspace[data-bs-theme="light"] :is(.glass-card,.tracker-card-item,.ut-stat-card,.modal-content,.dropdown-menu,.toast) a:not(.btn) {
+  color: #245bd1 !important;
+  -webkit-text-fill-color: #245bd1 !important;
+}
+.ut-workspace[data-bs-theme="light"] :is(.glass-card,.tracker-card-item,.ut-stat-card) :is(input,select,textarea) {
+  color: #244b83 !important;
+  -webkit-text-fill-color: #244b83 !important;
+}
+.ut-workspace[data-bs-theme="light"] .ut-hero-panel :is(h1,h2,h3,h4,h5,h6,p,span,small,strong,b) {
+  color: inherit;
+  -webkit-text-fill-color: currentColor;
+}
