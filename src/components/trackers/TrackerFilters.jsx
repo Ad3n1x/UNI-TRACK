@@ -77,6 +77,8 @@ export default function TrackerFilters({
       transition: 'all 0.2s ease',
       minWidth: '110px',
       userSelect: 'none',
+      appearance: 'none',
+      textAlign: 'left',
     },
     menu: {
       position: 'absolute',
@@ -104,6 +106,9 @@ export default function TrackerFilters({
         ? '#ffffff' 
         : darkMode ? '#f8fafc' : '#1e293b',
       fontWeight: isSelected ? '600' : '400',
+      width: '100%',
+      border: 0,
+      textAlign: 'left',
       transition: 'background-color 0.1s ease',
     }),
   };
@@ -115,9 +120,10 @@ export default function TrackerFilters({
       </label>
 
       {/* Custom Dropdown Trigger */}
-      <div
-        role="button"
-        tabIndex={0}
+      <button
+        type="button"
+        aria-haspopup="listbox"
+        aria-expanded={isOpen}
         style={styles.trigger}
         onClick={() => setIsOpen(!isOpen)}
         onMouseEnter={() => setIsHovered(true)}
@@ -127,15 +133,18 @@ export default function TrackerFilters({
         <span style={{ fontSize: '10px', color: darkMode ? '#94a3b8' : '#64748b', transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }}>
           ▼
         </span>
-      </div>
+      </button>
 
       {/* Custom Popup Menu Options */}
       {isOpen && (
-        <div style={styles.menu}>
+        <div style={styles.menu} role="listbox" aria-label="Tracker type">
           {FILTER_OPTIONS.map(({ label, value }) => {
             const isSelected = typeFilter === value;
             return (
-              <div
+              <button
+                type="button"
+                role="option"
+                aria-selected={isSelected}
                 key={value}
                 style={styles.option(isSelected)}
                 onClick={() => {
@@ -154,7 +163,7 @@ export default function TrackerFilters({
                 }}
               >
                 {label}
-              </div>
+              </button>
             );
           })}
         </div>

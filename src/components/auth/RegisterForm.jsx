@@ -117,9 +117,10 @@ const Register = () => {
   };
 
   return (
-    <div className="d-flex flex-column align-items-center justify-content-center min-vh-100 px-3 py-4 bg-light">
-      <div className="p-4 p-md-5 rounded-4 shadow-lg bg-white w-100 border border-light" style={{ maxWidth: "480px" }}>
+    <div className="auth-shell d-flex flex-column align-items-center justify-content-center min-vh-100 px-3 py-4 bg-light">
+      <div className="auth-card p-4 p-md-5 rounded-4 shadow-lg bg-white w-100 border border-light" style={{ maxWidth: "480px" }}>
         
+        <div className="auth-brand"><img src="/logo.svg" alt="" /><div><strong>UNI-TRACK</strong><span>BUILT BY AD3N1X</span></div></div>
         {step === "register" ? (
           <>
             {/* Back to Unitrack Link */}
@@ -136,9 +137,11 @@ const Register = () => {
 
             <form onSubmit={formik.handleSubmit}>
               <div className="mb-3">
-                <label className="form-label fw-semibold text-secondary small">First Name</label>
+                <label htmlFor="register-firstname" className="form-label fw-semibold text-secondary small">First Name</label>
                 <input
+                  id="register-firstname"
                   type="text"
+                  autoComplete="given-name"
                   name="firstname"
                   className={`form-control ${formik.touched.firstname && formik.errors.firstname ? "is-invalid" : ""}`}
                   placeholder="John"
@@ -152,9 +155,11 @@ const Register = () => {
               </div>
 
               <div className="mb-3">
-                <label className="form-label fw-semibold text-secondary small">Last Name</label>
+                <label htmlFor="register-lastname" className="form-label fw-semibold text-secondary small">Last Name</label>
                 <input
+                  id="register-lastname"
                   type="text"
+                  autoComplete="family-name"
                   name="lastname"
                   className={`form-control ${formik.touched.lastname && formik.errors.lastname ? "is-invalid" : ""}`}
                   placeholder="Doe"
@@ -168,9 +173,12 @@ const Register = () => {
               </div>
 
               <div className="mb-3">
-                <label className="form-label fw-semibold text-secondary small">Email Address</label>
+                <label htmlFor="register-email" className="form-label fw-semibold text-secondary small">Email Address</label>
                 <input
+                  id="register-email"
                   type="email"
+                  autoComplete="email"
+                  inputMode="email"
                   name="email"
                   className={`form-control ${formik.touched.email && formik.errors.email ? "is-invalid" : ""}`}
                   placeholder="name@example.com"
@@ -184,9 +192,11 @@ const Register = () => {
               </div>
 
               <div className="mb-4">
-                <label className="form-label fw-semibold text-secondary small">Password</label>
+                <label htmlFor="register-password" className="form-label fw-semibold text-secondary small">Password</label>
                 <input
+                  id="register-password"
                   type="password"
+                  autoComplete="new-password"
                   name="password"
                   className={`form-control ${formik.touched.password && formik.errors.password ? "is-invalid" : ""}`}
                   placeholder="••••••••"
@@ -243,6 +253,11 @@ const Register = () => {
               <div className="mb-4">
                 <input
                   type="text"
+                  id="register-otp"
+                  name="one-time-code"
+                  type="text"
+                  inputMode="numeric"
+                  autoComplete="one-time-code"
                   className="form-control text-center fs-2 fw-bold rounded-3 py-2 shadow-sm"
                   placeholder="------"
                   maxLength={6}

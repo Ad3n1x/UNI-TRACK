@@ -208,6 +208,7 @@ export default function DashboardPage({ trackers = [], darkMode = false, onBack 
 
   return (
     <div
+      className="ut-analytics-dashboard"
       style={{
         width: "100%",
         minHeight: "100vh",
@@ -274,6 +275,8 @@ export default function DashboardPage({ trackers = [], darkMode = false, onBack 
           return (
             <div
               key={card.id}
+              className="ut-metric-card"
+              aria-pressed={isSelected}
               onClick={() => handleCardClick(card.id)}
               role="button"
               tabIndex={0}

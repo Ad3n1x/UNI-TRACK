@@ -99,9 +99,10 @@ const ForgotPassword = () => {
   };
 
   return (
-    <div className="d-flex flex-column align-items-center justify-content-center min-vh-100 px-3 py-4 bg-light">
-      <div className="p-4 p-md-5 rounded-4 shadow-lg bg-white w-100 border border-light" style={{ maxWidth: "440px" }}>
+    <div className="auth-shell d-flex flex-column align-items-center justify-content-center min-vh-100 px-3 py-4 bg-light">
+      <div className="auth-card p-4 p-md-5 rounded-4 shadow-lg bg-white w-100 border border-light" style={{ maxWidth: "440px" }}>
         
+        <div className="auth-brand"><img src="/logo.svg" alt="" /><div><strong>UNI-TRACK</strong><span>BUILT BY AD3N1X</span></div></div>
         {step === 1 ? (
           <>
             <div className="text-center mb-4">
@@ -111,9 +112,13 @@ const ForgotPassword = () => {
 
             <form onSubmit={handleRequestOtp}>
               <div className="mb-3">
-                <label className="form-label fw-semibold text-secondary small">Email Address</label>
+                <label htmlFor="recovery-email" className="form-label fw-semibold text-secondary small">Email Address</label>
                 <input
+                  id="recovery-email"
+                  name="email"
                   type="email"
+                  autoComplete="email"
+                  inputMode="email"
                   className="form-control rounded-3 py-2 shadow-sm"
                   placeholder="name@example.com"
                   value={email}
@@ -148,9 +153,13 @@ const ForgotPassword = () => {
 
             <form onSubmit={handleResetPassword}>
               <div className="mb-3">
-                <label className="form-label fw-semibold text-secondary small">6-Digit OTP Code</label>
+                <label htmlFor="recovery-otp" className="form-label fw-semibold text-secondary small">6-Digit OTP Code</label>
                 <input
+                  id="recovery-otp"
+                  name="one-time-code"
                   type="text"
+                  inputMode="numeric"
+                  autoComplete="one-time-code"
                   className="form-control text-center fw-bold fs-4 rounded-3 shadow-sm"
                   placeholder="------"
                   maxLength={6}
@@ -163,9 +172,12 @@ const ForgotPassword = () => {
               </div>
 
               <div className="mb-4">
-                <label className="form-label fw-semibold text-secondary small">New Password</label>
+                <label htmlFor="recovery-new-password" className="form-label fw-semibold text-secondary small">New Password</label>
                 <input
+                  id="recovery-new-password"
+                  name="new-password"
                   type="password"
+                  autoComplete="new-password"
                   className="form-control rounded-3 py-2 shadow-sm"
                   placeholder="••••••••"
                   value={newPassword}
