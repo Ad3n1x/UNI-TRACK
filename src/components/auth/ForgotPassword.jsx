@@ -112,9 +112,13 @@ const ForgotPassword = () => {
 
             <form onSubmit={handleRequestOtp}>
               <div className="mb-3">
-                <label className="form-label fw-semibold text-secondary small">Email Address</label>
+                <label htmlFor="recovery-email" className="form-label fw-semibold text-secondary small">Email Address</label>
                 <input
+                  id="recovery-email"
+                  name="email"
                   type="email"
+                  autoComplete="email"
+                  inputMode="email"
                   className="form-control rounded-3 py-2 shadow-sm"
                   placeholder="name@example.com"
                   value={email}
@@ -149,9 +153,13 @@ const ForgotPassword = () => {
 
             <form onSubmit={handleResetPassword}>
               <div className="mb-3">
-                <label className="form-label fw-semibold text-secondary small">6-Digit OTP Code</label>
+                <label htmlFor="recovery-otp" className="form-label fw-semibold text-secondary small">6-Digit OTP Code</label>
                 <input
+                  id="recovery-otp"
+                  name="one-time-code"
                   type="text"
+                  inputMode="numeric"
+                  autoComplete="one-time-code"
                   className="form-control text-center fw-bold fs-4 rounded-3 shadow-sm"
                   placeholder="------"
                   maxLength={6}
@@ -164,9 +172,12 @@ const ForgotPassword = () => {
               </div>
 
               <div className="mb-4">
-                <label className="form-label fw-semibold text-secondary small">New Password</label>
+                <label htmlFor="recovery-new-password" className="form-label fw-semibold text-secondary small">New Password</label>
                 <input
+                  id="recovery-new-password"
+                  name="new-password"
                   type="password"
+                  autoComplete="new-password"
                   className="form-control rounded-3 py-2 shadow-sm"
                   placeholder="••••••••"
                   value={newPassword}
