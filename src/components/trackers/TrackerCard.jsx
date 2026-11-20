@@ -5,12 +5,12 @@ import { TRACKER_ICONS } from "../../utils/trackerIcons";
 import Cookies from "universal-cookie";
 import { toast } from "react-toastify";
 
-import { initializeUserKeys, encryptData, decryptData, decryptLegacyField, decryptField as decryptStoredField } from "../../utils/e2ee";
+import { initializeUserKeys, encryptData, decryptData } from "../../utils/e2ee";
 
 const RAW_BASE_URL = import.meta.env?.DEV ? (import.meta.env.VITE_API_URL || "") : "";
 
 const BASE_URL = RAW_BASE_URL.replace(/\/$/, "");
-const decryptField = decryptLegacyField;
+
 
 const TYPE_COLORS = {
   habit: "#10b981",
@@ -63,49 +63,22 @@ export default function TrackerCard({
 
   const trackerId = tracker?._id || tracker?.id;
 
-  const decryptedName = useMemo(() => decryptField(tracker?.name) || "Untitled", [tracker?.name]);
-  const decryptedTarget = useMemo(() => Number(decryptField(tracker?.target)) || 0, [tracker?.target]);
+  const decryptedName = useMemo(() => tracker?.__locked ? "Locked tracker" : (tracker?.name || tracker?.trackerName || "Untitled tracker"), [tracker?.name, tracker?.trackerName, tracker?.__locked]);
+  const decryptedTarget = useMemo(() => Number(tracker?.target) || 0, [tracker?.target]);
 
   const decryptedType = useMemo(() => {
-    const raw = decryptField(tracker?.type);
+    const raw = tracker?.type;
     return typeof raw === "string" ? raw.toLowerCase().trim() : "counter";
   }, [tracker?.type]);
 
-  const decryptedColor = useMemo(() => decryptField(tracker?.color), [tracker?.color]);
-  const decryptedIcon = useMemo(() => decryptField(tracker?.icon), [tracker?.icon]);
+  const decryptedColor = useMemo(() => tracker?.color, [tracker?.color]);
+  const decryptedIcon = useMemo(() => tracker?.icon, [tracker?.icon]);
 
   const [localEntries, setLocalEntries] = useState([]);
 
   useEffect(() => {
-    let isMounted = true;
-    const loadEntries = async () => {
-      if (!tracker?.entries) {
-        if (isMounted) setLocalEntries([]);
-        return;
-      }
-      try {
-        const { privateKey } = await initializeUserKeys();
-        const decrypted = await decryptStoredField(privateKey, tracker.entries);
-        if (isMounted) {
-          if (Array.isArray(decrypted)) {
-            setLocalEntries(decrypted);
-          } else {
-            const fallbackParsed = decryptField(tracker.entries);
-            setLocalEntries(Array.isArray(fallbackParsed) ? fallbackParsed : []);
-          }
-        }
-      } catch (err) {
-        console.error("Error decrypting entries:", err);
-        const fallbackParsed = decryptField(tracker.entries);
-        if (isMounted) {
-          setLocalEntries(Array.isArray(fallbackParsed) ? fallbackParsed : []);
-        }
-      }
-    };
-    loadEntries();
-    return () => {
-      isMounted = false;
-    };
+    // Homepage owns decryption. Cards receive normalized plaintext data only.
+    setLocalEntries(Array.isArray(tracker?.entries) ? tracker.entries : []);
   }, [tracker?.entries]);
 
   const today = getLocalDateString();
