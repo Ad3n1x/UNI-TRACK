@@ -59,8 +59,24 @@ export default function TrackerList({
           className="text-uppercase small fw-bold tracking-widest"
           style={{ color: darkMode ? '#94a3b8' : '#64748b' }}
         >
-          {trackers.length} {trackers.length === 1 ? 'tracker' : 'trackers'}
+          {searchTerm.trim() ? sortedTrackers.length + " of " + trackers.length : trackers.length} {trackers.length === 1 ? 'tracker' : 'trackers'}
         </span>
+
+        {trackers.length > 0 && (
+          <div className="ut-tracker-search">
+            <span aria-hidden="true">⌕</span>
+            <input
+              type="search"
+              value={searchTerm}
+              onChange={(event) => setSearchTerm(event.target.value)}
+              placeholder="Search trackers by name, type or unit"
+              aria-label="Search trackers by name, type or unit"
+            />
+            {searchTerm && (
+              <button type="button" onClick={() => setSearchTerm("")} aria-label="Clear tracker search">×</button>
+            )}
+          </div>
+        )}
 
         {trackers.length > 0 && (
           <div className="d-flex align-items-center gap-2 flex-wrap">
@@ -140,7 +156,7 @@ export default function TrackerList({
             📭
           </div>
           <p className="mb-0" style={{ color: darkMode ? '#94a3b8' : '#64748b' }}>
-            No trackers found. Create your first one!
+{trackers.length > 0 ? "No trackers match your search. Try another term or clear the search." : "No trackers found. Create your first one!"}
           </p>
         </div>
       ) : (
