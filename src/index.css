@@ -69,3 +69,92 @@ img, svg { max-width: 100%; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
 }
+
+/* Product experience refresh: consistent workspace and authentication surfaces */
+.ut-workspace { --ut-bg: #f5f7fc; }
+.ut-workspace-nav {
+  min-height: 72px;
+  padding-block: .75rem !important;
+  box-shadow: 0 1px 0 rgba(25, 42, 75, .05), 0 8px 28px rgba(25, 42, 75, .035);
+}
+.ut-workspace-nav .container { max-width: 1440px; }
+.ut-workspace-nav .navbar-brand { font-size: 1.02rem !important; letter-spacing: -.055em; }
+.ut-workspace-main { max-width: 1440px !important; padding-top: clamp(1.25rem, 3vw, 2.5rem) !important; }
+.ut-workspace .glass-card {
+  border-radius: 22px !important;
+  box-shadow: 0 12px 34px rgba(25, 42, 75, .055) !important;
+}
+.ut-workspace .glass-card h2,
+.ut-workspace .glass-card h3 { letter-spacing: -.035em; }
+.ut-workspace .form-control,
+.ut-workspace .form-select { min-height: 44px; }
+.ut-workspace .btn-custom-nav { min-height: 42px; border-radius: 12px !important; }
+.ut-workspace .btn-primary { background: linear-gradient(135deg, #315eea, #4778f5); border-color: #315eea; }
+.ut-workspace .modal-content { border-radius: 22px !important; }
+.ut-workspace .dropdown-menu { border-radius: 14px !important; }
+.ut-workspace .progress { height: 9px; background-color: rgba(100, 116, 139, .14); }
+.ut-workspace .support-fab { width: 52px; height: 52px; border-radius: 17px !important; }
+
+.auth-shell {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: clamp(18px, 4vw, 44px) 16px !important;
+  background:
+    radial-gradient(ellipse at 12% 12%, rgba(81, 124, 255, .14), transparent 36%),
+    radial-gradient(ellipse at 88% 82%, rgba(80, 190, 176, .10), transparent 34%),
+    #f4f7fc !important;
+}
+.auth-card {
+  width: min(100%, 470px) !important;
+  padding: clamp(24px, 5vw, 42px) !important;
+  border: 1px solid rgba(221, 229, 242, .95) !important;
+  border-radius: 24px !important;
+  background: rgba(255, 255, 255, .96) !important;
+  box-shadow: 0 24px 80px rgba(24, 43, 78, .11), 0 2px 8px rgba(24, 43, 78, .035) !important;
+}
+.auth-brand {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  margin-bottom: 28px;
+  color: #172033;
+}
+.auth-brand img { width: 40px; height: 40px; object-fit: contain; }
+.auth-brand strong { display: block; font-size: 15px; letter-spacing: -.045em; }
+.auth-brand span { display: block; margin-top: 3px; color: #8491a7; font-size: 9px; font-weight: 800; letter-spacing: 1.5px; }
+.auth-card h2, .auth-card h3 { color: #172033 !important; letter-spacing: -.045em; }
+.auth-card .form-label { color: #48566d !important; font-size: .78rem; }
+.auth-card .form-control {
+  min-height: 48px !important;
+  padding-inline: 14px !important;
+  border: 1px solid #dfe6f1 !important;
+  border-radius: 12px !important;
+  background: #fbfcff !important;
+  box-shadow: none !important;
+}
+.auth-card .form-control:focus {
+  border-color: #5279ee !important;
+  background: #fff !important;
+  box-shadow: 0 0 0 4px rgba(65, 105, 225, .12) !important;
+}
+.auth-card .btn-primary, .auth-card .btn-success {
+  min-height: 48px;
+  border-radius: 12px !important;
+  box-shadow: 0 8px 18px rgba(49, 94, 234, .16) !important;
+}
+.auth-card a { text-underline-offset: 3px; }
+.auth-card a:focus-visible, .auth-card button:focus-visible, .auth-card input:focus-visible {
+  outline: 3px solid rgba(49, 94, 234, .35) !important;
+  outline-offset: 3px;
+}
+@media (max-width: 767.98px) {
+  .ut-workspace-nav .container { align-items: center !important; }
+  .ut-workspace-nav .container > .d-flex:last-child { width: auto; justify-content: flex-end; }
+  .ut-workspace-main { padding-inline: 14px !important; }
+  .auth-card { border-radius: 20px !important; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ut-workspace *, .auth-card * { scroll-behavior: auto !important; transition-duration: .01ms !important; }
+}
