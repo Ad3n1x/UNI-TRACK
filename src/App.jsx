@@ -1,16 +1,25 @@
-import React, { useEffect, useCallback } from "react";
+import React, { lazy, Suspense, useEffect, useCallback } from "react";
 import { Routes, Route, useNavigate } from "react-router-dom";
 // ❌ Removed unused Helmet import
 import Cookies from "universal-cookie";
 import { toast } from "react-toastify";
 import { apiFetch } from "./utils/api";
 
-import Homepage from "./pages/Homepage";
-import LoginForm from "./components/auth/LoginForm";
-import RegisterForm from "./components/auth/RegisterForm";
-import NotFound from "./pages/Notfound";
-import ForgotPassword from "./components/auth/ForgotPassword";
-import UnitrackPage from "./pages/Unitrack";
+const Homepage = lazy(() => import("./pages/Homepage"));
+const LoginForm = lazy(() => import("./components/auth/LoginForm"));
+const RegisterForm = lazy(() => import("./components/auth/RegisterForm"));
+const NotFound = lazy(() => import("./pages/Notfound"));
+const ForgotPassword = lazy(() => import("./components/auth/ForgotPassword"));
+const UnitrackPage = lazy(() => import("./pages/Unitrack"));
+
+function RouteLoading() {
+  return (
+    <main className="ut-route-loading" role="status" aria-live="polite">
+      <span className="ut-route-loading-mark" aria-hidden="true" />
+      <p>Loading your UniTrack workspace…</p>
+    </main>
+  );
+}
 
 const INACTIVITY_LIMIT_MS = 60 * 60 * 1000; // 1 Hour
 const cookies = new Cookies();
@@ -75,6 +84,7 @@ function AutoLogoutWrapper({ children }) {
 export default function App() {
   return (
     <AutoLogoutWrapper>
+      <Suspense fallback={<RouteLoading />}>
       <Routes>
         {/* Landing Page */}
         <Route path="/" element={<UnitrackPage />} />
@@ -89,6 +99,7 @@ export default function App() {
         {/* Catch-All 404 Route */}
         <Route path="*" element={<NotFound />} />
       </Routes>
+      </Suspense>
     </AutoLogoutWrapper>
   );
 }
