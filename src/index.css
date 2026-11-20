@@ -187,3 +187,25 @@ img, svg { max-width: 100%; }
 @media (hover: none) {
   .tracker-card-item:hover { transform: none; }
 }
+
+
+.ut-analytics-dashboard { min-width: 0; }
+.ut-metric-card {
+  min-height: 132px;
+  border-radius: 18px !important;
+  text-align: left;
+  outline-offset: 4px;
+}
+.ut-metric-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 14px 28px rgba(24, 43, 78, .10) !important;
+}
+.ut-metric-card:focus-visible {
+  outline: 3px solid rgba(53, 104, 232, .5);
+}
+.ut-workspace:not([data-bs-theme="dark"]) .ut-workspace-main > .glass-card:first-child {
+  background: linear-gradient(125deg, #ffffff 0%, #f6f8ff 72%, #eff4ff 100%) !important;
+}
+@media (hover: none) {
+  .ut-metric-card:hover { transform: none; }
+}
