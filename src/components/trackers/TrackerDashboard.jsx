@@ -18,7 +18,7 @@ export default function DashboardPage({ trackers = [], darkMode = false }) {
     })).length;
     const goals = valid.filter((tracker) => tracker.target !== null && tracker.target !== undefined && tracker.target !== "").length;
     const logs = valid.reduce((sum, tracker) => sum + (Array.isArray(tracker.entries) ? tracker.entries.length : 0), 0);
-    return { total: valid.length, completed, goals, logs };
+    return { total: (Array.isArray(trackers) ? trackers : []).length, completed, goals, logs };
   }, [trackers, today]);
 
   const cards = [
