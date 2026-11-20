@@ -889,29 +889,32 @@ export default function HomePage() {
       <main className="ut-workspace-main container py-4">
         
         {/* Welcome Banner */}
-        <div className={`p-4 p-md-5 glass-card shadow-sm border mb-4 position-relative overflow-hidden ${darkMode ? "bg-dark border-secondary" : "bg-white"}`}>
+        <div className={`ut-hero-panel p-4 p-md-5 glass-card shadow-sm border mb-4 position-relative overflow-hidden ${darkMode ? "bg-dark border-secondary" : "bg-white"}`}>
           <div className="position-absolute top-0 end-0 p-4 opacity-10 d-none d-md-block text-primary">
             <Sparkles size={160} />
           </div>
 
           <div className="position-relative" style={{ zIndex: 1 }}>
-            <span className="badge bg-primary bg-opacity-10 text-primary mb-2 px-3 py-1.5 rounded-pill fw-semibold small">
-              {timeGreeting}
-            </span>
-            <h2 className="fw-bold mb-2 fs-3">Welcome back to Uni-Track!</h2>
-            <p className="text-muted mb-0">
-              Connected account: <strong>{currentUserEmail || "Active Guest"}</strong>
-            </p>
+            <span className="ut-hero-eyebrow">YOUR PERSONAL PRODUCTIVITY SPACE</span>
+            <div className="d-flex flex-wrap align-items-center gap-2 mt-3 mb-2">
+              <span className="ut-greeting-chip">{timeGreeting}</span>
+              <span className="ut-live-chip"><span /> WORKSPACE READY</span>
+            </div>
+            <h2 className="fw-bold mb-2 fs-2">Make progress visible.</h2>
+            <p className="ut-hero-description mb-3">A clear view of your habits, goals and daily momentum.</p>
+            <p className="ut-account-line mb-0">SIGNED IN AS <strong>{currentUserEmail || "Active Guest"}</strong></p>
           </div>
         </div>
 
         {/* Analytics Visualizer */}
-        <div className={`p-3 p-md-4 glass-card shadow-sm border ${darkMode ? "bg-dark border-secondary" : "bg-white"}`}>
+        <div className={`ut-panel ut-analytics-panel p-3 p-md-4 glass-card shadow-sm border ${darkMode ? "bg-dark border-secondary" : "bg-white"}`}>
+          <div className="ut-section-heading mb-3"><span className="ut-section-kicker">AT A GLANCE</span><h3>Progress overview</h3><p>Your activity, summarized from your trackers.</p></div>
           <TrackerDashboard trackers={displayTrackers} darkMode={darkMode} />
         </div>
 
         {/* Controls & Trackers */}
-        <div className={`p-3 p-md-4 glass-card shadow-sm border mt-4 ${darkMode ? "bg-dark border-secondary" : "bg-white"}`}>
+        <div className={`ut-panel ut-trackers-panel p-3 p-md-4 glass-card shadow-sm border mt-4 ${darkMode ? "bg-dark border-secondary" : "bg-white"}`}>
+          <div className="ut-trackers-heading"><div><span className="ut-section-kicker">YOUR SYSTEM</span><h3>Trackers</h3><p>Build consistency, one entry at a time.</p></div><span className="ut-tracker-total">{trackers.length} {trackers.length === 1 ? "tracker" : "trackers"}</span></div>
           
           <div className={`alert ${darkMode ? "bg-dark text-info border-info" : "bg-info bg-opacity-10 text-info border-info-subtle"} d-flex align-items-center gap-2 mb-4 py-2 px-3 rounded-3 small border`}>
             <Info size={18} className="flex-shrink-0" />
