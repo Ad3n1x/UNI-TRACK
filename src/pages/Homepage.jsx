@@ -461,14 +461,9 @@ export default function HomePage() {
     }
   };
 
+  // Data portability is available on every plan. Exports are decrypted locally
+  // in the browser and are never uploaded to a third-party export service.
   const handleExportData = async (format = "json") => {
-    if (!isPremium) {
-      toggleBootstrapModal("premiumModal", "show");
-      setNotification("Data export is available exclusively for PRO users.");
-      setTimeout(() => setNotification(null), 4000);
-      return;
-    }
-
     const timestamp = Date.now();
 
     try {
