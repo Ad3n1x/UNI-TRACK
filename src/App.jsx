@@ -77,7 +77,7 @@ export default function App() {
     <AutoLogoutWrapper>
       <Routes>
         {/* Landing Page */}
-        <Route index element={<UnitrackPage />} />
+        <Route path="/" element={<UnitrackPage />} />
         <Route path="/unitrack" element={<UnitrackPage />} />
 
         {/* Auth & App Routes */}
