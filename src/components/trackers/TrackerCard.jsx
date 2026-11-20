@@ -544,7 +544,20 @@ export default function TrackerCard({
           <div className="tracker-mood-grid" style={{ display: "grid", gridTemplateColumns: "repeat(5, minmax(0, 1fr))", gap: "0.35rem", width: "100%" }}>
             {MOOD_OPTIONS.map((m) => {
               const isSelected = todayEntry?.value === m.value;
-              return (
+              if (tracker?.__locked) {
+    return (
+      <article className="tracker-card-item ut-locked-tracker" role="status">
+        <div className="ut-locked-mark"><span aria-hidden="true">🔒</span></div>
+        <div className="ut-locked-copy">
+          <strong>{decryptedName}</strong>
+          <span>This tracker's encrypted data could not be unlocked in this browser. It has been kept unchanged.</span>
+        </div>
+        <button type="button" className="btn btn-outline-danger btn-sm" onClick={onDelete}>Delete tracker</button>
+      </article>
+    );
+  }
+
+  return (
                 <button
                   key={m.value}
                   className="tracker-mood-btn"
