@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import TrackerCard from './TrackerCard';
 
 export default function TrackerList({
@@ -11,10 +11,16 @@ export default function TrackerList({
   darkMode = false,
 }) {
   const [sortBy, setSortBy] = useState("createdAt"); // 'createdAt', 'name', 'type'
-  const [sortOrder, setSortOrder] = useState("desc");    // 'asc' or 'desc'
+  const [sortOrder, setSortOrder] = useState("desc");
+  const [searchTerm, setSearchTerm] = useState("");
+  const matchingTrackers = useMemo(() => {
+    const query = searchTerm.trim().toLowerCase();
+    if (!query) return trackers;
+    return trackers.filter((tracker) => [tracker.name, tracker.trackerName, tracker.type, tracker.description, tracker.unit].filter(Boolean).join(" ").toLowerCase().includes(query));
+  }, [trackers, searchTerm]);
 
   // Sort trackers dynamically based on user selection
-  const sortedTrackers = [...trackers].sort((a, b) => {
+  const sortedTrackers = [...matchingTrackers].sort((a, b) => {
     let valA = a[sortBy];
     let valB = b[sortBy];
 
@@ -24,9 +30,9 @@ export default function TrackerList({
       valB = b.createdAt ? new Date(b.createdAt).getTime() : (b._id ? parseInt(b._id.substring(0, 8), 16) * 1000 : 0);
     }
 
-    if (typeof valA === "string") {
-      valA = valA.toLowerCase();
-      valB = valB.toLowerCase();
+    if (typeof valA === "string" || typeof valB === "string") {
+      valA = String(valA ?? "").toLowerCase();
+      valB = String(valB ?? "").toLowerCase();
     }
 
     if (valA < valB) return sortOrder === "asc" ? -1 : 1;
@@ -53,8 +59,24 @@ export default function TrackerList({
           className="text-uppercase small fw-bold tracking-widest"
           style={{ color: darkMode ? '#94a3b8' : '#64748b' }}
         >
-          {trackers.length} {trackers.length === 1 ? 'tracker' : 'trackers'}
+          {searchTerm.trim() ? sortedTrackers.length + " of " + trackers.length : trackers.length} {trackers.length === 1 ? 'tracker' : 'trackers'}
         </span>
+
+        {trackers.length > 0 && (
+          <div className="ut-tracker-search">
+            <span aria-hidden="true">⌕</span>
+            <input
+              type="search"
+              value={searchTerm}
+              onChange={(event) => setSearchTerm(event.target.value)}
+              placeholder="Search trackers by name, type or unit"
+              aria-label="Search trackers by name, type or unit"
+            />
+            {searchTerm && (
+              <button type="button" onClick={() => setSearchTerm("")} aria-label="Clear tracker search">×</button>
+            )}
+          </div>
+        )}
 
         {trackers.length > 0 && (
           <div className="d-flex align-items-center gap-2 flex-wrap">
@@ -134,7 +156,7 @@ export default function TrackerList({
             📭
           </div>
           <p className="mb-0" style={{ color: darkMode ? '#94a3b8' : '#64748b' }}>
-            No trackers found. Create your first one!
+{trackers.length > 0 ? "No trackers match your search. Try another term or clear the search." : "No trackers found. Create your first one!"}
           </p>
         </div>
       ) : (

@@ -209,3 +209,67 @@ img, svg { max-width: 100%; }
 @media (hover: none) {
   .ut-metric-card:hover { transform: none; }
 }
+
+
+/* Route-level loading and tracker search */
+.ut-route-loading {
+  min-height: 100vh;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 14px;
+  padding: 24px;
+  background: #f5f7fc;
+  color: #53627a;
+  font-size: .9rem;
+}
+.ut-route-loading p { margin: 0; }
+.ut-route-loading-mark {
+  width: 34px;
+  height: 34px;
+  border: 3px solid #dbe5fb;
+  border-top-color: #315eea;
+  border-radius: 50%;
+  animation: ut-route-spin .8s linear infinite;
+}
+@keyframes ut-route-spin { to { transform: rotate(360deg); } }
+.ut-tracker-search {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: min(100%, 430px);
+  min-height: 42px;
+  padding: 0 11px;
+  border: 1px solid #dce4f0;
+  border-radius: 12px;
+  background: #fff;
+  color: #64748b;
+}
+.ut-tracker-search:focus-within {
+  border-color: #5279ee;
+  box-shadow: 0 0 0 3px rgba(65, 105, 225, .11);
+}
+.ut-tracker-search input {
+  width: 100%;
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: #172033;
+  font: inherit;
+  font-size: .85rem;
+}
+.ut-tracker-search button {
+  flex: 0 0 auto;
+  border: 0;
+  background: transparent;
+  color: #64748b;
+  font-size: 1.25rem;
+  line-height: 1;
+}
+@media (max-width: 575.98px) {
+  .ut-tracker-search { width: 100%; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ut-route-loading-mark { animation: none; }
+}

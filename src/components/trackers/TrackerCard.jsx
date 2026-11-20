@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo } from "react";
 import { apiFetch } from "../../utils/api";
 import { Minus, Plus, RotateCcw, ExternalLink, Activity, X } from "lucide-react";
-import * as Icons from "lucide-react";
+import { TRACKER_ICONS } from "../../utils/trackerIcons";
 import Cookies from "universal-cookie";
 import { toast } from "react-toastify";
 
@@ -111,7 +111,7 @@ export default function TrackerCard({
   const today = getLocalDateString();
   const todayEntry = localEntries.find((e) => getEntryDateString(e.date) === today);
 
-  const IconComponent = Icons[decryptedIcon] || Icons.Circle;
+  const IconComponent = TRACKER_ICONS[decryptedIcon] || TRACKER_ICONS.Circle;
   const typeColor = TYPE_COLORS[decryptedType] || decryptedColor || "#3b82f6";
 
   useEffect(() => {

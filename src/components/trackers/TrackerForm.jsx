@@ -1,7 +1,7 @@
 import { useState, useRef } from "react";
 import { apiFetch } from "../../utils/api";
-import { Check, Circle, Loader2 } from "lucide-react";
-import * as Icons from "lucide-react";
+import { Check, Loader2 } from "lucide-react";
+import { TRACKER_ICONS } from "../../utils/trackerIcons";
 import { initializeUserKeys, encryptField } from "../../utils/e2ee";
 
 const RAW_BASE_URL = import.meta.env?.DEV ? (import.meta.env.VITE_API_URL || "") : "";
@@ -198,7 +198,7 @@ export default function TrackerForm({ onCreate, onClose, darkMode = false }) {
         <label style={styles.label}>Icon</label>
         <div style={styles.iconContainer}>
           {ICON_OPTIONS.map((iconName) => {
-            const IconComp = Icons[iconName] || Circle;
+            const IconComp = TRACKER_ICONS[iconName] || TRACKER_ICONS.Circle;
             const isActive = icon === iconName;
             return (
               <button
