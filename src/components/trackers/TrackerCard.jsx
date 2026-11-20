@@ -1,16 +1,13 @@
 import React, { useState, useEffect, useRef, useMemo } from "react";
-import { apiFetch } from "../../utils/api";
 import { Minus, Plus, RotateCcw, ExternalLink, Activity, X } from "lucide-react";
 import { TRACKER_ICONS } from "../../utils/trackerIcons";
-import Cookies from "universal-cookie";
 import { toast } from "react-toastify";
 
-import { initializeUserKeys, encryptData, decryptData, decryptLegacyField, decryptField as decryptStoredField } from "../../utils/e2ee";
 
 const RAW_BASE_URL = import.meta.env?.DEV ? (import.meta.env.VITE_API_URL || "") : "";
 
 const BASE_URL = RAW_BASE_URL.replace(/\/$/, "");
-const decryptField = decryptLegacyField;
+
 
 const TYPE_COLORS = {
   habit: "#10b981",
@@ -50,7 +47,7 @@ export default function TrackerCard({
   tracker,
   onDelete = () => {},
   onUpdateTracker = () => {},
-  fetchTrackers = () => {},
+
   cardRef = null,
   isNewlyAdded = false,
   darkMode = false,
@@ -63,49 +60,22 @@ export default function TrackerCard({
 
   const trackerId = tracker?._id || tracker?.id;
 
-  const decryptedName = useMemo(() => decryptField(tracker?.name) || "Untitled", [tracker?.name]);
-  const decryptedTarget = useMemo(() => Number(decryptField(tracker?.target)) || 0, [tracker?.target]);
+  const decryptedName = useMemo(() => tracker?.__locked ? "Locked tracker" : (tracker?.name || tracker?.trackerName || "Untitled tracker"), [tracker?.name, tracker?.trackerName, tracker?.__locked]);
+  const decryptedTarget = useMemo(() => Number(tracker?.target) || 0, [tracker?.target]);
 
   const decryptedType = useMemo(() => {
-    const raw = decryptField(tracker?.type);
+    const raw = tracker?.type;
     return typeof raw === "string" ? raw.toLowerCase().trim() : "counter";
   }, [tracker?.type]);
 
-  const decryptedColor = useMemo(() => decryptField(tracker?.color), [tracker?.color]);
-  const decryptedIcon = useMemo(() => decryptField(tracker?.icon), [tracker?.icon]);
+  const decryptedColor = useMemo(() => tracker?.color, [tracker?.color]);
+  const decryptedIcon = useMemo(() => tracker?.icon, [tracker?.icon]);
 
   const [localEntries, setLocalEntries] = useState([]);
 
   useEffect(() => {
-    let isMounted = true;
-    const loadEntries = async () => {
-      if (!tracker?.entries) {
-        if (isMounted) setLocalEntries([]);
-        return;
-      }
-      try {
-        const { privateKey } = await initializeUserKeys();
-        const decrypted = await decryptStoredField(privateKey, tracker.entries);
-        if (isMounted) {
-          if (Array.isArray(decrypted)) {
-            setLocalEntries(decrypted);
-          } else {
-            const fallbackParsed = decryptField(tracker.entries);
-            setLocalEntries(Array.isArray(fallbackParsed) ? fallbackParsed : []);
-          }
-        }
-      } catch (err) {
-        console.error("Error decrypting entries:", err);
-        const fallbackParsed = decryptField(tracker.entries);
-        if (isMounted) {
-          setLocalEntries(Array.isArray(fallbackParsed) ? fallbackParsed : []);
-        }
-      }
-    };
-    loadEntries();
-    return () => {
-      isMounted = false;
-    };
+    // Homepage owns decryption. Cards receive normalized plaintext data only.
+    setLocalEntries(Array.isArray(tracker?.entries) ? tracker.entries : []);
   }, [tracker?.entries]);
 
   const today = getLocalDateString();
@@ -127,63 +97,16 @@ export default function TrackerCard({
 
   const syncEntryToDb = async (updatedEntriesList, successMessage = "Progress updated!") => {
     if (!trackerId) {
-      toast.error("Cannot sync entry: Tracker ID is missing");
+      toast.error("Cannot update this tracker because its ID is missing.");
       return;
     }
-
     setLocalEntries(updatedEntriesList);
-
-    const cookies = new Cookies();
-    const token = cookies.get("token") || localStorage.getItem("token");
-
-    const headers = {
-      "Content-Type": "application/json",
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    };
-
     try {
-      const { publicKey } = await initializeUserKeys();
-      const encryptedPayloadEntries = await encryptData(publicKey, updatedEntriesList);
-
-      let res = await apiFetch(`${BASE_URL}/api/v1/trackers/${trackerId}`, {
-        method: "PUT",
-        headers,
-        body: JSON.stringify({ entries: encryptedPayloadEntries }),
-      });
-
-      if (res.status === 404) {
-        res = await apiFetch(`${BASE_URL}/api/trackers/${trackerId}`, {
-          method: "PUT",
-          headers,
-          body: JSON.stringify({ entries: encryptedPayloadEntries }),
-        });
-      }
-
-      if (!res.ok) {
-        console.warn(`Server sync failed: HTTP ${res.status}. Refreshing from the server.`);
-        toast.error("Progress could not be saved. Your tracker is being refreshed.");
-        fetchTrackers?.();
-        return;
-      }
-
-      const updatedTrackerRes = await res.json();
-      const finalTracker = updatedTrackerRes.data || updatedTrackerRes;
-
-      if (finalTracker && finalTracker.entries) {
-        const { privateKey } = await initializeUserKeys();
-        const serverDecrypted = await decryptData(privateKey, finalTracker.entries);
-        if (Array.isArray(serverDecrypted)) {
-          setLocalEntries(serverDecrypted);
-        }
-      }
-
-      onUpdateTracker?.(finalTracker);
-      fetchTrackers?.();
+      await onUpdateTracker?.({ ...tracker, entries: updatedEntriesList });
       toast.success(successMessage);
-    } catch (err) {
-      console.error("Network sync error:", err);
-      toast.error("Could not reach the server. Your tracker is being refreshed.");
-      fetchTrackers?.();
+    } catch (error) {
+      console.error("Tracker update failed:", error);
+      toast.error("Progress could not be saved. Please refresh and try again.");
     }
   };
 
@@ -621,7 +544,20 @@ export default function TrackerCard({
           <div className="tracker-mood-grid" style={{ display: "grid", gridTemplateColumns: "repeat(5, minmax(0, 1fr))", gap: "0.35rem", width: "100%" }}>
             {MOOD_OPTIONS.map((m) => {
               const isSelected = todayEntry?.value === m.value;
-              return (
+              if (tracker?.__locked) {
+    return (
+      <article className="tracker-card-item ut-locked-tracker" role="status">
+        <div className="ut-locked-mark"><span aria-hidden="true">🔒</span></div>
+        <div className="ut-locked-copy">
+          <strong>{decryptedName}</strong>
+          <span>This tracker's encrypted data could not be unlocked in this browser. It has been kept unchanged.</span>
+        </div>
+        <button type="button" className="btn btn-outline-danger btn-sm" onClick={onDelete}>Delete tracker</button>
+      </article>
+    );
+  }
+
+  return (
                 <button
                   key={m.value}
                   className="tracker-mood-btn"
