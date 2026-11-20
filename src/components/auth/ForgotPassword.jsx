@@ -99,9 +99,10 @@ const ForgotPassword = () => {
   };
 
   return (
-    <div className="d-flex flex-column align-items-center justify-content-center min-vh-100 px-3 py-4 bg-light">
-      <div className="p-4 p-md-5 rounded-4 shadow-lg bg-white w-100 border border-light" style={{ maxWidth: "440px" }}>
+    <div className="auth-shell d-flex flex-column align-items-center justify-content-center min-vh-100 px-3 py-4 bg-light">
+      <div className="auth-card p-4 p-md-5 rounded-4 shadow-lg bg-white w-100 border border-light" style={{ maxWidth: "440px" }}>
         
+        <div className="auth-brand"><img src="/logo.svg" alt="" /><div><strong>UNI-TRACK</strong><span>BUILT BY AD3N1X</span></div></div>
         {step === 1 ? (
           <>
             <div className="text-center mb-4">
