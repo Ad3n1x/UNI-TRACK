@@ -962,3 +962,51 @@ img, svg { max-width: 100%; }
   color: inherit;
   -webkit-text-fill-color: currentColor;
 }
+
+
+/* Light-mode welcome banner: white surface with blue typography.
+   Keep the dark-mode banner and its white typography unchanged. */
+.ut-workspace[data-bs-theme="light"] .ut-hero-panel {
+  background: #ffffff !important;
+  background-image: none !important;
+  color: #1749a5 !important;
+  border: 1px solid #d8e5fb !important;
+  box-shadow: 0 14px 36px rgba(28, 75, 150, .08) !important;
+}
+.ut-workspace[data-bs-theme="light"] .ut-hero-panel .ut-hero-eyebrow,
+.ut-workspace[data-bs-theme="light"] .ut-hero-panel .ut-greeting-chip,
+.ut-workspace[data-bs-theme="light"] .ut-hero-panel .ut-live-chip,
+.ut-workspace[data-bs-theme="light"] .ut-hero-panel h2,
+.ut-workspace[data-bs-theme="light"] .ut-hero-panel .ut-hero-description,
+.ut-workspace[data-bs-theme="light"] .ut-hero-panel .ut-account-line,
+.ut-workspace[data-bs-theme="light"] .ut-hero-panel .ut-account-line strong {
+  color: #1749a5 !important;
+  -webkit-text-fill-color: #1749a5 !important;
+  opacity: 1 !important;
+  text-shadow: none !important;
+}
+.ut-workspace[data-bs-theme="light"] .ut-hero-panel .ut-greeting-chip {
+  display: inline-flex;
+  padding: .42rem .78rem;
+  border-radius: 999px;
+  background: #edf4ff !important;
+  border: 1px solid #c9dcff !important;
+}
+.ut-workspace[data-bs-theme="light"] .ut-hero-panel .ut-live-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: .42rem .78rem;
+  border-radius: 999px;
+  background: #eaf8f1 !important;
+  border: 1px solid #bce8d1 !important;
+  color: #176b49 !important;
+  -webkit-text-fill-color: #176b49 !important;
+}
+.ut-workspace[data-bs-theme="light"] .ut-hero-panel .ut-hero-eyebrow {
+  letter-spacing: .12em;
+  font-weight: 800;
+}
+.ut-workspace[data-bs-theme="light"] .ut-hero-panel > div:first-child {
+  color: #315eea !important;
+  opacity: .08 !important;
+}
