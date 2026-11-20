@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import TrackerCard from './TrackerCard';
 
 export default function TrackerList({
@@ -11,10 +11,16 @@ export default function TrackerList({
   darkMode = false,
 }) {
   const [sortBy, setSortBy] = useState("createdAt"); // 'createdAt', 'name', 'type'
-  const [sortOrder, setSortOrder] = useState("desc");    // 'asc' or 'desc'
+  const [sortOrder, setSortOrder] = useState("desc");
+  const [searchTerm, setSearchTerm] = useState("");
+  const matchingTrackers = useMemo(() => {
+    const query = searchTerm.trim().toLowerCase();
+    if (!query) return trackers;
+    return trackers.filter((tracker) => [tracker.name, tracker.trackerName, tracker.type, tracker.description, tracker.unit].filter(Boolean).join(" ").toLowerCase().includes(query));
+  }, [trackers, searchTerm]);    // 'asc' or 'desc'
 
   // Sort trackers dynamically based on user selection
-  const sortedTrackers = [...trackers].sort((a, b) => {
+  const sortedTrackers = [...matchingTrackers].sort((a, b) => {
     let valA = a[sortBy];
     let valB = b[sortBy];
 
