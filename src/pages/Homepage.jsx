@@ -205,12 +205,16 @@ const toggleBootstrapModal = (modalId, action = "show") => {
 };
 
 const safeDecrypt = async (privateKey, value) => {
+  if (value === undefined || value === null || value === "") return value;
   try {
     const decrypted = await decryptField(privateKey, value);
-    return decrypted !== undefined && decrypted !== null ? decrypted : value;
+    if (decrypted && typeof decrypted === "object" && decrypted.ciphertext && decrypted.encryptedKey) {
+      throw new Error("Encrypted value could not be unlocked.");
+    }
+    return decrypted;
   } catch (err) {
-    console.warn("Decryption fallback triggered:", err);
-    return value;
+    console.warn("Decryption failed; encrypted content will not be exposed:", err);
+    throw err;
   }
 };
 
@@ -345,54 +349,63 @@ export default function HomePage() {
       const data = await response.json();
       const fetchedArray = Array.isArray(data) ? data : Array.isArray(data.trackers) ? data.trackers : [];
 
-      const decryptedTrackers = await Promise.all(
-        fetchedArray.map(async (tracker) => {
-          const decryptOrKeep = async (value) => {
-            try { return await decryptField(privateKey, value); }
-            catch (error) {
-              console.warn("A tracker field could not be decrypted in this browser:", error);
-              return value;
+      const isEncryptedValue = (value) => {
+        if (value && typeof value === "object") return Boolean(value.ciphertext && value.encryptedKey && value.iv);
+        if (typeof value !== "string") return false;
+        if (value.startsWith("U2FsdGVkX1")) return true;
+        try {
+          const parsed = JSON.parse(value);
+          return Boolean(parsed && parsed.ciphertext && parsed.encryptedKey && parsed.iv);
+        } catch { return false; }
+      };
+
+      const decryptedTrackers = await Promise.all(fetchedArray.map(async (tracker) => {
+        const lockedFields = [];
+        const readField = async (field, fallbackField) => {
+          const source = tracker[field] ?? (fallbackField ? tracker[fallbackField] : undefined);
+          if (source === undefined || source === null || source === "") return source;
+          try {
+            const result = await decryptField(privateKey, source);
+            if (isEncryptedValue(result)) throw new Error("Encrypted value remained locked");
+            return result;
+          } catch (error) {
+            if (isEncryptedValue(source)) {
+              lockedFields.push(field);
+              console.warn(`Could not unlock tracker field "${field}" for ${tracker._id || tracker.id || "unknown"}.`, error);
+              return undefined;
             }
-          };
-
-          const name = await decryptOrKeep(tracker.name ?? tracker.trackerName);
-          const target = tracker.target !== undefined ? await decryptOrKeep(tracker.target) : tracker.target;
-          const entries = tracker.entries !== undefined ? await decryptOrKeep(tracker.entries) : tracker.entries;
-          const decrypted = { ...tracker, name, trackerName: name, target, entries };
-
-          // Migrate old shared-key AES fields to this account's public-key encryption
-          // after successful decryption. Failed or unavailable legacy keys are never overwritten.
-          const migration = {};
-          if (typeof tracker.name === "string" && tracker.name.startsWith("U2FsdGVkX1") && name !== tracker.name) {
-            migration.name = await encryptField(publicKey, name, true);
+            return source;
           }
-          if (typeof tracker.target === "string" && tracker.target.startsWith("U2FsdGVkX1") && target !== tracker.target) {
-            migration.target = await encryptField(publicKey, target);
-          }
-          if (typeof tracker.entries === "string" && tracker.entries.startsWith("U2FsdGVkX1") && entries !== tracker.entries) {
-            migration.entries = await encryptField(publicKey, entries);
-          }
+        };
 
-          const trackerId = tracker._id || tracker.id;
-          if (trackerId && Object.keys(migration).length > 0) {
-            try {
-              const migrationResponse = await apiFetch(`${BASE_URL}/api/v1/trackers/${trackerId}`, {
-                method: "PUT",
-                headers: getAuthHeaders(),
-                body: JSON.stringify(migration),
-              });
-              if (!migrationResponse.ok) {
-                console.warn(`Legacy tracker migration deferred for ${trackerId}: HTTP ${migrationResponse.status}`);
-              }
-            } catch (migrationError) {
-              console.warn("Legacy tracker migration will be retried on a later refresh:", migrationError);
-            }
-          }
+        const [name, type, target, entries, description, color, icon, unit] = await Promise.all([
+          readField("name", "trackerName"),
+          readField("type"),
+          readField("target"),
+          readField("entries"),
+          readField("description"),
+          readField("color"),
+          readField("icon"),
+          readField("unit"),
+        ]);
 
-          return decrypted;
-        })
-      );
-
+        const safeName = typeof name === "string" && name.trim() ? name : (lockedFields.includes("name") ? "Locked tracker" : "Untitled tracker");
+        const safeEntries = Array.isArray(entries) ? entries : [];
+        return {
+          ...tracker,
+          name: safeName,
+          trackerName: safeName,
+          type: typeof type === "string" && type.trim() ? type.toLowerCase().trim() : "general",
+          target: target ?? null,
+          entries: safeEntries,
+          description: typeof description === "string" ? description : "",
+          color: typeof color === "string" ? color : tracker.color,
+          icon: typeof icon === "string" ? icon : tracker.icon,
+          unit: typeof unit === "string" ? unit : tracker.unit,
+          __locked: lockedFields.length > 0,
+          __lockedFields: lockedFields,
+        };
+      }));
       setTrackers(decryptedTrackers.reverse());
       
       if (isManualRefresh) {
