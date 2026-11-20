@@ -730,7 +730,7 @@ export default function HomePage() {
 
   return (
     <div 
-      className={`min-vh-100 position-relative ${darkMode ? "bg-dark text-light" : "bg-light text-dark"}`} 
+      className={`ut-workspace min-vh-100 position-relative ${darkMode ? "bg-dark text-light" : "bg-light text-dark"}`} 
       data-bs-theme={darkMode ? "dark" : "light"}
       style={{ transition: "background-color 0.25s ease" }}
     >
@@ -820,7 +820,7 @@ export default function HomePage() {
       )}
 
       {/* Navigation Bar */}
-      <nav className={`navbar border-bottom sticky-top backdrop-blur py-2.5 ${darkMode ? "bg-dark bg-opacity-75 border-secondary" : "bg-white bg-opacity-75"}`}>
+      <nav className={`ut-workspace-nav navbar border-bottom sticky-top backdrop-blur py-2.5 ${darkMode ? "bg-dark bg-opacity-75 border-secondary" : "bg-white bg-opacity-75"}`}>
         <div className="container d-flex align-items-center justify-content-between flex-wrap gap-2">
           
           <div className="d-flex align-items-center gap-2">
@@ -891,7 +891,7 @@ export default function HomePage() {
       </nav>
 
       {/* Main Workspace */}
-      <main className="container py-4">
+      <main className="ut-workspace-main container py-4">
         
         {/* Welcome Banner */}
         <div className={`p-4 p-md-5 glass-card shadow-sm border mb-4 position-relative overflow-hidden ${darkMode ? "bg-dark border-secondary" : "bg-white"}`}>
