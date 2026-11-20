@@ -122,9 +122,13 @@ export default function LoginForm({ onSuccess }) {
 
           <form onSubmit={handleSubmit}>
             <div className="mb-3">
-              <label className="form-label fw-semibold small text-secondary">Email Address</label>
+              <label htmlFor="login-email" className="form-label fw-semibold small text-secondary">Email Address</label>
               <input
+                id="login-email"
+                name="email"
                 type="email"
+                autoComplete="username"
+                inputMode="email"
                 className="form-control form-control-md rounded-3 py-2 shadow-sm"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -135,13 +139,16 @@ export default function LoginForm({ onSuccess }) {
 
             <div className="mb-4">
               <div className="d-flex justify-content-between align-items-center mb-1">
-                <label className="form-label fw-semibold small text-secondary mb-0">Password</label>
+                <label htmlFor="login-password" className="form-label fw-semibold small text-secondary mb-0">Password</label>
                 <Link to="/forgot-password" style={{ fontSize: "0.8rem" }} className="text-primary text-decoration-none fw-semibold">
                   Forgot Password?
                 </Link>
               </div>
               <input
+                id="login-password"
+                name="password"
                 type="password"
+                autoComplete="current-password"
                 className="form-control form-control-md rounded-3 py-2 shadow-sm"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
