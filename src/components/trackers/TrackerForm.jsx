@@ -145,7 +145,7 @@ export default function TrackerForm({ onCreate, onClose, darkMode = false }) {
   };
 
   return (
-    <form onSubmit={handleSubmit} style={styles.form}>
+    <form onSubmit={handleSubmit} className="ut-tracker-form" style={styles.form}>
       {errorMsg && (
         <div style={styles.errorBox}>
           <strong>Error:</strong> {errorMsg}
@@ -153,8 +153,9 @@ export default function TrackerForm({ onCreate, onClose, darkMode = false }) {
       )}
 
       <div>
-        <label style={styles.label}>Tracker Name</label>
+        <label htmlFor="ut-tracker-name" style={styles.label}>Tracker Name</label>
         <input
+          id="ut-tracker-name"
           type="text"
           maxLength={120}
           value={name}
@@ -175,6 +176,8 @@ export default function TrackerForm({ onCreate, onClose, darkMode = false }) {
               <button
                 key={typeConfig.value}
                 type="button"
+                className="ut-type-option"
+                aria-pressed={isActive}
                 disabled={loading}
                 onClick={() => handleTypeChange(typeConfig)}
                 style={{
@@ -204,6 +207,9 @@ export default function TrackerForm({ onCreate, onClose, darkMode = false }) {
               <button
                 key={iconName}
                 type="button"
+                className="ut-icon-option"
+                aria-label={`Choose ${iconName} icon`}
+                aria-pressed={isActive}
                 disabled={loading}
                 onClick={() => setIcon(iconName)}
                 style={{
@@ -226,6 +232,9 @@ export default function TrackerForm({ onCreate, onClose, darkMode = false }) {
             <button
               key={c}
               type="button"
+              className="ut-color-option"
+              aria-label={`Choose color ${c}`}
+              aria-pressed={color === c}
               disabled={loading}
               onClick={() => setColor(c)}
               style={{
