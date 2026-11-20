@@ -389,8 +389,28 @@ export default function HomePage() {
           readField("unit"),
         ]);
 
+        const readFieldValue = async (source, fieldName) => {
+          if (source === undefined || source === null || source === "") return source;
+          try {
+            const result = await decryptField(privateKey, source);
+            if (isEncryptedValue(result)) throw new Error("Encrypted value remained locked");
+            return result;
+          } catch (error) {
+            lockedFields.push(fieldName);
+            console.warn(`Could not unlock ${fieldName} for tracker ${tracker._id || tracker.id || "unknown"}.`, error);
+            return undefined;
+          }
+        };
+
         const safeName = typeof name === "string" && name.trim() ? name : (lockedFields.includes("name") ? "Locked tracker" : "Untitled tracker");
-        const safeEntries = Array.isArray(entries) ? entries : [];
+        const safeEntries = Array.isArray(entries) ? await Promise.all(entries.map(async (entry) => {
+          if (!entry || typeof entry !== "object" || Array.isArray(entry)) return entry;
+          const [entryValue, entryNote] = await Promise.all([
+            entry.value !== undefined ? readFieldValue(entry.value, "entry.value") : undefined,
+            entry.note !== undefined ? readFieldValue(entry.note, "entry.note") : undefined,
+          ]);
+          return { ...entry, ...(entry.value !== undefined ? { value: entryValue } : {}), ...(entry.note !== undefined ? { note: entryNote } : {}) };
+        })) : [];
         return {
           ...tracker,
           name: safeName,
@@ -399,9 +419,9 @@ export default function HomePage() {
           target: target ?? null,
           entries: safeEntries,
           description: typeof description === "string" ? description : "",
-          color: typeof color === "string" ? color : tracker.color,
-          icon: typeof icon === "string" ? icon : tracker.icon,
-          unit: typeof unit === "string" ? unit : tracker.unit,
+          color: typeof color === "string" ? color : undefined,
+          icon: typeof icon === "string" ? icon : undefined,
+          unit: typeof unit === "string" ? unit : "",
           __locked: lockedFields.length > 0,
           __lockedFields: lockedFields,
         };
