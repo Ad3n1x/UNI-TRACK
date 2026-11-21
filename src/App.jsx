@@ -153,18 +153,18 @@ export default function App() {
   return (
     <Suspense fallback={<RouteLoading />}>
       <Routes>
-          {/* Public product landing page */}
-          <Route path="/" element={<UnitrackPage />} />
-          <Route path="/unitrack" element={<UnitrackPage />} />
+        {/* Public product landing page */}
+        <Route path="/" element={<UnitrackPage />} />
+        <Route path="/unitrack" element={<UnitrackPage />} />
 
-          {/* Public authentication pages */}
-          <Route path="/login" element={<LoginForm />} />
-          <Route path="/register" element={<RegisterForm />} />
-          <Route path="/forgot-password" element={<ForgotPassword />} />
+        {/* Public authentication pages */}
+        <Route path="/login" element={<LoginForm />} />
+        <Route path="/register" element={<RegisterForm />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
 
-          {/* Private workspace: render only after the server confirms the session */}
-          <Route
-            path="/homepage"
+        {/* Private workspace: render only after the server confirms the session */}
+        <Route
+          path="/homepage"
             element={
               <RequireAuthenticatedWorkspace>
                 <AutoLogoutWrapper>
@@ -172,9 +172,9 @@ export default function App() {
                 </AutoLogoutWrapper>
               </RequireAuthenticatedWorkspace>
             }
-          />
+        />
 
-          <Route path="*" element={<NotFound />} />
+        <Route path="*" element={<NotFound />} />
       </Routes>
     </Suspense>
   );
