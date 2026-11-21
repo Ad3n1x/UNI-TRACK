@@ -29,7 +29,7 @@ import TrackerDashboard from "../components/trackers/TrackerDashboard";
 import TrackerForm from "../components/trackers/TrackerForm";
 import TrackerList from "../components/trackers/TrackerList";
 import TrackerFilters from "../components/trackers/TrackerFilters";
-import { initializeUserKeys, decryptField, encryptData, encryptField } from "../utils/e2ee";
+import { initializeUserKeys, decryptField, encryptData } from "../utils/e2ee";
 
 // ==========================================
 // CONFIGURATION & CONSTANTS
@@ -328,7 +328,7 @@ export default function HomePage() {
     if (isManualRefresh) setRefreshing(true);
     
     try {
-      const { privateKey, publicKey } = await initializeUserKeys();
+      const { privateKey } = await initializeUserKeys();
 
       let response = await apiFetch(`${BASE_URL}/api/v1/trackers`, { headers: getAuthHeaders() });
       if (response.status === 401 || response.status === 403) {
