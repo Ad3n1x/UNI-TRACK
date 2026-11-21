@@ -4,11 +4,6 @@ import { TRACKER_ICONS } from "../../utils/trackerIcons";
 import { toast } from "react-toastify";
 
 
-const RAW_BASE_URL = import.meta.env?.DEV ? (import.meta.env.VITE_API_URL || "") : "";
-
-const BASE_URL = RAW_BASE_URL.replace(/\/$/, "");
-
-
 const TYPE_COLORS = {
   habit: "#10b981",
   counter: "#3b82f6",
@@ -71,12 +66,11 @@ export default function TrackerCard({
   const decryptedColor = useMemo(() => tracker?.color, [tracker?.color]);
   const decryptedIcon = useMemo(() => tracker?.icon, [tracker?.icon]);
 
-  const [localEntries, setLocalEntries] = useState([]);
-
-  useEffect(() => {
-    // Homepage owns decryption. Cards receive normalized plaintext data only.
-    setLocalEntries(Array.isArray(tracker?.entries) ? tracker.entries : []);
-  }, [tracker?.entries]);
+  // Homepage owns decryption; cards consume normalized plaintext entries.
+  const localEntries = useMemo(
+    () => Array.isArray(tracker?.entries) ? tracker.entries : [],
+    [tracker?.entries]
+  );
 
   const today = getLocalDateString();
   const todayEntry = localEntries.find((e) => getEntryDateString(e.date) === today);
@@ -100,7 +94,6 @@ export default function TrackerCard({
       toast.error("Cannot update this tracker because its ID is missing.");
       return;
     }
-    setLocalEntries(updatedEntriesList);
     try {
       await onUpdateTracker?.({ ...tracker, entries: updatedEntriesList });
       toast.success(successMessage);
