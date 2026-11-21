@@ -1,5 +1,5 @@
 import React, { lazy, Suspense, useEffect, useCallback, useState } from "react";
-import { Routes, Route, useNavigate, Navigate } from "react-router-dom";
+import { Routes, Route, useNavigate, Navigate, Link } from "react-router-dom";
 import Cookies from "universal-cookie";
 import { toast } from "react-toastify";
 import { apiFetch } from "./utils/api";
@@ -81,7 +81,7 @@ function RequireAuthenticatedWorkspace({ children }) {
         <button type="button" onClick={() => setAttempt((value) => value + 1)}>
           Try again
         </button>
-        <a href="/login">Return to sign in</a>
+        <Link to="/login">Return to sign in</Link>
       </main>
     );
   }
@@ -151,9 +151,8 @@ function AutoLogoutWrapper({ children }) {
 
 export default function App() {
   return (
-    <AutoLogoutWrapper>
-      <Suspense fallback={<RouteLoading />}>
-        <Routes>
+    <Suspense fallback={<RouteLoading />}>
+      <Routes>
           {/* Public product landing page */}
           <Route path="/" element={<UnitrackPage />} />
           <Route path="/unitrack" element={<UnitrackPage />} />
@@ -168,14 +167,15 @@ export default function App() {
             path="/homepage"
             element={
               <RequireAuthenticatedWorkspace>
-                <Homepage />
+                <AutoLogoutWrapper>
+                  <Homepage />
+                </AutoLogoutWrapper>
               </RequireAuthenticatedWorkspace>
             }
           />
 
           <Route path="*" element={<NotFound />} />
-        </Routes>
-      </Suspense>
-    </AutoLogoutWrapper>
+      </Routes>
+    </Suspense>
   );
 }
