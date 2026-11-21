@@ -1,5 +1,5 @@
 import React, { useMemo } from "react";
-import { TrendingUp, Target, CheckCircle2, LayoutGrid, ListTodo } from "lucide-react";
+import { Target, CheckCircle2, LayoutGrid, ListTodo } from "lucide-react";
 
 const dateKey = (value) => {
   if (!value) return "";
