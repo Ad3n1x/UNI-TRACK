@@ -223,8 +223,6 @@ const safeDecrypt = async (privateKey, value) => {
 // ==========================================
 export default function HomePage() {
   const cookies = new Cookies();
-  const token = cookies.get("token") || localStorage.getItem("token") || localStorage.getItem("unitrack_authenticated");
-
   const currentUserEmail = (
     localStorage.getItem("userEmail") || 
     cookies.get("userEmail") || 
@@ -264,10 +262,6 @@ export default function HomePage() {
     const timer = setTimeout(() => setCurrentTime(Date.now()), 0);
     return () => clearTimeout(timer);
   }, []);
-
-  useEffect(() => {
-    if (!token) window.location.href = "/login";
-  }, [token]);
 
   const fetchUserSubscriptionStatus = useCallback(async () => {
     try {
@@ -445,8 +439,7 @@ export default function HomePage() {
   }, []);
 
   useEffect(() => {
-    if (!token) return undefined;
-
+    // The route guard has already verified the server session.
     // Defer network-driven state updates until after the effect commits.
     const task = setTimeout(() => {
       fetchTrackers();
@@ -458,7 +451,7 @@ export default function HomePage() {
     }, 0);
 
     return () => clearTimeout(task);
-  }, [token, fetchTrackers, fetchUserSubscriptionStatus]);
+  }, [fetchTrackers, fetchUserSubscriptionStatus]);
 
   // --- ACTIONS ---
   const handleAlatPayPayment = async () => {
@@ -722,8 +715,6 @@ export default function HomePage() {
     }
     setTimeout(() => setNotification(null), 3000);
   };
-
-  if (!token) return null;
 
   if (loading) {
     return (
