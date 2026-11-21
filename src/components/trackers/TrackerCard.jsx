@@ -67,10 +67,7 @@ export default function TrackerCard({
   const decryptedIcon = useMemo(() => tracker?.icon, [tracker?.icon]);
 
   // Homepage owns decryption; cards consume normalized plaintext entries.
-  const localEntries = useMemo(
-    () => Array.isArray(tracker?.entries) ? tracker.entries : [],
-    [tracker?.entries]
-  );
+  const localEntries = Array.isArray(tracker?.entries) ? tracker.entries : [];
 
   const today = getLocalDateString();
   const todayEntry = localEntries.find((e) => getEntryDateString(e.date) === today);
