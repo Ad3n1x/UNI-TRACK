@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
+import "../styles/workspace.css";
 import { apiFetch } from "../utils/api";
 import Cookies from "universal-cookie";
 import { 
