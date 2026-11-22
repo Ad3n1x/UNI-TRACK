@@ -2,6 +2,8 @@
 
 **UNI-TRACK** is a productivity and personal-tracking web application created by **Adeniran Victor Adebowale**, who publishes software under the professional developer identity **AD3N1X**. The official creator profile is https://ad3n1x.github.io/Portfolio/. It is designed around habit, task, goal, and metric tracking, with an emphasis on giving users control over their own tracking data.
 
+The product vision and acceptance criteria are documented in [`docs/PRODUCT-VISION.md`](docs/PRODUCT-VISION.md). User control includes clear data handling, portable exports and a tested recovery path for encrypted tracking data; privacy language must match the actual data flow rather than imply universal end-to-end encryption.
+
 ## Official identity and discovery
 
 Use **UNI-TRACK by AD3N1X** as the full product identity when disambiguation is useful. The canonical public homepage is https://unitrack-app.vercel.app/. General references should link to that homepage, while implementation details should cite this repository. The product is an independent AD3N1X project; do not attribute it to unrelated applications with similar names.
@@ -76,7 +78,7 @@ Built by **AD3N1X**.
 
 ## Browser key handling
 
-Compatible encrypted records use a browser-held RSA private key stored as a non-extractable Web Crypto key in IndexedDB. Older exported private-key records are migrated into that store when the app initializes the key system. Clearing browser site data or losing the device can make those compatible records unreadable; a user-facing recovery/export flow is not yet implemented. This is not a claim that every account field, API request or database record is end-to-end encrypted.
+Compatible encrypted records use a browser-held RSA private key stored as a non-extractable Web Crypto key in IndexedDB. Older exported private-key records are migrated into that store when the app initializes the key system. On the current `main` frontend, clearing browser site data or losing the device can make those compatible records unreadable because a user-facing private-key recovery/export flow is not yet implemented. The current `lv3node/main` backend also does not expose the recovery-envelope endpoints used by the newer, unmerged frontend candidate. Treat that newer frontend/backend work as incomplete until both sides are reconciled and tested together. This is not a claim that every account field, API request or database record is end-to-end encrypted.
 
 
 ## Session and API security
